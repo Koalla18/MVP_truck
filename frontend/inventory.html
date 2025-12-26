@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Инвентарь · RoutoX</title>
+  <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+  <link rel="stylesheet" href="./assets/css/style.css" />
+  <script defer src="./assets/js/common.js"></script>
+</head>
+<body class="min-h-screen flex flex-col">
+  <header class="glass px-6 py-5 flex flex-col gap-4 sticky top-0 z-20">
+    <div class="flex flex-wrap items-center justify-between gap-4">
+      <div class="flex flex-wrap items-center gap-4">
+        <a href="./index.html" class="flex items-center gap-3 hover:opacity-90 transition">
+          <div class="brand-mark">R</div>
+          <div>
+            <div class="text-lg font-semibold">RoutoX</div>
+            <div class="text-xs text-slate-400">Управление флотом</div>
+          </div>
+        </a>
+        <nav class="flex flex-wrap gap-2 text-sm">
+          <a href="./index.html" class="nav-pill"><i class="fa-solid fa-gauge-high"></i><span>Флот</span></a>
+          <a href="./trips.html" class="nav-pill"><i class="fa-solid fa-route"></i><span>Рейсы</span></a>
+          <a href="./geozones.html" class="nav-pill"><i class="fa-solid fa-map"></i><span>Геозоны</span></a>
+          <a href="./analytics.html" class="nav-pill"><i class="fa-solid fa-chart-line"></i><span>Аналитика</span></a>
+          <a href="./inventory.html" class="nav-pill nav-pill-active"><i class="fa-solid fa-boxes-stacked"></i><span>Инвентарь</span></a>
+        </nav>
+      </div>
+      <div class="flex items-center gap-2 relative">
+        <button id="notifBtn" class="icon-button" aria-label="Уведомления">
+          <img id="notifIcon" src="./assets/images/notification.gif" alt="Уведомления" class="icon-img hidden" />
+          <span class="notif-dot hidden"></span>
+        </button>
+        <button id="settingsBtn" class="icon-button" aria-label="Настройки">
+          <img src="./assets/images/settings.png" alt="Настройки" class="icon-img" />
+        </button>
+        <div class="header-avatar" aria-label="Профиль">LD</div>
+        <div id="notifPanel" class="floating-panel hidden" role="dialog" aria-label="Активные уведомления">
+          <div class="panel-header">Активные уведомления</div>
+          <div class="panel-body" id="notifList"></div>
+        </div>
+        <div id="settingsPanel" class="floating-panel hidden" role="dialog" aria-label="Системные настройки">
+          <div class="panel-header">Системные настройки</div>
+          <div class="panel-body space-y-3 text-sm">
+            <label class="flex items-center justify-between gap-3">Часовой пояс
+              <select id="tzSelect" class="input-select">
+                <option value="UTC+3">UTC+3 Москва</option>
+                <option value="UTC+2">UTC+2 Калининград</option>
+                <option value="UTC+5">UTC+5 Екатеринбург</option>
+              </select>
+            </label>
+            <label class="flex items-center justify-between gap-3">Топливо в
+              <select id="fuelUnitSelect" class="input-select">
+                <option value="l">литрах</option>
+                <option value="gal">галлонах</option>
+              </select>
+            </label>
+            <label class="flex items-center justify-between gap-3">Температура
+              <select id="tempUnitSelect" class="input-select">
+                <option value="c">°C</option>
+                <option value="f">°F</option>
+              </select>
+            </label>
+            <label class="flex items-center justify-between gap-3">Оповещения
+              <select id="alertModeSelect" class="input-select">
+                <option value="push">Push + Email</option>
+                <option value="push-only">Только Push</option>
+                <option value="email">Только Email</option>
+              </select>
+            </label>
+          </div>
+        </div>
+        <label id="themeToggle" class="theme-toggle" aria-live="polite">
+          <input type="checkbox" id="themeToggleInput" aria-describedby="themeToggleHint" />
+          <span class="toggle-track">
+            <span class="toggle-icon sun"><i class="fa-solid fa-sun"></i></span>
+            <span class="toggle-icon moon"><i class="fa-solid fa-moon"></i></span>
+            <span class="toggle-thumb"></span>
+          </span>
+          <span id="themeToggleHint" class="sr-only">Переключатель темы</span>
+        </label>
+      </div>
+    </div>
+    <div class="flex items-center justify-between">
+      <h1 class="text-2xl font-semibold">Инвентарь</h1>
+      <span class="text-sm text-slate-400">Демо-режим (локальные данные)</span>
+    </div>
+  </header>
+
+  <main class="p-6 space-y-6">
+    <div class="grid xl:grid-cols-3 gap-4">
+      <div class="glass rounded-2xl p-4 space-y-3">
+        <div class="flex items-center justify-between">
+          <h2 class="text-lg font-semibold">Сводка запасов</h2>
+          <span class="text-xs text-slate-400" id="invMeta">—</span>
+        </div>
+        <div id="invSummary" class="analytics-grid"></div>
+      </div>
+      <div class="glass rounded-2xl p-4 space-y-3">
+        <div class="flex items-center justify-between">
+          <h2 class="text-lg font-semibold">Резервы и критичность</h2>
+          <span class="text-xs text-slate-400">Автообновление</span>
+        </div>
+        <div id="invReserves" class="space-y-2"></div>
+      </div>
+      <div class="glass rounded-2xl p-4 space-y-3">
+        <div class="flex items-center justify-between">
+          <h2 class="text-lg font-semibold">Телеметрия датчиков</h2>
+          <span class="text-xs text-slate-400">Вкл. сигнал</span>
+        </div>
+        <div id="invSensors" class="space-y-2"></div>
+      </div>
+    </div>
+
+    <div class="glass rounded-2xl p-4">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-lg font-semibold">Склад</h2>
+        <button id="addItemBtn" class="icon-button"><i class="fa-solid fa-plus"></i></button>
+      </div>
+      <div id="inventoryList" class="space-y-2"></div>
+    </div>
+
+    <div class="glass rounded-2xl p-4">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-lg font-semibold">История операций</h2>
+        <span class="text-xs text-slate-400">Последние заявки</span>
+      </div>
+      <div id="inventoryLog" class="space-y-2"></div>
+    </div>
+  </main>
+
+  <div id="itemModal" class="modal fixed inset-0 hidden items-center justify-center z-40">
+    <div class="glass rounded-2xl p-6 w-[90%] max-w-md border border-slate-700 relative fade-in">
+      <button class="absolute top-3 right-3 text-slate-400 hover:text-white" onclick="toggle(false)"><i class="fa-solid fa-xmark"></i></button>
+      <h3 class="text-lg font-semibold mb-3 flex items-center gap-2"><i class="fa-solid fa-box"></i> Добавить позицию</h3>
+      <form id="itemForm" class="space-y-3">
+        <div>
+          <label class="text-sm text-slate-300">Название</label>
+          <input required name="name" class="mt-1 w-full rounded-lg bg-slate-800 border border-slate-700 px-3 py-2" />
+        </div>
+        <div>
+          <label class="text-sm text-slate-300">Количество</label>
+          <input required type="number" min="0" name="qty" class="mt-1 w-full rounded-lg bg-slate-800 border border-slate-700 px-3 py-2" />
+        </div>
+        <div>
+          <label class="text-sm text-slate-300">Статус</label>
+          <input name="status" class="mt-1 w-full rounded-lg bg-slate-800 border border-slate-700 px-3 py-2" placeholder="Резерв / Онлайн" />
+        </div>
+        <button class="w-full mt-2 bg-emerald-600 hover:bg-emerald-500 rounded-lg py-2 font-semibold">Сохранить</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="https://kit.fontawesome.com/a2e0e9e5a9.js" crossorigin="anonymous"></script>
+  <script>
+    const STORAGE_KEY = "routox-inventory";
+    const defaultItems = [
+      { name: "Датчики (температура)", qty: 42, status: "Работают" },
+      { name: "Камеры кабины", qty: 18, status: "HD 1080p" },
+      { name: "Шины зимние", qty: 64, status: "Склад 3" },
+      { name: "ЗИП · ремни", qty: 120, status: "Резерв" },
+      { name: "Топливо резерв", qty: 3100, status: "Литры" }
+    ];
+    const clamp = (v, min = 0, max = 100) => Math.max(min, Math.min(max, v));
+
+    function loadItems() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return defaultItems;
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed) ? parsed : defaultItems;
+      } catch (e) {
+        return defaultItems;
+      }
+    }
+
+    function saveItems(items) { localStorage.setItem(STORAGE_KEY, JSON.stringify(items)); }
+
+    function render(items) {
+      const list = document.getElementById("inventoryList");
+      if (!list) return;
+      list.innerHTML = items
+        .map((i, idx) => `
+          <div class="inventory-item">
+            <div>
+              <div class="font-semibold">${i.name}</div>
+              <div class="text-xs text-slate-400">${i.status || ""}</div>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="pill-muted">${i.qty}</span>
+              <button class="text-red-300 text-xs" data-remove="${idx}">✕</button>
+            </div>
+          </div>`)
+        .join("");
+    }
+
+    function renderSummary(items) {
+      const grid = document.getElementById("invSummary");
+      const meta = document.getElementById("invMeta");
+      if (!grid) return;
+      const totalQty = items.reduce((s, i) => s + Number(i.qty || 0), 0);
+      const reserves = items.filter((i) => (i.status || "").toLowerCase().includes("резерв"));
+      const critical = items.filter((i) => Number(i.qty || 0) < 20);
+      const cards = [
+        { title: "Позиций", value: items.length, bar: clamp((items.length / 20) * 100, 5, 100) },
+        { title: "Всего ед.", value: totalQty, bar: clamp((totalQty / 4000) * 100, 5, 100) },
+        { title: "Резерв", value: `${reserves.length} поз.`, bar: clamp((reserves.length / Math.max(items.length, 1)) * 100, 5, 100) },
+        { title: "Критично", value: `${critical.length} поз.`, bar: clamp((critical.length / Math.max(items.length, 1)) * 100, 5, 100) }
+      ];
+      grid.innerHTML = cards
+        .map((c) => `
+          <div class="analytics-card">
+            <div class="flex items-center justify-between">
+              <div class="text-sm text-slate-300 font-semibold">${c.title}</div>
+              <div class="text-xs pill-muted">live</div>
+            </div>
+            <div class="text-2xl font-semibold mt-1">${c.value}</div>
+            <div class="analytics-bar"><span style="width:${clamp(c.bar, 6, 100)}%"></span></div>
+          </div>`)
+        .join("");
+      if (meta) meta.textContent = `${items.length} позиций · ${totalQty} ед.`;
+    }
+
+    function renderReserves(items) {
+      const wrap = document.getElementById("invReserves");
+      if (!wrap) return;
+      const sorted = [...items]
+        .sort((a, b) => Number(a.qty || 0) - Number(b.qty || 0))
+        .slice(0, 4);
+      wrap.innerHTML = sorted
+        .map((i) => {
+          const health = clamp((Number(i.qty || 0) / 120) * 100, 4, 100);
+          const status = (i.status || "").toLowerCase();
+          const tone = status.includes("резерв") ? "text-amber-300" : "text-slate-400";
+          return `
+            <div class="rounded-xl border border-slate-800 p-3 bg-slate-900/35 space-y-1">
+              <div class="flex items-center justify-between text-sm font-semibold">
+                <span>${i.name}</span>
+                <span class="pill-muted">${i.qty}</span>
+              </div>
+              <div class="text-xs ${tone}">${i.status || "—"}</div>
+              <div class="progress mt-1"><span style="width:${health}%"></span></div>
+            </div>`;
+        })
+        .join("");
+    }
+
+    function renderSensors() {
+      const wrap = document.getElementById("invSensors");
+      if (!wrap) return;
+      const sensors = [
+        { name: "Температура рефриж.", value: "+4.3°C", level: "ok" },
+        { name: "Давление шин", value: "Норма", level: "ok" },
+        { name: "Камеры 1080p", value: "18 актив.", level: "warn" },
+        { name: "GPS датчики", value: "2 вне сети", level: "danger" }
+      ];
+      wrap.innerHTML = sensors
+        .map((s) => {
+          const color = s.level === "danger" ? "text-red-400" : s.level === "warn" ? "text-amber-300" : "text-emerald-300";
+          return `
+            <div class="inventory-item">
+              <div>
+                <div class="font-semibold">${s.name}</div>
+                <div class="text-xs text-slate-400">Сигнал</div>
+              </div>
+              <span class="text-sm font-semibold ${color}">${s.value}</span>
+            </div>`;
+        })
+        .join("");
+    }
+
+    function renderLog(items) {
+      const wrap = document.getElementById("inventoryLog");
+      if (!wrap) return;
+      const events = [
+        { title: "Отгрузка шин", meta: "-12 шт · Склад 3" },
+        { title: "Датчики температуры", meta: "+10 шт · Холод" },
+        { title: "Топливо резерв", meta: "+800 л · Заправка" },
+        { title: "Камеры кабины", meta: "-2 шт · Сервис" }
+      ];
+      wrap.innerHTML = events
+        .map((e) => `
+          <div class="rounded-xl border border-slate-800 p-3 bg-slate-900/35 flex items-center justify-between">
+            <div>
+              <div class="font-semibold text-sm">${e.title}</div>
+              <div class="text-xs text-slate-400">${e.meta}</div>
+            </div>
+            <span class="pill-muted">${new Date().toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}</span>
+          </div>`)
+        .join("");
+    }
+
+    function updateAll() {
+      render(state.items);
+      renderSummary(state.items);
+      renderReserves(state.items);
+      renderSensors();
+      renderLog(state.items);
+    }
+
+    function toggle(show) {
+      const modal = document.getElementById("itemModal");
+      if (!modal) return;
+      modal.classList.toggle("hidden", !show);
+      modal.classList.toggle("flex", show);
+    }
+
+    const state = { items: [] };
+
+    window.addEventListener("DOMContentLoaded", async () => {
+      const { token } = await window.RoutoxCommon.requireAuth({ allowRoles: ["admin", "owner"] });
+      if (!token) return;
+
+      await window.RoutoxCommon.initHeaderPanels(token);
+
+      state.items = loadItems();
+      updateAll();
+
+      const addBtn = document.getElementById("addItemBtn");
+      if (addBtn) addBtn.onclick = () => toggle(true);
+
+      const form = document.getElementById("itemForm");
+      if (form) {
+        form.onsubmit = (e) => {
+          e.preventDefault();
+          const data = new FormData(e.target);
+          state.items.unshift({ name: data.get("name"), qty: Number(data.get("qty") || 0), status: data.get("status") });
+          saveItems(state.items);
+          updateAll();
+          toggle(false);
+          e.target.reset();
+        };
+      }
+
+      const list = document.getElementById("inventoryList");
+      if (list) {
+        list.onclick = (e) => {
+          const btn = e.target.closest("[data-remove]");
+          if (!btn) return;
+          const idx = Number(btn.dataset.remove);
+          state.items.splice(idx, 1);
+          saveItems(state.items);
+          updateAll();
+        };
+      }
+
+      document.getElementById("itemModal")?.addEventListener("click", (e) => {
+        if (e.target.id === "itemModal") toggle(false);
+      });
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Вход - RoutoX</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    }
+  </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+  <div class="bg-slate-800/50 backdrop-blur-lg rounded-2xl shadow-2xl p-8 w-full max-w-md border border-slate-700">
+    <div class="text-center mb-8">
+      <div class="text-3xl font-bold text-white mb-2">RoutoX</div>
+      <div class="text-slate-400">Управление флотом</div>
+    </div>
+    
+    <form id="loginForm" class="space-y-6">
+      <div>
+        <label class="block text-sm font-medium text-slate-300 mb-2">Email</label>
+        <input 
+          type="email" 
+          id="email" 
+          required
+          value=""
+          class="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          placeholder="admin+...@example.com"
+        />
+      </div>
+      
+      <div>
+        <label class="block text-sm font-medium text-slate-300 mb-2">Пароль</label>
+        <input 
+          type="password" 
+          id="password" 
+          required
+          value=""
+          class="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          placeholder="••••••••"
+        />
+      </div>
+      
+      <button 
+        type="submit"
+        class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors"
+      >
+        Войти
+      </button>
+    </form>
+    
+    <div id="error" class="mt-4 text-red-400 text-sm text-center hidden"></div>
+
+    <div class="mt-6 rounded-xl border border-slate-700 bg-slate-900/30 p-4">
+      <div class="text-sm font-semibold text-white">Тестовые аккаунты</div>
+      <div class="text-xs text-slate-400 mt-1">Если аккаунтов нет — запустите backend/scripts/seed_demo.sh</div>
+
+      <div class="mt-4 grid gap-3 text-sm">
+        <div class="flex items-center justify-between gap-3">
+          <div class="min-w-0">
+            <div class="text-slate-200 font-semibold">owner</div>
+            <div class="text-xs text-slate-400 truncate">owner@example.com · owner123</div>
+          </div>
+          <button type="button" class="px-3 py-2 rounded-lg border border-slate-700 text-slate-200 hover:border-emerald-400/60 transition" data-fill-email="owner@example.com" data-fill-pass="owner123">Заполнить</button>
+        </div>
+
+        <div class="flex items-center justify-between gap-3">
+          <div class="min-w-0">
+            <div class="text-slate-200 font-semibold">admin</div>
+            <div class="text-xs text-slate-400 truncate">admin@example.com · admin123</div>
+          </div>
+          <button type="button" class="px-3 py-2 rounded-lg border border-slate-700 text-slate-200 hover:border-emerald-400/60 transition" data-fill-email="admin@example.com" data-fill-pass="admin123">Заполнить</button>
+        </div>
+
+        <div class="flex items-center justify-between gap-3">
+          <div class="min-w-0">
+            <div class="text-slate-200 font-semibold">driver</div>
+            <div class="text-xs text-slate-400 truncate">driver@example.com · driver123</div>
+          </div>
+          <button type="button" class="px-3 py-2 rounded-lg border border-slate-700 text-slate-200 hover:border-emerald-400/60 transition" data-fill-email="driver@example.com" data-fill-pass="driver123">Заполнить</button>
+        </div>
+      </div>
+    </div>
+    
+    <div class="mt-6 text-center text-sm text-slate-400">
+      <p>Демо-логины создаёт скрипт backend/scripts/seed_demo.sh</p>
+      <p class="mt-2">Креды выше — стабильные и должны совпадать со seed.</p>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE_URL = "http://localhost:8000/api/v1";
+
+    async function fetchMe(token) {
+      const res = await fetch(`${API_BASE_URL}/auth/me`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error("Не удалось получить профиль пользователя");
+      return await res.json();
+    }
+    
+    document.getElementById("loginForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+      const errorDiv = document.getElementById("error");
+      
+      try {
+        const response = await fetch(`${API_BASE_URL}/auth/login`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ email, password }),
+        });
+        
+        if (!response.ok) {
+          const error = await response.json().catch(() => ({ detail: "Ошибка входа" }));
+          throw new Error(error.detail || "Неверный email или пароль");
+        }
+        
+        const data = await response.json();
+        localStorage.setItem("auth_token", data.access_token);
+
+        // Role-based redirect
+        try {
+          const me = await fetchMe(data.access_token);
+          if (me.role === "driver") window.location.href = "./driver.html";
+          else if (me.role === "owner") window.location.href = "./owner.html";
+          else window.location.href = "./index.html";
+        } catch {
+          // Fallback if API is temporarily unavailable
+          window.location.href = "./index.html";
+        }
+      } catch (error) {
+        errorDiv.textContent = error.message;
+        errorDiv.classList.remove("hidden");
+      }
+    });
+
+    document.querySelectorAll("button[data-fill-email]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const email = btn.getAttribute("data-fill-email") || "";
+        const pass = btn.getAttribute("data-fill-pass") || "";
+        const emailEl = document.getElementById("email");
+        const passEl = document.getElementById("password");
+        const errorDiv = document.getElementById("error");
+        if (emailEl) emailEl.value = email;
+        if (passEl) passEl.value = pass;
+        errorDiv?.classList.add("hidden");
+      });
+    });
+  </script>
+</body>
+</html>
+

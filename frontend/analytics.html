@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Аналитика · RoutoX</title>
+  <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+  <link rel="stylesheet" href="./assets/css/style.css" />
+  <script defer src="./assets/js/common.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body class="min-h-screen flex flex-col">
+  <header class="glass px-6 py-5 flex flex-col gap-4 sticky top-0 z-20">
+    <div class="flex flex-wrap items-center justify-between gap-4">
+      <div class="flex flex-wrap items-center gap-4">
+        <a href="./index.html" class="flex items-center gap-3 hover:opacity-90 transition">
+          <div class="brand-mark">R</div>
+          <div>
+            <div class="text-lg font-semibold">RoutoX</div>
+            <div class="text-xs text-slate-400">Управление флотом</div>
+          </div>
+        </a>
+        <nav class="flex flex-wrap gap-2 text-sm">
+          <a href="./index.html" class="nav-pill"><i class="fa-solid fa-gauge-high"></i><span>Флот</span></a>
+          <a href="./trips.html" class="nav-pill"><i class="fa-solid fa-route"></i><span>Рейсы</span></a>
+          <a href="./geozones.html" class="nav-pill"><i class="fa-solid fa-map"></i><span>Геозоны</span></a>
+          <a href="./analytics.html" class="nav-pill nav-pill-active"><i class="fa-solid fa-chart-line"></i><span>Аналитика</span></a>
+          <a href="./inventory.html" class="nav-pill"><i class="fa-solid fa-boxes-stacked"></i><span>Инвентарь</span></a>
+        </nav>
+      </div>
+
+      <div class="flex items-center gap-2 relative">
+        <button id="notifBtn" class="icon-button" aria-label="Уведомления">
+          <img id="notifIcon" src="./assets/images/notification.gif" alt="Уведомления" class="icon-img hidden" />
+          <span class="notif-dot hidden"></span>
+        </button>
+        <button id="settingsBtn" class="icon-button" aria-label="Настройки">
+          <img src="./assets/images/settings.png" alt="Настройки" class="icon-img" />
+        </button>
+        <div class="header-avatar" aria-label="Профиль">LD</div>
+
+        <div id="notifPanel" class="floating-panel hidden" role="dialog" aria-label="Активные уведомления">
+          <div class="panel-header">Активные уведомления</div>
+          <div class="panel-body" id="notifList"></div>
+        </div>
+        <div id="settingsPanel" class="floating-panel hidden" role="dialog" aria-label="Системные настройки">
+          <div class="panel-header">Системные настройки</div>
+          <div class="panel-body space-y-3 text-sm">
+            <label class="flex items-center justify-between gap-3">Часовой пояс
+              <select id="tzSelect" class="input-select">
+                <option value="UTC+3">UTC+3 Москва</option>
+                <option value="UTC+2">UTC+2 Калининград</option>
+                <option value="UTC+5">UTC+5 Екатеринбург</option>
+              </select>
+            </label>
+            <label class="flex items-center justify-between gap-3">Топливо в
+              <select id="fuelUnitSelect" class="input-select">
+                <option value="l">литрах</option>
+                <option value="gal">галлонах</option>
+              </select>
+            </label>
+            <label class="flex items-center justify-between gap-3">Температура
+              <select id="tempUnitSelect" class="input-select">
+                <option value="c">°C</option>
+                <option value="f">°F</option>
+              </select>
+            </label>
+            <label class="flex items-center justify-between gap-3">Оповещения
+              <select id="alertModeSelect" class="input-select">
+                <option value="push">Push + Email</option>
+                <option value="push-only">Только Push</option>
+                <option value="email">Только Email</option>
+              </select>
+            </label>
+          </div>
+        </div>
+
+        <label id="themeToggle" class="theme-toggle" aria-live="polite">
+          <input type="checkbox" id="themeToggleInput" aria-describedby="themeToggleHint" />
+          <span class="toggle-track">
+            <span class="toggle-icon sun"><i class="fa-solid fa-sun"></i></span>
+            <span class="toggle-icon moon"><i class="fa-solid fa-moon"></i></span>
+            <span class="toggle-thumb"></span>
+          </span>
+          <span id="themeToggleHint" class="sr-only">Переключатель темы</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="flex items-center justify-between">
+      <h1 class="text-2xl font-semibold">Аналитика</h1>
+      <span class="text-sm text-slate-400">KPI, риски, инциденты</span>
+    </div>
+  </header>
+
+  <main class="p-6 space-y-6">
+    <div class="glass rounded-2xl p-4 space-y-3">
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <h2 class="text-lg font-semibold">Ключевые метрики</h2>
+          <div class="text-xs text-slate-400">Период: последние 30 дней (по created_at)</div>
+        </div>
+        <span class="text-xs text-slate-400" id="metaLabel">Загрузка…</span>
+      </div>
+      <div id="kpiGrid" class="analytics-grid"></div>
+    </div>
+
+    <div class="grid xl:grid-cols-3 gap-4">
+      <div class="glass rounded-2xl p-4 space-y-3 xl:col-span-2">
+        <div class="flex items-center justify-between">
+          <h2 class="text-lg font-semibold">Заказы · Динамика</h2>
+          <span class="text-xs text-slate-400">Последние 14 дней</span>
+        </div>
+        <div class="h-[260px]"><canvas id="ordersTrendChart" aria-label="График заказов"></canvas></div>
+        <div id="ordersTrendFallback" class="text-sm text-slate-400 hidden">График недоступен</div>
+      </div>
+      <div class="glass rounded-2xl p-4 space-y-3">
+        <div class="flex items-center justify-between">
+          <h2 class="text-lg font-semibold">Статусы заказов</h2>
+          <span class="text-xs text-slate-400">Срез</span>
+        </div>
+        <div class="h-[260px]"><canvas id="ordersStatusChart" aria-label="Статусы заказов"></canvas></div>
+        <div id="ordersStatusFallback" class="text-sm text-slate-400 hidden">График недоступен</div>
+      </div>
+    </div>
+
+    <div class="grid xl:grid-cols-3 gap-4">
+      <div class="glass rounded-2xl p-4 space-y-3">
+        <div class="flex items-center justify-between">
+          <h2 class="text-lg font-semibold">Инциденты</h2>
+          <span class="text-xs text-slate-400">Открытые</span>
+        </div>
+        <div class="h-[220px]"><canvas id="incidentsSeverityChart" aria-label="Инциденты по критичности"></canvas></div>
+        <div id="incidentsSeverityFallback" class="text-sm text-slate-400 hidden">График недоступен</div>
+        <div id="incidentList" class="space-y-2"></div>
+      </div>
+
+      <div class="glass rounded-2xl p-4 space-y-3">
+        <div class="flex items-center justify-between">
+          <h2 class="text-lg font-semibold">Риски и SLA</h2>
+          <span class="text-xs text-slate-400">Топ сигналов</span>
+        </div>
+        <div id="riskList" class="space-y-2"></div>
+      </div>
+
+      <div class="glass rounded-2xl p-4 space-y-3">
+        <div class="flex items-center justify-between">
+          <h2 class="text-lg font-semibold">Геозоны</h2>
+          <span class="text-xs text-slate-400">События (24ч)</span>
+        </div>
+        <div id="geozoneEvents" class="space-y-2"></div>
+      </div>
+    </div>
+
+    <div class="glass rounded-2xl p-4">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-lg font-semibold">Топ маршрутов</h2>
+        <span class="text-xs text-slate-400">По количеству заказов</span>
+      </div>
+      <div id="routeTable" class="space-y-2"></div>
+    </div>
+  </main>
+
+  <script src="https://kit.fontawesome.com/a2e0e9e5a9.js" crossorigin="anonymous"></script>
+  <script>
+    function esc(v) {
+      return String(v || "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;");
+    }
+
+    function parseTs(ts) {
+      if (!ts) return null;
+      const d = new Date(ts);
+      return Number.isNaN(d.getTime()) ? null : d;
+    }
+
+    function fmtTs(ts) {
+      const d = parseTs(ts);
+      if (!d) return "—";
+      return d.toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+    }
+
+    function clamp(v, min = 0, max = 100) {
+      return Math.max(min, Math.min(max, v));
+    }
+
+    function cssVar(name) {
+      return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    }
+
+    function hexToRgb(hex) {
+      const h = String(hex || "").trim();
+      if (!h.startsWith("#")) return null;
+      const s = h.slice(1);
+      const full = s.length === 3 ? s.split("").map((c) => c + c).join("") : s;
+      if (full.length !== 6) return null;
+      const n = parseInt(full, 16);
+      if (!Number.isFinite(n)) return null;
+      return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
+    }
+
+    function colorWithAlpha(color, alpha) {
+      const c = String(color || "").trim();
+      if (!c) return `rgba(148,163,184,${alpha})`;
+      if (c.startsWith("#")) {
+        const rgb = hexToRgb(c);
+        if (rgb) return `rgba(${rgb.r},${rgb.g},${rgb.b},${alpha})`;
+      }
+      if (c.startsWith("rgb(")) return c.replace("rgb(", "rgba(").replace(")", `,${alpha})`);
+      if (c.startsWith("rgba(")) return c;
+      return c;
+    }
+
+    function getPalette() {
+      const accent = cssVar("--accent") || "#10b981";
+      const warn = cssVar("--accent-warn") || "#f59e0b";
+      const danger = cssVar("--accent-danger") || "#ef4444";
+      const text = cssVar("--text") || "#e5e7eb";
+      const muted = cssVar("--muted") || "#6b7280";
+      const border = cssVar("--border") || "#1f2937";
+      return {
+        accent,
+        warn,
+        danger,
+        text,
+        muted,
+        grid: colorWithAlpha(muted, 0.25),
+        border: colorWithAlpha(border, 0.65),
+      };
+    }
+
+    function startOfDay(d) {
+      const x = new Date(d);
+      x.setHours(0, 0, 0, 0);
+      return x;
+    }
+
+    function addDays(d, days) {
+      const x = new Date(d);
+      x.setDate(x.getDate() + days);
+      return x;
+    }
+
+    function fmtDayLabel(d) {
+      return d.toLocaleDateString("ru-RU", { day: "2-digit", month: "2-digit" });
+    }
+
+    function pickOrdersWindow(orders, days) {
+      const now = new Date();
+      const from = addDays(now, -days);
+      return (orders || []).filter((o) => {
+        const dt = parseTs(o?.created_at);
+        return dt ? dt >= from : true;
+      });
+    }
+
+    function countBy(items, keyFn) {
+      const m = new Map();
+      (items || []).forEach((it) => {
+        const k = keyFn(it);
+        m.set(k, (m.get(k) || 0) + 1);
+      });
+      return m;
+    }
+
+    function renderKpis({ orders, alerts, incidents, vehicles }) {
+      const grid = document.getElementById("kpiGrid");
+      if (!grid) return;
+
+      const totalOrders = orders.length;
+      const completedOrders = orders.filter((o) => o.status === "completed").length;
+      const cancelledOrders = orders.filter((o) => o.status === "cancelled").length;
+      const backlogOrders = orders.filter((o) => o.status === "new" || o.status === "assigned").length;
+      const activeOrders = orders.filter((o) => !["completed", "cancelled"].includes(o.status)).length;
+
+      const acceptedSamples = orders
+        .filter((o) => o.accepted_at && o.created_at)
+        .map((o) => {
+          const a = parseTs(o.accepted_at);
+          const c = parseTs(o.created_at);
+          if (!a || !c) return null;
+          const ms = a.getTime() - c.getTime();
+          return Number.isFinite(ms) ? ms : null;
+        })
+        .filter((v) => v !== null);
+
+      const avgAcceptMins = acceptedSamples.length
+        ? Math.round(acceptedSamples.reduce((s, v) => s + v, 0) / acceptedSamples.length / 60000)
+        : null;
+
+      const acceptanceRate = totalOrders ? Math.round((acceptedSamples.length / totalOrders) * 100) : 0;
+
+      const activeAlerts = alerts.filter((a) => a.status === "created" || a.status === "delivered").length;
+      const openIncidents = incidents.filter((i) => ["open", "acknowledged", "in_progress"].includes(i.status)).length;
+
+      const fleet = vehicles.length;
+      const utilization = fleet ? Math.round((activeOrders / fleet) * 100) : 0;
+
+      const cards = [
+        { title: "Заказы", value: String(totalOrders), hint: `завершено ${completedOrders}`, icon: "fa-route", bar: totalOrders ? (completedOrders / totalOrders) * 100 : 0 },
+        { title: "Активные", value: String(activeOrders), hint: `бэклог ${backlogOrders}`, icon: "fa-bolt", bar: fleet ? (activeOrders / Math.max(fleet, 1)) * 100 : 0 },
+        { title: "Принятие", value: `${acceptanceRate}%`, hint: avgAcceptMins == null ? "—" : `среднее ${avgAcceptMins} мин`, icon: "fa-user-check", bar: acceptanceRate },
+        { title: "Тревоги", value: String(activeAlerts), hint: "active", icon: "fa-triangle-exclamation", bar: clamp(activeAlerts * 12, 0, 100) },
+        { title: "Инциденты", value: String(openIncidents), hint: "open", icon: "fa-shield-halved", bar: clamp(openIncidents * 10, 0, 100) },
+        { title: "Флот", value: String(fleet), hint: `утилизация ${utilization}%`, icon: "fa-truck", bar: clamp((fleet / 60) * 100, 0, 100) },
+        { title: "Отменено", value: String(cancelledOrders), hint: "orders", icon: "fa-ban", bar: totalOrders ? (cancelledOrders / totalOrders) * 100 : 0 },
+      ];
+
+      grid.innerHTML = cards
+        .map((c) => `
+          <div class="analytics-card">
+            <div class="flex items-center justify-between">
+              <div class="text-sm text-slate-300 font-semibold flex items-center gap-2">
+                <i class="fa-solid ${c.icon} text-slate-400"></i>
+                <span>${esc(c.title)}</span>
+              </div>
+              <div class="text-xs pill-muted">live</div>
+            </div>
+            <div class="text-2xl font-semibold mt-1 tabular">${esc(c.value)}</div>
+            <div class="text-xs text-slate-400 mt-1">${esc(c.hint || "")}</div>
+            <div class="analytics-bar"><span style="width:${clamp(c.bar, 3, 100)}%"></span></div>
+          </div>`)
+        .join("");
+    }
+
+    function renderIncidentList(incidents) {
+      const wrap = document.getElementById("incidentList");
+      if (!wrap) return;
+
+      const open = (incidents || [])
+        .filter((i) => ["open", "acknowledged", "in_progress"].includes(i.status))
+        .sort((a, b) => {
+          const aSla = parseTs(a.sla_due_at)?.getTime() || Infinity;
+          const bSla = parseTs(b.sla_due_at)?.getTime() || Infinity;
+          return aSla - bSla;
+        })
+        .slice(0, 5);
+
+      if (!open.length) {
+        wrap.innerHTML = '<div class="text-sm text-slate-400">Нет открытых инцидентов</div>';
+        return;
+      }
+
+      wrap.innerHTML = open
+        .map((i) => {
+          const sev = (i.severity || "").toLowerCase();
+          const color = sev === "critical" || sev === "high" ? "text-red-400" : sev === "medium" ? "text-amber-300" : "text-slate-400";
+          const sla = i.sla_due_at ? `SLA ${fmtTs(i.sla_due_at)}` : "SLA —";
+          return `
+            <div class="rounded-xl border border-slate-800 p-3 bg-slate-900/35 space-y-1">
+              <div class="flex items-center justify-between gap-3">
+                <div class="text-sm font-semibold min-w-0 truncate">${esc(i.title || "Инцидент")}</div>
+                <span class="pill-muted ${color}">${esc(i.severity || "—")}</span>
+              </div>
+              <div class="text-xs text-slate-400">${esc(sla)} · ${esc(i.status || "—")}</div>
+            </div>`;
+        })
+        .join("");
+    }
+
+    function renderRisks({ orders, alerts, incidents }) {
+      const wrap = document.getElementById("riskList");
+      if (!wrap) return;
+
+      const items = [];
+      (incidents || [])
+        .filter((i) => ["open", "acknowledged", "in_progress"].includes(i.status))
+        .forEach((i) => {
+          const sev = (i.severity || "").toLowerCase();
+          const scoreBase = sev === "critical" ? 100 : sev === "high" ? 80 : sev === "medium" ? 60 : 40;
+          const due = parseTs(i.sla_due_at);
+          const minsToDue = due ? Math.round((due.getTime() - Date.now()) / 60000) : null;
+          const urgency = minsToDue == null ? 0 : minsToDue <= 0 ? 35 : minsToDue <= 60 ? 25 : minsToDue <= 240 ? 15 : 0;
+          const escalated = i.escalated_at ? 35 : 0;
+          const score = scoreBase + urgency + escalated;
+          const tone = sev === "critical" || sev === "high" ? "danger" : sev === "medium" ? "warn" : "ok";
+          items.push({ kind: "incident", score, title: i.title || "Инцидент", meta: `severity ${i.severity || "—"} · ${i.sla_due_at ? `SLA ${fmtTs(i.sla_due_at)}` : "SLA —"}`, tone });
+        });
+
+      (alerts || [])
+        .filter((a) => a.status === "created" || a.status === "delivered")
+        .slice(0, 10)
+        .forEach((a) => {
+          items.push({ kind: "alert", score: 55, title: `Тревога по ТС ${a.vehicle_id || "—"}`, meta: a.message || "", tone: "warn" });
+        });
+
+      (orders || [])
+        .filter((o) => o.status === "new" || o.status === "assigned")
+        .slice(0, 10)
+        .forEach((o) => {
+          const route = [o.origin, o.destination].filter(Boolean).join(" → ") || "—";
+          items.push({ kind: "order", score: 35, title: o.title || "Заказ", meta: `${route} · статус ${o.status} · план ${fmtTs(o.planned_depart_at)}`, tone: "ok" });
+        });
+
+      const top = items.sort((a, b) => b.score - a.score).slice(0, 8);
+      if (!top.length) {
+        wrap.innerHTML = '<div class="text-sm text-slate-400">Пока нет сигналов</div>';
+        return;
+      }
+
+      wrap.innerHTML = top
+        .map((r) => {
+          const color = r.tone === "danger" ? "text-red-400" : r.tone === "warn" ? "text-amber-300" : "text-emerald-300";
+          const badge = r.kind === "incident" ? "INC" : r.kind === "alert" ? "ALERT" : "ORDER";
+          return `
+            <div class="rounded-xl border border-slate-800 p-3 bg-slate-900/40 space-y-1">
+              <div class="flex items-center justify-between gap-3">
+                <div class="text-sm font-semibold min-w-0 truncate">${esc(r.title)}</div>
+                <span class="pill-muted ${color}">${badge}</span>
+              </div>
+              <div class="text-xs text-slate-400">${esc(r.meta)}</div>
+            </div>`;
+        })
+        .join("");
+    }
+
+    function renderGeozoneEvents(events) {
+      const wrap = document.getElementById("geozoneEvents");
+      if (!wrap) return;
+      const dayAgo = Date.now() - 24 * 60 * 60 * 1000;
+      const items = (events || [])
+        .filter((e) => {
+          const d = parseTs(e.occurred_at);
+          return d ? d.getTime() >= dayAgo : false;
+        })
+        .slice(0, 8);
+
+      if (!items.length) {
+        wrap.innerHTML = '<div class="text-sm text-slate-400">Нет событий за 24 часа</div>';
+        return;
+      }
+
+      wrap.innerHTML = items
+        .map((e) => {
+          const t = (e.event_type || "").toLowerCase();
+          const color = t === "enter" ? "text-emerald-300" : t === "exit" ? "text-sky-300" : "text-slate-400";
+          return `
+            <div class="rounded-xl border border-slate-800 p-3 bg-slate-900/35 flex items-start justify-between gap-3">
+              <div class="min-w-0">
+                <div class="text-sm font-semibold truncate">${esc(e.geozone_id || "Геозона")}</div>
+                <div class="text-xs text-slate-400">ТС ${esc(e.vehicle_id || "—")} · ${fmtTs(e.occurred_at)}</div>
+              </div>
+              <span class="pill-muted ${color}">${esc(e.event_type || "evt")}</span>
+            </div>`;
+        })
+        .join("");
+    }
+
+    function renderRoutes(orders) {
+      const table = document.getElementById("routeTable");
+      if (!table) return;
+      const groups = new Map();
+      (orders || []).forEach((o) => {
+        const key = [o.origin || "—", o.destination || "—"].join(" → ");
+        const g = groups.get(key) || { route: key, count: 0, durations: [], last: null };
+        g.count += 1;
+        const dep = parseTs(o.planned_depart_at);
+        const arr = parseTs(o.planned_arrive_at);
+        if (dep && arr) {
+          const mins = Math.round((arr.getTime() - dep.getTime()) / 60000);
+          if (Number.isFinite(mins) && mins > 0) g.durations.push(mins);
+        }
+        const c = parseTs(o.created_at);
+        if (c && (!g.last || c > g.last)) g.last = c;
+        groups.set(key, g);
+      });
+
+      const rows = Array.from(groups.values()).sort((a, b) => b.count - a.count).slice(0, 8);
+      if (!rows.length) {
+        table.innerHTML = '<div class="text-sm text-slate-400">Нет данных по маршрутам</div>';
+        return;
+      }
+
+      table.innerHTML = rows
+        .map((r) => {
+          const avg = r.durations.length ? Math.round(r.durations.reduce((s, v) => s + v, 0) / r.durations.length) : null;
+          const avgLabel = avg == null ? "—" : `${Math.floor(avg / 60)}ч ${avg % 60}м`;
+          const lastLabel = r.last ? r.last.toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "—";
+          return `
+            <div class="rounded-xl border border-slate-800 p-3 bg-slate-900/30 space-y-1">
+              <div class="flex items-center justify-between text-sm font-semibold">
+                <span class="truncate">${esc(r.route)}</span>
+                <span class="pill-muted">${r.count} заказов</span>
+              </div>
+              <div class="text-xs text-slate-400 flex items-center justify-between gap-3">
+                <span>План длит.: ${esc(avgLabel)}</span>
+                <span class="tabular">последн.: ${esc(lastLabel)}</span>
+              </div>
+            </div>`;
+        })
+        .join("");
+    }
+
+    let ordersTrendChart;
+    let ordersStatusChart;
+    let incidentsSeverityChart;
+
+    function destroyCharts() {
+      [ordersTrendChart, ordersStatusChart, incidentsSeverityChart].forEach((c) => {
+        try { c?.destroy(); } catch {}
+      });
+      ordersTrendChart = null;
+      ordersStatusChart = null;
+      incidentsSeverityChart = null;
+    }
+
+    function setChartFallback(id, on) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.classList.toggle("hidden", !on);
+    }
+
+    function renderCharts({ orders, incidents }) {
+      destroyCharts();
+      setChartFallback("ordersTrendFallback", false);
+      setChartFallback("ordersStatusFallback", false);
+      setChartFallback("incidentsSeverityFallback", false);
+
+      if (!window.Chart) {
+        setChartFallback("ordersTrendFallback", true);
+        setChartFallback("ordersStatusFallback", true);
+        setChartFallback("incidentsSeverityFallback", true);
+        return;
+      }
+
+      const pal = getPalette();
+      const commonOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { labels: { color: pal.text } },
+          tooltip: { backgroundColor: colorWithAlpha(pal.border, 0.95), titleColor: pal.text, bodyColor: pal.text, borderColor: pal.border, borderWidth: 1 },
+        },
+      };
+
+      // Orders trend (14 days)
+      const now = startOfDay(new Date());
+      const from = addDays(now, -13);
+      const labels = [];
+      const buckets = new Map();
+      for (let i = 0; i < 14; i++) {
+        const d = addDays(from, i);
+        const key = d.toISOString().slice(0, 10);
+        labels.push(fmtDayLabel(d));
+        buckets.set(key, 0);
+      }
+      (orders || []).forEach((o) => {
+        const d = parseTs(o.created_at);
+        if (!d) return;
+        const key = startOfDay(d).toISOString().slice(0, 10);
+        if (!buckets.has(key)) return;
+        buckets.set(key, (buckets.get(key) || 0) + 1);
+      });
+      const trendData = Array.from(buckets.values());
+
+      const trendCanvas = document.getElementById("ordersTrendChart");
+      if (trendCanvas) {
+        ordersTrendChart = new Chart(trendCanvas, {
+          type: "line",
+          data: {
+            labels,
+            datasets: [{
+              label: "Заказы",
+              data: trendData,
+              borderColor: pal.accent,
+              backgroundColor: colorWithAlpha(pal.accent, 0.18),
+              fill: true,
+              tension: 0.35,
+              pointRadius: 3,
+              pointBackgroundColor: pal.accent,
+            }],
+          },
+          options: {
+            ...commonOptions,
+            scales: {
+              x: { ticks: { color: pal.muted }, grid: { color: pal.grid } },
+              y: { ticks: { color: pal.muted }, grid: { color: pal.grid }, beginAtZero: true, suggestedMax: Math.max(3, ...trendData) + 1 },
+            },
+          },
+        });
+      }
+
+      // Orders by status
+      const statusMap = countBy(orders || [], (o) => o.status || "unknown");
+      const statusKeys = Array.from(statusMap.keys());
+      const statusCounts = statusKeys.map((k) => statusMap.get(k) || 0);
+      const statusColors = statusKeys.map((k) => {
+        if (k === "completed") return colorWithAlpha(pal.accent, 0.85);
+        if (k === "cancelled") return colorWithAlpha(pal.danger, 0.85);
+        if (k === "in_progress") return colorWithAlpha(pal.warn, 0.85);
+        if (k === "accepted") return colorWithAlpha(pal.accent, 0.55);
+        if (k === "assigned") return colorWithAlpha(pal.warn, 0.55);
+        if (k === "new") return colorWithAlpha(pal.text, 0.25);
+        return colorWithAlpha(pal.muted, 0.35);
+      });
+
+      const statusCanvas = document.getElementById("ordersStatusChart");
+      if (statusCanvas) {
+        ordersStatusChart = new Chart(statusCanvas, {
+          type: "doughnut",
+          data: {
+            labels: statusKeys,
+            datasets: [{
+              label: "Заказы",
+              data: statusCounts,
+              backgroundColor: statusColors,
+              borderColor: pal.border,
+              borderWidth: 1,
+            }],
+          },
+          options: { ...commonOptions, cutout: "68%" },
+        });
+      }
+
+      // Incidents severity (open)
+      const openInc = (incidents || []).filter((i) => ["open", "acknowledged", "in_progress"].includes(i.status));
+      const sevOrder = ["critical", "high", "medium", "low"];
+      const sevCounts = sevOrder.map((s) => openInc.filter((i) => (i.severity || "").toLowerCase() === s).length);
+      const sevColors = [
+        colorWithAlpha(pal.danger, 0.85),
+        colorWithAlpha(pal.danger, 0.6),
+        colorWithAlpha(pal.warn, 0.65),
+        colorWithAlpha(pal.text, 0.25),
+      ];
+
+      const sevCanvas = document.getElementById("incidentsSeverityChart");
+      if (sevCanvas) {
+        incidentsSeverityChart = new Chart(sevCanvas, {
+          type: "bar",
+          data: {
+            labels: ["Critical", "High", "Medium", "Low"],
+            datasets: [{
+              label: "Открытые",
+              data: sevCounts,
+              backgroundColor: sevColors,
+              borderColor: pal.border,
+              borderWidth: 1,
+              borderRadius: 10,
+            }],
+          },
+          options: {
+            ...commonOptions,
+            scales: {
+              x: { ticks: { color: pal.muted }, grid: { color: pal.grid } },
+              y: { ticks: { color: pal.muted }, grid: { color: pal.grid }, beginAtZero: true, suggestedMax: Math.max(2, ...sevCounts) + 1 },
+            },
+          },
+        });
+      }
+    }
+
+    function renderEmptyState() {
+      const grid = document.getElementById("kpiGrid");
+      if (grid && !grid.innerHTML.trim()) {
+        grid.innerHTML = `
+          <div class="analytics-card">
+            <div class="text-sm text-slate-300 font-semibold">Нет данных</div>
+            <div class="text-xs text-slate-400 mt-1">Проверьте, что backend запущен и вы вошли под admin/owner</div>
+          </div>`;
+      }
+      const lists = ["incidentList", "riskList", "geozoneEvents", "routeTable"];
+      lists.forEach((id) => {
+        const el = document.getElementById(id);
+        if (el && !el.innerHTML.trim()) el.innerHTML = '<div class="text-sm text-slate-400">Нет данных</div>';
+      });
+    }
+
+    window.addEventListener("DOMContentLoaded", async () => {
+      const meta = document.getElementById("metaLabel");
+      try {
+        const { token } = await window.RoutoxCommon.requireAuth({ allowRoles: ["admin", "owner"] });
+        if (!token) return;
+
+        await window.RoutoxCommon.initHeaderPanels(token);
+
+        const [ordersRaw, alertsRaw, incidentsRaw, vehiclesRaw, geozoneEventsRaw] = await Promise.all([
+          window.RoutoxCommon.apiRequest("/orders", token).catch(() => []),
+          window.RoutoxCommon.apiRequest("/alerts", token).catch(() => []),
+          window.RoutoxCommon.apiRequest("/incidents?limit=200", token).catch(() => []),
+          window.RoutoxCommon.apiRequest("/vehicles", token).catch(() => []),
+          window.RoutoxCommon.apiRequest("/geozones/events?limit=200", token).catch(() => []),
+        ]);
+
+        const orders = Array.isArray(ordersRaw) ? ordersRaw : [];
+        const alerts = Array.isArray(alertsRaw) ? alertsRaw : [];
+        const incidents = Array.isArray(incidentsRaw) ? incidentsRaw : [];
+        const vehicles = Array.isArray(vehiclesRaw) ? vehiclesRaw : [];
+        const events = Array.isArray(geozoneEventsRaw) ? geozoneEventsRaw : [];
+
+        const orders30 = pickOrdersWindow(orders, 30);
+
+        renderKpis({ orders: orders30, alerts, incidents, vehicles });
+        renderIncidentList(incidents);
+        renderRisks({ orders: orders30, alerts, incidents });
+        renderGeozoneEvents(events);
+        renderRoutes(orders30);
+
+        try {
+          renderCharts({ orders: orders30, incidents });
+        } catch {
+          setChartFallback("ordersTrendFallback", true);
+          setChartFallback("ordersStatusFallback", true);
+          setChartFallback("incidentsSeverityFallback", true);
+        }
+
+        renderEmptyState();
+
+        if (meta) {
+          meta.textContent = `обновлено ${new Date().toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })} · заказы ${orders30.length} · тревоги ${alerts.length}`;
+        }
+
+        document.getElementById("themeToggleInput")?.addEventListener("change", () => {
+          try { renderCharts({ orders: orders30, incidents }); } catch {}
+        });
+      } catch (e) {
+        if (meta) meta.textContent = esc(e?.message || "Ошибка загрузки аналитики");
+        renderEmptyState();
+      }
+    });
+  </script>
+</body>
+</html>

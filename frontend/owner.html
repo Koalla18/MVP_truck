@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RoutoX — Owner</title>
+  <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+  <script src="https://kit.fontawesome.com/a2e0e9e5a9.js" crossorigin="anonymous"></script>
+  <link rel="stylesheet" href="./assets/css/style.css" />
+</head>
+<body class="min-h-screen flex flex-col">
+  <header class="glass px-6 py-5 flex flex-col gap-4 sticky top-0 z-20">
+    <div class="flex flex-wrap items-center justify-between gap-4">
+      <div class="flex flex-wrap items-center gap-4">
+        <a href="./owner.html" class="flex items-center gap-3">
+          <div class="brand-mark">R</div>
+          <div>
+            <div class="text-lg font-semibold">RoutoX</div>
+            <div class="text-xs text-slate-400">Owner · Управление</div>
+          </div>
+        </a>
+        <nav class="flex flex-wrap gap-2 text-sm">
+          <a href="./index.html" class="nav-pill"><i class="fa-solid fa-gauge-high"></i><span>Флот</span></a>
+          <a href="./trips.html" class="nav-pill"><i class="fa-solid fa-route"></i><span>Рейсы</span></a>
+          <a href="./analytics.html" class="nav-pill"><i class="fa-solid fa-chart-line"></i><span>Аналитика</span></a>
+          <a href="./inventory.html" class="nav-pill"><i class="fa-solid fa-boxes-stacked"></i><span>Инвентарь</span></a>
+        </nav>
+      </div>
+      <div class="flex items-center gap-2 relative">
+        <button id="notifBtn" class="icon-button" aria-label="Уведомления">
+          <img id="notifIcon" src="./assets/images/notification.gif" alt="Уведомления" class="icon-img hidden" />
+          <span class="notif-dot hidden"></span>
+        </button>
+        <button id="settingsBtn" class="icon-button" aria-label="Настройки">
+          <img src="./assets/images/settings.png" alt="Настройки" class="icon-img" />
+        </button>
+        <span id="roleBadge" class="text-xs px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-200 border border-indigo-500/30">owner</span>
+        <span class="text-xs text-slate-400" id="meEmail">—</span>
+        <button id="logoutBtn" class="glass px-3 py-2 rounded-lg border border-slate-700 hover:border-red-400/60 transition flex items-center gap-2 text-sm">
+          <i class="fa-solid fa-right-from-bracket text-red-300"></i><span>Выйти</span>
+        </button>
+        <div id="notifPanel" class="floating-panel hidden" role="dialog" aria-label="Активные уведомления">
+          <div class="panel-header">Уведомления</div>
+          <div class="panel-body" id="notifList"></div>
+        </div>
+        <div id="settingsPanel" class="floating-panel hidden" role="dialog" aria-label="Системные настройки">
+          <div class="panel-header">Настройки</div>
+          <div class="panel-body space-y-3 text-sm">
+            <label class="flex items-center justify-between gap-3">Часовой пояс
+              <select id="tzSelect" class="input-select">
+                <option value="UTC+3">UTC+3 Москва</option>
+                <option value="UTC+2">UTC+2 Калининград</option>
+                <option value="UTC+5">UTC+5 Екатеринбург</option>
+              </select>
+            </label>
+            <label class="flex items-center justify-between gap-3">Топливо в
+              <select id="fuelUnitSelect" class="input-select">
+                <option value="l">литрах</option>
+                <option value="gal">галлонах</option>
+              </select>
+            </label>
+            <label class="flex items-center justify-between gap-3">Температура
+              <select id="tempUnitSelect" class="input-select">
+                <option value="c">°C</option>
+                <option value="f">°F</option>
+              </select>
+            </label>
+            <label class="flex items-center justify-between gap-3">Оповещения
+              <select id="alertModeSelect" class="input-select">
+                <option value="push">Push + Email</option>
+                <option value="push-only">Только Push</option>
+                <option value="email">Только Email</option>
+              </select>
+            </label>
+          </div>
+        </div>
+        <label id="themeToggle" class="theme-toggle" aria-live="polite">
+          <input type="checkbox" id="themeToggleInput" aria-describedby="themeToggleHint" />
+          <span class="toggle-track">
+            <span class="toggle-icon sun"><i class="fa-solid fa-sun"></i></span>
+            <span class="toggle-icon moon"><i class="fa-solid fa-moon"></i></span>
+            <span class="toggle-thumb"></span>
+          </span>
+          <span id="themeToggleHint" class="sr-only">Переключатель темы</span>
+        </label>
+      </div>
+    </div>
+  </header>
+
+  <main class="p-6 grid lg:grid-cols-3 gap-4 flex-1">
+    <section class="glass rounded-2xl p-4 lg:col-span-2 space-y-6">
+      <div class="flex items-center justify-between gap-3 flex-wrap">
+        <h2 class="text-lg font-semibold">Сотрудники и роли</h2>
+      </div>
+      <div class="text-sm text-slate-400">
+        Создавайте сотрудников и назначайте роли. Для MVP пароль задаётся при создании.
+      </div>
+
+      <form id="inviteForm" class="grid sm:grid-cols-3 gap-2">
+        <input id="inviteEmail" type="email" required placeholder="email" class="glass rounded-lg border border-slate-700 px-3 py-2 text-sm" />
+        <input id="invitePassword" type="password" required placeholder="password" class="glass rounded-lg border border-slate-700 px-3 py-2 text-sm" />
+        <div class="flex gap-2">
+          <select id="inviteRole" class="input-select w-full">
+            <option value="driver">driver</option>
+            <option value="admin">admin</option>
+            <option value="owner">owner</option>
+          </select>
+          <button type="submit" class="glass px-4 py-2 rounded-lg border border-slate-700 hover:border-emerald-400/60 transition flex items-center gap-2 text-sm whitespace-nowrap">
+            <i class="fa-solid fa-user-plus text-emerald-300"></i><span>Создать</span>
+          </button>
+        </div>
+      </form>
+      <div id="inviteNote" class="text-sm text-slate-400 hidden"></div>
+
+      <div class="mt-4 grid sm:grid-cols-2 gap-3">
+        <div class="glass rounded-xl p-4 border border-slate-800">
+          <div class="text-xs text-slate-400">Owner</div>
+          <div class="text-base font-semibold" id="ownerCount">—</div>
+          <div class="text-xs text-slate-500 mt-1">Полные права</div>
+        </div>
+        <div class="glass rounded-xl p-4 border border-slate-800">
+          <div class="text-xs text-slate-400">Admin</div>
+          <div class="text-base font-semibold" id="adminCount">—</div>
+          <div class="text-xs text-slate-500 mt-1">Заказы, назначение, контроль</div>
+        </div>
+        <div class="glass rounded-xl p-4 border border-slate-800">
+          <div class="text-xs text-slate-400">Driver</div>
+          <div class="text-base font-semibold" id="driverCount">—</div>
+          <div class="text-xs text-slate-500 mt-1">Приём и выполнение рейсов</div>
+        </div>
+        <div class="glass rounded-xl p-4 border border-slate-800">
+          <div class="text-xs text-slate-400">Аудит</div>
+          <div class="text-base font-semibold" id="auditHint">Включён</div>
+          <div class="text-xs text-slate-500 mt-1">События пишутся на сервере</div>
+        </div>
+      </div>
+
+      <div class="glass rounded-xl p-4 border border-slate-800">
+        <div class="flex items-center justify-between gap-3">
+          <div>
+            <div class="text-xs text-slate-400">Список пользователей</div>
+            <div class="text-sm text-slate-400 mt-1">Изменение роли доступно владельцу.</div>
+          </div>
+          <button id="usersRefreshBtn" class="glass px-3 py-2 rounded-lg border border-slate-700 hover:border-sky-400/60 transition flex items-center gap-2 text-sm">
+            <i class="fa-solid fa-arrows-rotate text-sky-300"></i> Обновить
+          </button>
+        </div>
+        <div id="usersEmpty" class="mt-3 text-sm text-slate-400">—</div>
+        <div id="usersList" class="mt-3 grid gap-2"></div>
+      </div>
+
+      <div class="glass rounded-xl p-4 border border-slate-800">
+        <div class="flex items-center justify-between gap-3">
+          <div>
+            <div class="text-xs text-slate-400">Заказы</div>
+            <div class="text-sm text-slate-400 mt-1">Список заказов (создаёт администратор).</div>
+          </div>
+          <button id="ordersRefreshBtn" class="glass px-3 py-2 rounded-lg border border-slate-700 hover:border-emerald-400/60 transition flex items-center gap-2 text-sm">
+            <i class="fa-solid fa-arrows-rotate text-emerald-300"></i> Обновить
+          </button>
+        </div>
+        <div id="ordersEmpty" class="mt-3 text-sm text-slate-400">—</div>
+        <div id="ordersList" class="mt-3 grid gap-2"></div>
+      </div>
+    </section>
+
+    <section class="space-y-4">
+      <div class="glass rounded-2xl p-4">
+        <h2 class="text-lg font-semibold">Быстрые действия</h2>
+        <div class="mt-4 grid gap-2 text-sm">
+          <a href="./index.html" class="glass px-4 py-3 rounded-lg border border-slate-700 hover:border-sky-400/60 transition flex items-center justify-between">
+            <span class="flex items-center gap-2"><i class="fa-solid fa-truck text-sky-300"></i>Открыть флот</span>
+            <i class="fa-solid fa-arrow-right text-slate-400"></i>
+          </a>
+          <a href="./trips.html" class="glass px-4 py-3 rounded-lg border border-slate-700 hover:border-emerald-400/60 transition flex items-center justify-between">
+            <span class="flex items-center gap-2"><i class="fa-solid fa-route text-emerald-300"></i>Открыть рейсы</span>
+            <i class="fa-solid fa-arrow-right text-slate-400"></i>
+          </a>
+        </div>
+      </div>
+
+      <div class="glass rounded-2xl p-4">
+        <h2 class="text-lg font-semibold">Состояние API</h2>
+        <div class="mt-3 text-sm text-slate-400" id="apiStatus">—</div>
+      </div>
+    </section>
+  </main>
+
+  <script src="./assets/js/owner.js"></script>
+</body>
+</html>

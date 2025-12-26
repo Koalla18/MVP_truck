@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<!--
+RoutoX — Intelligent Fleet Management Dashboard
+This single-page demo recreates the described PDF layout: dark tech look, responsive grid, interactive vehicle list,
+live-ish metric jitter, mechanical status LEDs, map & alert modals, and add-vehicle form. Built with Tailwind CDN + vanilla JS.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Панель RoutoX</title>
+  <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+  <script src="https://kit.fontawesome.com/a2e0e9e5a9.js" crossorigin="anonymous"></script>
+  <link rel="stylesheet" href="./assets/css/style.css" />
+</head>
+<body class="min-h-screen flex flex-col">
+  <!-- Header -->
+  <header class="glass px-6 py-5 flex flex-col gap-4 sticky top-0 z-20">
+    <div class="flex flex-wrap items-center justify-between gap-4">
+      <div class="flex flex-wrap items-center gap-4">
+        <a href="./index.html" class="flex items-center gap-3">
+          <div class="brand-mark">R</div>
+          <div>
+            <div class="text-lg font-semibold">RoutoX</div>
+            <div class="text-xs text-slate-400">Управление флотом</div>
+          </div>
+        </a>
+        <nav class="flex flex-wrap gap-2 text-sm">
+          <a href="./index.html" class="nav-pill nav-pill-active"><i class="fa-solid fa-gauge-high"></i><span>Флот</span></a>
+          <a href="./trips.html" class="nav-pill"><i class="fa-solid fa-route"></i><span>Рейсы</span></a>
+          <a href="./geozones.html" class="nav-pill"><i class="fa-solid fa-map"></i><span>Геозоны</span></a>
+          <a href="./analytics.html" class="nav-pill"><i class="fa-solid fa-chart-line"></i><span>Аналитика</span></a>
+          <a href="./inventory.html" class="nav-pill"><i class="fa-solid fa-boxes-stacked"></i><span>Инвентарь</span></a>
+        </nav>
+      </div>
+      <div class="flex items-center gap-2 relative">
+        <button id="notifBtn" class="icon-button" aria-label="Уведомления">
+          <img id="notifIcon" src="./assets/images/notification.gif" alt="Уведомления" class="icon-img hidden" />
+          <span class="notif-dot hidden"></span>
+        </button>
+        <button id="settingsBtn" class="icon-button" aria-label="Настройки">
+          <img src="./assets/images/settings.png" alt="Настройки" class="icon-img" />
+        </button>
+        <button id="logoutBtn" class="icon-button" aria-label="Выйти">
+          <i class="fa-solid fa-right-from-bracket"></i>
+        </button>
+        <div class="header-avatar" aria-label="Профиль">LD</div>
+        <div id="notifPanel" class="floating-panel hidden" role="dialog" aria-label="Активные уведомления">
+          <div class="panel-header">Активные уведомления</div>
+          <div class="panel-body" id="notifList">
+            <!-- filled by JS -->
+          </div>
+        </div>
+        <div id="settingsPanel" class="floating-panel hidden" role="dialog" aria-label="Системные настройки">
+          <div class="panel-header">Системные настройки</div>
+          <div class="panel-body space-y-3 text-sm">
+            <label class="flex items-center justify-between gap-3">Часовой пояс
+              <select id="tzSelect" class="input-select">
+                <option value="UTC+3">UTC+3 Москва</option>
+                <option value="UTC+2">UTC+2 Калининград</option>
+                <option value="UTC+5">UTC+5 Екатеринбург</option>
+              </select>
+            </label>
+            <label class="flex items-center justify-between gap-3">Топливо в
+              <select id="fuelUnitSelect" class="input-select">
+                <option value="l">литрах</option>
+                <option value="gal">галлонах</option>
+              </select>
+            </label>
+            <label class="flex items-center justify-between gap-3">Температура
+              <select id="tempUnitSelect" class="input-select">
+                <option value="c">°C</option>
+                <option value="f">°F</option>
+              </select>
+            </label>
+            <label class="flex items-center justify-between gap-3">Оповещения
+              <select id="alertModeSelect" class="input-select">
+                <option value="push">Push + Email</option>
+                <option value="push-only">Только Push</option>
+                <option value="email">Только Email</option>
+              </select>
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="flex flex-col gap-3">
+      <div class="top-metrics grid md:grid-cols-2 xl:grid-cols-4 gap-3">
+        <div class="metric-hero">
+          <div class="metric-hero-icon"><i class="fa-solid fa-truck"></i></div>
+          <div>
+            <div class="metric-hero-label">Активные</div>
+            <div class="metric-hero-value" id="metricActiveFleet">—</div>
+            <div class="metric-hero-sub" id="metricActiveHint">фур онлайн</div>
+          </div>
+        </div>
+        <div class="metric-hero warn">
+          <div class="metric-hero-icon"><i class="fa-solid fa-screwdriver-wrench"></i></div>
+          <div>
+            <div class="metric-hero-label">Техобслуживание</div>
+            <div class="metric-hero-value" id="metricMaintenance">—</div>
+            <div class="metric-hero-sub" id="metricMaintenanceHint">в сервисе</div>
+          </div>
+        </div>
+        <div class="metric-hero info">
+          <div class="metric-hero-icon"><i class="fa-solid fa-gauge-high"></i></div>
+          <div>
+            <div class="metric-hero-label">Эффективность</div>
+            <div class="metric-hero-value" id="metricEfficiency">—</div>
+            <div class="metric-hero-sub" id="metricEfficiencyHint">средняя загрузка</div>
+          </div>
+        </div>
+        <div class="metric-hero sky">
+          <div class="metric-hero-icon"><i class="fa-solid fa-boxes-stacked"></i></div>
+          <div>
+            <div class="metric-hero-label">Грузы в пути</div>
+            <div class="metric-hero-value" id="metricCargoValue">—</div>
+            <div class="metric-hero-sub" id="metricCargoHint">паллет</div>
+          </div>
+        </div>
+      </div>
+      <div class="flex items-center justify-between gap-3 flex-wrap">
+        <span class="text-xs text-slate-400">Данные обновляются каждые 30 секунд</span>
+        <div class="flex items-center gap-3">
+          <button id="addVehicleBtn" class="glass px-4 py-2 rounded-lg border border-slate-700 hover:border-emerald-400/60 transition flex items-center gap-2">
+            <i class="fa-solid fa-plus text-emerald-300"></i><span>Добавить транспорт</span>
+          </button>
+          <label id="themeToggle" class="theme-toggle" aria-live="polite">
+            <input type="checkbox" id="themeToggleInput" aria-describedby="themeToggleHint" />
+            <span class="toggle-track">
+              <span class="toggle-icon sun"><i class="fa-solid fa-sun"></i></span>
+              <span class="toggle-icon moon"><i class="fa-solid fa-moon"></i></span>
+              <span class="toggle-thumb"></span>
+            </span>
+            <span id="themeToggleHint" class="sr-only">Переключатель темы</span>
+          </label>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Grid -->
+  <main class="p-6 grid lg:grid-cols-[320px_1fr_320px] gap-4 flex-1">
+    <!-- Track List -->
+    <section class="glass rounded-2xl p-4 flex flex-col min-h-[70vh]">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-lg font-semibold">Список маршрутов</h2>
+        <span class="text-xs text-slate-400">Колонна · Онлайн</span>
+      </div>
+      <div id="trackList" class="space-y-3 overflow-y-auto scroll-slim">
+        <!-- Cards injected by JS -->
+      </div>
+    </section>
+
+    <!-- Center Panels -->
+    <section class="space-y-4">
+      <!-- Selected vehicle hero -->
+      <div class="glass hero-panel rounded-3xl p-6 border border-slate-800">
+        <div class="grid gap-6 items-center lg:grid-cols-[1.1fr_0.9fr] relative">
+          <div class="space-y-4">
+            <div>
+              <p class="text-xs uppercase tracking-[0.25em] text-slate-400">Центральный контроль</p>
+              <div id="selName" class="text-3xl font-semibold mt-1">MANTTOX</div>
+              <div class="mt-2 text-sm text-slate-400" id="selCargo">Груз: SCOOT (D3000g) · Маршрут: 2B / 6B/1F</div>
+            </div>
+            <div id="selStatuses" class="flex gap-2 flex-wrap text-xs"></div>
+            <div id="statusControls" class="flex flex-wrap gap-2 text-xs mt-2">
+              <button class="status-btn" data-status="В сопровождении">В сопровождении</button>
+              <button class="status-btn" data-status="Под охраной">Под охраной</button>
+              <button class="status-btn" data-status="В пути">В пути</button>
+              <button class="status-btn" data-status="На разгрузке">На разгрузке</button>
+              <button class="status-btn" data-status="На погрузке">На погрузке</button>
+              <button class="status-btn" data-status="Свободен">Свободен</button>
+            </div>
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
+              <div class="hero-badge">
+                <span class="hero-badge-label">ETA</span>
+                <span class="hero-badge-value" id="heroEta">17:45</span>
+                <span class="hero-badge-sub">Минск</span>
+              </div>
+              <div class="hero-badge">
+                <span class="hero-badge-label">Дистанция</span>
+                <span class="hero-badge-value" id="heroDistance">780 км</span>
+                <span class="hero-badge-sub">На маршруте</span>
+              </div>
+              <div class="hero-badge">
+                <span class="hero-badge-label">Связь</span>
+                <span class="hero-badge-value">Стойкая</span>
+                <span class="hero-badge-sub">Канал 4B</span>
+              </div>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <button id="mapBtn" class="glass px-4 py-2 rounded-lg border border-slate-700 hover:border-emerald-400/60 flex items-center gap-2 text-sm">
+                <i class="fa-solid fa-map text-emerald-300"></i> Карта
+              </button>
+              <button id="alertBtn" class="glass px-4 py-2 rounded-lg border border-slate-700 hover:border-red-400/60 flex items-center gap-2 text-sm">
+                <i class="fa-solid fa-bell text-red-300"></i> Тревога
+              </button>
+              <button id="deleteVehicleBtn" class="glass px-4 py-2 rounded-lg border border-slate-700 hover:border-red-400/60 flex items-center gap-2 text-sm">
+                <i class="fa-solid fa-trash text-red-400"></i> Удалить фуру
+              </button>
+            </div>
+          </div>
+          <div class="hero-visual">
+            <img id="heroImage" src="./assets/images/truck-data.png" alt="Изображение грузовика" class="hero-truck" loading="lazy" />
+            <div class="hero-overlay top-4 left-4">
+              <span class="hero-overlay-label">Загрузка</span>
+              <span class="hero-overlay-value" id="heroLoadValue">77%</span>
+            </div>
+            <div class="hero-overlay top-4 right-4">
+              <span class="hero-overlay-label">Госномер</span>
+              <span class="hero-overlay-value" id="heroPlateValue">А123ВС 16 RUS</span>
+            </div>
+            <div class="hero-overlay bottom-6 right-4">
+              <span class="hero-overlay-label">Скорость</span>
+              <span class="hero-overlay-value" id="heroSpeedValue">68 км/ч</span>
+            </div>
+            <div class="hero-overlay bottom-6 left-4">
+              <span class="hero-overlay-label">Температура</span>
+              <span class="hero-overlay-value" id="heroTempValue">24°C</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid sm:grid-cols-3 gap-4 mt-6">
+          <div class="glass rounded-xl p-3 border border-slate-800 flex items-center gap-3">
+            <div class="w-12 h-12 rounded-full flex items-center justify-center text-lg font-semibold pulse dev-circle dev-ok" id="devCircle">0°</div>
+            <div>
+              <div class="text-xs text-slate-400">Отклонение узла</div>
+              <div class="text-base font-semibold" id="devLabel">Стабильно</div>
+            </div>
+          </div>
+          <div class="glass rounded-xl p-3 border border-slate-800 flex items-center gap-3">
+            <i class="fa-solid fa-temperature-half text-orange-300 text-xl"></i>
+            <div class="flex-1">
+              <div class="text-xs text-slate-400">Температура</div>
+              <div class="flex items-center gap-2">
+                <div class="text-base font-semibold" id="tempVal">24°C</div>
+                <span class="text-xs px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-200 border border-orange-500/30">Норма</span>
+              </div>
+            </div>
+          </div>
+          <div class="glass rounded-xl p-3 border border-slate-800">
+            <div class="flex items-center justify-between text-xs text-slate-400">
+              <span>Загрузка</span><span id="rollValLabel">60%</span>
+            </div>
+            <div class="progress mt-2"><span id="rollBar" class="bg-emerald-500/70 w-[60%]"></span></div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Driver + truck info -->
+      <div class="grid gap-4 md:grid-cols-2">
+        <div class="glass rounded-2xl p-4">
+          <div class="flex items-center gap-4">
+            <button class="driver-avatar" id="driverAvatarBtn" aria-label="Открыть профиль водителя"><span id="driverAvatar">АМ</span></button>
+            <div class="flex-1">
+              <div class="flex items-center justify-between gap-2 flex-wrap">
+                <div>
+                  <div class="text-lg font-semibold" id="driverName">Артем Малышев</div>
+                  <div class="text-sm text-slate-400" id="driverStatus">На линии · 4ч 12м</div>
+                  <div class="text-xs text-slate-500" id="driverHome">База: Казань</div>
+                </div>
+                <a id="driverCall" href="#" class="call-chip" aria-label="Позвонить водителю" aria-disabled="true" title="Телефон не указан" style="pointer-events:none;opacity:.6"><i class="fa-solid fa-phone"></i><span id="driverPhone">—</span></a>
+              </div>
+            </div>
+            <button class="icon-button" aria-label="Связаться с водителем"><i class="fa-solid fa-headset"></i></button>
+          </div>
+          <div class="grid grid-cols-1 gap-3 text-sm mt-4">
+            <div class="data-pill">
+              <span class="pill-label">Стаж</span>
+              <span class="pill-value" id="driverExperience">9 лет</span>
+            </div>
+            <div class="data-pill">
+              <span class="pill-label">Смена</span>
+              <span class="pill-value" id="driverShift">4ч 12м</span>
+            </div>
+            <div class="data-pill">
+              <span class="pill-label">До лимита (12ч)</span>
+              <span class="pill-value" id="driverRemaining">—</span>
+            </div>
+            <div class="data-pill">
+              <span class="pill-label">Допуск</span>
+              <span class="pill-value" id="driverLicense">CE</span>
+            </div>
+            <div class="data-pill">
+              <span class="pill-label">Отдых</span>
+              <span class="pill-value" id="driverRest">через 1ч</span>
+            </div>
+            <div class="data-pill">
+              <span class="pill-label">Телефон</span>
+              <span class="pill-value" id="driverPhonePill">—</span>
+            </div>
+          </div>
+        </div>
+        <div class="glass rounded-2xl p-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="text-lg font-semibold">Параметры фуры</h3>
+              <p class="text-xs text-slate-500">VIN · <span id="truckVin">SDK-8831</span></p>
+            </div>
+            <span class="truck-tag" id="truckSeries">SDK · AM</span>
+          </div>
+          <div class="space-y-4 mt-4">
+            <div>
+              <div class="truck-spec">
+                <span class="spec-label">Загрузка</span>
+                <span class="spec-value" id="truckLoadValue">77%</span>
+              </div>
+              <div class="text-xs text-slate-400" id="truckPallets">28/38 пал.</div>
+              <div class="metric-bar"><span id="truckLoadBar"></span></div>
+            </div>
+            <div>
+              <div class="truck-spec">
+                <span class="spec-label">Топливо</span>
+                <span class="spec-value" id="truckFuelValue">480 л</span>
+              </div>
+              <div class="text-xs text-slate-400" id="truckFuelStatus">72%</div>
+              <div class="metric-bar"><span id="truckFuelBar"></span></div>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div class="spec-card">
+                <span class="spec-card-label">Температура</span>
+                <span class="spec-card-value" id="truckTempValue">24°C</span>
+                <p class="spec-card-sub">Стабилизирована</p>
+              </div>
+              <div class="spec-card">
+                <span class="spec-card-label">Состояние</span>
+                <span class="spec-card-value" id="truckHealthValue">94%</span>
+                <p class="spec-card-sub">Узелов в норме</p>
+              </div>
+            </div>
+            <div class="data-card">
+              <div class="data-row"><span>Шасси</span><span id="truckChassis">6x4</span></div>
+              <div class="data-row"><span>Полная масса</span><span id="truckMass">38 т</span></div>
+              <div class="data-row"><span>Высота/длина</span><span id="truckSize">4.0 м / 13.6 м</span></div>
+              <div class="data-row"><span>Осевая нагрузка</span><span id="truckAxle">11.5 / 10 / 10 т</span></div>
+            </div>
+            <div class="fault-block" id="faultBlock">
+              <div class="fault-title">Ошибки узлов</div>
+              <div class="fault-grid">
+                <button class="fault-btn" data-fault="ABS">ABS</button>
+                <button class="fault-btn" data-fault="Пневмо">Пневмо</button>
+                <button class="fault-btn" data-fault="Давление шин">Давление шин</button>
+                <button class="fault-btn" data-fault="Колодки">Колодки</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Route / Activity -->
+      <div class="glass rounded-2xl p-4">
+        <div class="flex items-center justify-between flex-wrap gap-2">
+          <h3 class="text-lg font-semibold">Маршрут / Узлы</h3>
+          <span class="text-xs text-slate-400">Живой маршрут</span>
+        </div>
+        <div class="mt-4">
+          <div class="flex items-center gap-3 mb-4">
+            <div class="node"></div>
+            <div class="flex-1 route-line"></div>
+            <div class="node"></div>
+            <div class="flex-1 route-line"></div>
+            <div class="node-warn"></div>
+            <div class="flex-1 route-line"></div>
+            <div class="node"></div>
+          </div>
+          <div class="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+            <div class="glass rounded-xl p-3 border border-slate-800">
+              <div class="text-xs text-slate-400">Активность за день</div>
+              <div class="font-semibold" id="metricActive">4ч 12м</div>
+            </div>
+            <div class="glass rounded-xl p-3 border border-slate-800">
+              <div class="text-xs text-slate-400">Просушка (10 мин)</div>
+              <div class="font-semibold" id="metricDry">7 циклов</div>
+            </div>
+            <div class="glass rounded-xl p-3 border border-slate-800">
+              <div class="text-xs text-slate-400">Средняя скорость</div>
+              <div class="font-semibold" id="metricSpeed">68 км/ч</div>
+            </div>
+            <div class="glass rounded-xl p-3 border border-slate-800">
+              <div class="text-xs text-slate-400">Использование кузова</div>
+              <div class="font-semibold" id="metricTrunk">Включено</div>
+            </div>
+            <div class="glass rounded-xl p-3 border border-slate-800">
+              <div class="text-xs text-slate-400">Полоса</div>
+              <div class="font-semibold" id="metricRunway">Штатный день</div>
+            </div>
+            <div class="glass rounded-xl p-3 border border-slate-800">
+              <div class="text-xs text-slate-400">Гимм-3</div>
+              <div class="font-semibold" id="metricGymm">42 ед</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live truck map -->
+      <div class="glass rounded-2xl p-4">
+        <div class="flex items-center justify-between flex-wrap gap-2">
+          <div>
+            <h3 class="text-lg font-semibold">Маршрут фуры</h3>
+            <p class="text-xs text-slate-500">Реальный трек от точки A до точки B</p>
+          </div>
+          <div class="text-xs text-slate-400" id="routeProgressLabel">Пройдено 0%</div>
+        </div>
+        <div class="route-map mt-4" id="liveMap">
+          <svg viewBox="0 0 100 40" preserveAspectRatio="xMidYMid slice">
+            <defs>
+              <linearGradient id="routeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#22c55e" />
+                <stop offset="100%" stop-color="#0ea5e9" />
+              </linearGradient>
+            </defs>
+            <rect x="2" y="10" width="96" height="20" rx="10" fill="url(#routeGrad)" opacity="0.12" />
+            <line x1="6" y1="20" x2="94" y2="20" stroke="#1e293b" stroke-width="2.5" stroke-linecap="round" />
+            <line id="routeDoneLine" x1="6" y1="20" x2="6" y2="20" stroke="url(#routeGrad)" stroke-width="3" stroke-linecap="round" />
+            <circle id="pointA" cx="6" cy="20" r="2.5" fill="#22c55e" />
+            <circle id="pointB" cx="94" cy="20" r="2.5" fill="#0ea5e9" />
+            <circle id="truckDot" cx="20" cy="20" r="3.3" fill="#f97316" stroke="#fff" stroke-width="0.6" />
+          </svg>
+          <div class="route-meta">
+            <div>
+              <div class="text-xs text-slate-400 mb-1">Пункт А</div>
+              <div class="font-semibold text-base" id="routeFrom">—</div>
+              <div class="text-xs text-slate-500 mt-1" id="routeStartTime">Старт —</div>
+              <div class="text-xs text-slate-500 mt-1" id="routeTimeElapsed">— ч в пути</div>
+            </div>
+            <div class="text-center">
+              <div class="text-xs text-slate-400 mb-1">Дистанция</div>
+              <div class="font-semibold text-base" id="routeDistance">— км</div>
+              <div class="text-xs text-slate-500 mt-1" id="routeSpeed">Ср. скорость —</div>
+              <div class="text-xs text-slate-500 mt-1">Код: <span id="routeCode">—</span></div>
+            </div>
+            <div class="text-right">
+              <div class="text-xs text-slate-400 mb-1">Пункт B</div>
+              <div class="font-semibold text-base" id="routeTo">—</div>
+              <div class="text-xs text-slate-500 mt-1" id="routeEta">ETA —</div>
+              <div class="text-xs text-slate-500 mt-1" id="routeTimeRemaining">— ч осталось</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cargo layout -->
+      <div class="glass rounded-2xl p-4">
+        <div class="flex items-center justify-between flex-wrap gap-2">
+          <div>
+            <h3 class="text-lg font-semibold">Компоновка кузова</h3>
+            <p class="text-xs text-slate-400">Точное распределение грузов и температур</p>
+          </div>
+          <span class="text-xs text-slate-500" id="cargoUpdated">Обновлено только что</span>
+        </div>
+        <div class="cargo-layout mt-4" id="cargoLayout">
+          <div class="cargo-zone zone-cold" data-zone="cold">
+            <div class="zone-label">Фронт · Холод</div>
+            <div class="zone-value" id="zoneColdValue">14 пал.</div>
+            <div class="zone-status" id="zoneColdTemp">4°C · вакуум</div>
+          </div>
+          <div class="cargo-zone zone-dry" data-zone="dry">
+            <div class="zone-label">Секция Dry</div>
+            <div class="zone-value" id="zoneDryValue">10 пал.</div>
+            <div class="zone-status" id="zoneDryTemp">12°C · сухо</div>
+          </div>
+          <div class="cargo-zone zone-fragile" data-zone="fragile">
+            <div class="zone-label">Хрупкие</div>
+            <div class="zone-value" id="zoneFragileValue">6 пал.</div>
+            <div class="zone-status" id="zoneFragileTemp">18°C · контроль</div>
+          </div>
+          <div class="cargo-zone zone-aux" data-zone="aux">
+            <div class="zone-label">Aux / Док</div>
+            <div class="zone-value" id="zoneAuxValue">4 пал.</div>
+            <div class="zone-status" id="zoneAuxTemp">22°C · поддержка</div>
+          </div>
+        </div>
+        <div class="cargo-sketch mt-4">
+          <div class="sketch-row">
+            <div class="sketch-cell cold" data-zone="cold"><span>Холод</span></div>
+            <div class="sketch-cell dry" data-zone="dry"><span>Dry</span></div>
+            <div class="sketch-cell fragile" data-zone="fragile"><span>Хрупкие</span></div>
+            <div class="sketch-cell aux" data-zone="aux"><span>Док</span></div>
+          </div>
+          <div class="sketch-meta">
+            <span id="sketchColdMeta">Холод: 0 пал.</span>
+            <span id="sketchDryMeta">Dry: 0 пал.</span>
+            <span id="sketchFragileMeta">Хрупкие: 0 пал.</span>
+            <span id="sketchAuxMeta">Док: 0 пал.</span>
+          </div>
+        </div>
+        <div class="cargo-detail" id="cargoDetail">
+          <div class="cargo-detail-title">Детали зоны</div>
+          <div class="cargo-detail-body"><span id="cargoZoneLabel">Выберите зону</span><span id="cargoZoneInfo" class="text-slate-300"></span></div>
+        </div>
+        <div class="grid md:grid-cols-3 gap-3 mt-4 text-sm">
+          <div class="mini-stat">
+            <span class="mini-stat-label">Сердцевина</span>
+            <div class="mini-stat-value" id="cargoCoreTemp">3.8°C</div>
+            <p class="text-xs text-slate-400">Допуск 2-5°C</p>
+          </div>
+          <div class="mini-stat">
+            <span class="mini-stat-label">Влажность</span>
+            <div class="mini-stat-value" id="cargoHumidity">52%</div>
+            <p class="text-xs text-slate-400">Стабилизаторы активны</p>
+          </div>
+          <div class="mini-stat">
+            <span class="mini-stat-label">Давление</span>
+            <div class="mini-stat-value" id="cargoPressure">1.01 бар</div>
+            <p class="text-xs text-slate-400">P03 · компенсация</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Right Column -->
+    <section class="space-y-4">
+      <!-- Orders (admin) -->
+      <div class="glass rounded-2xl p-4">
+        <div class="flex items-center justify-between mb-3 gap-3 flex-wrap">
+          <div>
+            <h3 class="text-lg font-semibold">Заказы</h3>
+            <p class="text-xs text-slate-500">Создание заказов доступно администратору</p>
+          </div>
+          <button id="ordersAdminRefreshBtn" class="glass px-3 py-2 rounded-lg border border-slate-700 hover:border-sky-400/60 transition flex items-center gap-2 text-sm">
+            <i class="fa-solid fa-arrows-rotate text-sky-300"></i>
+            Обновить
+          </button>
+        </div>
+
+        <form id="adminOrderForm" class="grid gap-2">
+          <input id="adminOrderTitle" required placeholder="Название заказа" class="glass rounded-lg border border-slate-700 px-3 py-2 text-sm" />
+          <div class="grid grid-cols-2 gap-2">
+            <input id="adminOrderOrigin" placeholder="Откуда" class="glass rounded-lg border border-slate-700 px-3 py-2 text-sm" />
+            <input id="adminOrderDestination" placeholder="Куда" class="glass rounded-lg border border-slate-700 px-3 py-2 text-sm" />
+          </div>
+          <button type="submit" class="glass px-4 py-2 rounded-lg border border-slate-700 hover:border-emerald-400/60 transition flex items-center justify-center gap-2 text-sm">
+            <i class="fa-solid fa-plus text-emerald-300"></i>
+            Создать заказ
+          </button>
+          <div id="adminOrdersNote" class="text-sm text-slate-400 hidden"></div>
+        </form>
+
+        <div id="ordersAdminEmpty" class="mt-3 text-sm text-slate-400">—</div>
+        <div id="ordersAdminList" class="mt-3 grid gap-2"></div>
+      </div>
+
+      <!-- Mechanical condition -->
+      <div class="glass rounded-2xl p-4">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-lg font-semibold">Механическое состояние</h3>
+          <span class="text-xs text-slate-500">Датчики</span>
+        </div>
+        <div id="mechanicalList" class="grid grid-cols-2 gap-3 text-sm">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <!-- Camera control -->
+      <div class="glass rounded-2xl p-4 space-y-4">
+        <div class="flex items-center justify-between gap-3 flex-wrap">
+          <div>
+            <h3 class="text-lg font-semibold" id="cameraTitle">Внутренний вид</h3>
+            <p class="text-xs text-slate-500" id="cameraSubtitle">Основная камера в кабине</p>
+          </div>
+          <div class="flex items-center gap-2 flex-wrap justify-end">
+            <div class="flex gap-2 flex-wrap">
+              <button class="camera-tab camera-tab-active" data-view="inside">Внутренний вид</button>
+              <button class="camera-tab" data-view="panorama">Панорама</button>
+              <button class="camera-tab" data-view="cargo">Фото из кузова</button>
+            </div>
+            <button class="icon-button" id="cameraRefresh" aria-label="Обновить поток"><i class="fa-solid fa-rotate"></i></button>
+          </div>
+        </div>
+        <div class="camera-feed">
+          <img id="cameraImage" src="./assets/images/cab-view.png" alt="Просмотр с камеры" loading="lazy" />
+          <span class="feed-badge flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> LIVE</span>
+          <span class="feed-badge hd-right" id="cameraLabel">CabCam 01 · 1080p HDR</span>
+          <div class="feed-meta">
+            <div>
+              <div class="text-xs text-slate-400">Курс</div>
+              <div class="font-semibold" id="cameraCourse">СЗ · 315°</div>
+            </div>
+            <div class="text-right">
+              <div class="text-xs text-slate-400">Зум</div>
+              <div class="font-semibold" id="cameraZoom">x2.4</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Toast -->
+  <div id="toast" class="fixed bottom-4 right-4 z-30 hidden">
+    <div class="glass rounded-xl px-4 py-3 border border-emerald-500/40 text-sm flex items-center gap-3 shadow-lg">
+      <i class="fa-solid fa-circle-check text-emerald-300"></i>
+      <span id="toastMsg">Тревога отправлена</span>
+    </div>
+  </div>
+
+  <!-- Modal: Map -->
+  <div id="mapModal" class="modal fixed inset-0 hidden items-center justify-center z-40">
+    <div class="glass rounded-2xl p-6 w-[90%] max-w-3xl border border-slate-700 relative fade-in">
+      <button class="absolute top-3 right-3 text-slate-400 hover:text-white" onclick="toggleModal('mapModal', false)"><i class="fa-solid fa-xmark"></i></button>
+      <h3 class="text-lg font-semibold mb-4 flex items-center gap-2"><i class="fa-solid fa-map-location-dot text-emerald-300"></i> Онлайн-карта</h3>
+      <div class="h-72 bg-slate-900/70 border border-slate-800 rounded-xl overflow-hidden relative">
+        <iframe id="mapFrame" title="Карта маршрута" class="w-full h-full border-0" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+        <div id="mapFallback" class="absolute inset-0 flex items-center justify-center text-slate-400 text-sm bg-slate-900/60 hidden">
+          Не удалось загрузить карту
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Add vehicle -->
+  <div id="addModal" class="modal fixed inset-0 hidden items-center justify-center z-40">
+    <div class="glass rounded-2xl p-6 w-[90%] max-w-md border border-slate-700 relative fade-in">
+      <button class="absolute top-3 right-3 text-slate-400 hover:text-white" onclick="toggleModal('addModal', false)"><i class="fa-solid fa-xmark"></i></button>
+      <h3 class="text-lg font-semibold mb-4 flex items-center gap-2"><i class="fa-solid fa-plus text-emerald-300"></i> Добавить транспорт</h3>
+      <form id="addForm" class="space-y-3">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-sm text-slate-300">Название*</label>
+            <input required name="name" class="mt-1 w-full rounded-lg bg-slate-800 border border-slate-700 px-3 py-2" placeholder="например, VOLVO FH" />
+          </div>
+          <div>
+            <label class="text-sm text-slate-300">Гос номер*</label>
+            <input required name="plate" class="mt-1 w-full rounded-lg bg-slate-800 border border-slate-700 px-3 py-2" placeholder="А123ВС 16 RUS" />
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-sm text-slate-300">VIN*</label>
+            <input required name="vin" class="mt-1 w-full rounded-lg bg-slate-800 border border-slate-700 px-3 py-2" placeholder="17 символов" />
+          </div>
+          <div>
+            <label class="text-sm text-slate-300">Серия</label>
+            <input name="series" class="mt-1 w-full rounded-lg bg-slate-800 border border-slate-700 px-3 py-2" placeholder="например, R450" />
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-sm text-slate-300">Маршрут</label>
+            <input name="route" class="mt-1 w-full rounded-lg bg-slate-800 border border-slate-700 px-3 py-2" placeholder="М7 · Р239" />
+          </div>
+          <div>
+            <label class="text-sm text-slate-300">Груз</label>
+            <input name="cargo" class="mt-1 w-full rounded-lg bg-slate-800 border border-slate-700 px-3 py-2" placeholder="Что везем" />
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3 items-end">
+          <div>
+            <label class="text-sm text-slate-300">Статус</label>
+            <select name="status" id="addStatus" class="mt-1 w-full rounded-lg bg-slate-800 border border-slate-700 px-3 py-2">
+              <option>В пути</option>
+              <option>Простаивает</option>
+              <option>Обслуживание</option>
+            </select>
+          </div>
+          <div id="loadField">
+            <label class="text-sm text-slate-300">Загрузка (%)</label>
+            <input type="number" min="0" max="100" name="load" class="mt-1 w-full rounded-lg bg-slate-800 border border-slate-700 px-3 py-2" value="60" />
+          </div>
+        </div>
+        <div>
+          <label class="text-sm text-slate-300">Фото (png/jpg/webp)</label>
+          <input type="file" accept="image/*" name="photo" class="mt-1 w-full text-sm text-slate-300" />
+        </div>
+        <div class="text-xs text-slate-400">Поля с * обязательны</div>
+        <button class="w-full mt-2 bg-emerald-600 hover:bg-emerald-500 rounded-lg py-2 font-semibold">Добавить</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Sensor detail -->
+  <div id="sensorModal" class="modal fixed inset-0 hidden items-center justify-center z-40">
+    <div class="glass rounded-2xl p-6 w-[90%] max-w-md border border-slate-700 relative fade-in">
+      <button class="absolute top-3 right-3 text-slate-400 hover:text-white" onclick="toggleModal('sensorModal', false)"><i class="fa-solid fa-xmark"></i></button>
+      <h3 class="text-lg font-semibold mb-3 flex items-center gap-2"><i class="fa-solid fa-microchip text-sky-300"></i> Деталь датчика</h3>
+      <div class="space-y-2 text-sm">
+        <div class="flex items-center justify-between"><span class="text-slate-400">Датчик</span><span id="sensorName">—</span></div>
+        <div class="flex items-center justify-between"><span class="text-slate-400">Статус</span><span id="sensorStatus">—</span></div>
+        <div class="text-xs text-slate-400" id="sensorHint">—</div>
+      </div>
+      <button class="mt-4 w-full bg-slate-800 hover:bg-slate-700 rounded-lg py-2 text-sm" onclick="toggleModal('sensorModal', false)">Закрыть</button>
+    </div>
+  </div>
+
+  <!-- Modal: Status confirm -->
+  <div id="statusModal" class="modal fixed inset-0 hidden items-center justify-center z-40">
+    <div class="glass rounded-2xl p-6 w-[90%] max-w-sm border border-slate-700 relative fade-in">
+      <button class="absolute top-3 right-3 text-slate-400 hover:text-white" onclick="toggleModal('statusModal', false)"><i class="fa-solid fa-xmark"></i></button>
+      <h3 class="text-lg font-semibold mb-3 flex items-center gap-2"><i class="fa-solid fa-circle-exclamation text-amber-300"></i> Подтвердите смену</h3>
+      <p class="text-sm text-slate-300" id="statusMessage">Сменить статус?</p>
+      <div class="mt-4 grid grid-cols-2 gap-2 text-sm">
+        <button id="statusNo" class="w-full bg-slate-800 hover:bg-slate-700 rounded-lg py-2">Нет</button>
+        <button id="statusYes" class="w-full bg-emerald-600 hover:bg-emerald-500 rounded-lg py-2 text-slate-900 font-semibold">Да</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Driver profile edit -->
+  <div id="profileModal" class="modal fixed inset-0 hidden items-center justify-center z-40">
+    <div class="glass rounded-2xl p-6 w-[90%] max-w-md border border-slate-700 relative fade-in">
+      <button class="absolute top-3 right-3 text-slate-400 hover:text-white" onclick="toggleModal('profileModal', false)"><i class="fa-solid fa-xmark"></i></button>
+      <h3 class="text-lg font-semibold mb-3 flex items-center gap-2"><i class="fa-solid fa-user-gear text-emerald-300"></i> Профиль водителя</h3>
+      <form id="profileForm" class="space-y-4">
+        <div class="form-grid">
+          <label class="form-label">Имя</label>
+          <input name="name" class="form-input" />
+        </div>
+        <div class="form-grid">
+          <label class="form-label">Телефон</label>
+          <input name="phone" class="form-input" />
+        </div>
+        <div class="form-grid">
+          <label class="form-label">База</label>
+          <input name="home" class="form-input" />
+        </div>
+        <div class="form-grid">
+          <label class="form-label">Статус</label>
+          <input name="status" class="form-input" />
+        </div>
+        <button class="w-full mt-2 bg-emerald-600 hover:bg-emerald-500 rounded-lg py-2 font-semibold">Сохранить</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Trip Details -->
+  <div id="tripDetailsModal" class="modal fixed inset-0 hidden items-center justify-center z-40">
+    <div class="glass rounded-2xl p-6 w-[90%] max-w-4xl border border-slate-700 relative fade-in max-h-[90vh] overflow-y-auto">
+      <button class="absolute top-3 right-3 text-slate-400 hover:text-white z-10" onclick="toggleModal('tripDetailsModal', false)"><i class="fa-solid fa-xmark"></i></button>
+      <h3 class="text-xl font-semibold mb-6 flex items-center gap-2"><i class="fa-solid fa-route text-emerald-300"></i> Детальная информация о рейсе</h3>
+      
+      <div class="grid md:grid-cols-2 gap-6">
+        <!-- Левая колонка: Основная информация -->
+        <div class="space-y-4">
+          <div class="glass rounded-xl p-4 border border-slate-800">
+            <h4 class="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2"><i class="fa-solid fa-map-marked-alt"></i> Маршрут</h4>
+            <div class="space-y-2 text-sm">
+              <div class="flex justify-between">
+                <span class="text-slate-400">Пункт отправления:</span>
+                <span class="font-semibold" id="tripDetailOrigin">—</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-slate-400">Пункт назначения:</span>
+                <span class="font-semibold" id="tripDetailDestination">—</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-slate-400">Код маршрута:</span>
+                <span class="font-semibold" id="tripDetailRoute">—</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-slate-400">Дистанция:</span>
+                <span class="font-semibold" id="tripDetailDistance">—</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-slate-400">Пройдено:</span>
+                <span class="font-semibold" id="tripDetailProgress">—</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-slate-400">Осталось:</span>
+                <span class="font-semibold" id="tripDetailRemaining">—</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="glass rounded-xl p-4 border border-slate-800">
+            <h4 class="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2"><i class="fa-solid fa-clock"></i> Временные параметры</h4>
+            <div class="space-y-2 text-sm">
+              <div class="flex justify-between">
+                <span class="text-slate-400">Время старта:</span>
+                <span class="font-semibold" id="tripDetailDepart">—</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-slate-400">ETA (прибытие):</span>
+                <span class="font-semibold" id="tripDetailEta">—</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-slate-400">Время в пути:</span>
+                <span class="font-semibold" id="tripDetailTimeElapsed">—</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-slate-400">Осталось времени:</span>
+                <span class="font-semibold" id="tripDetailTimeRemaining">—</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-slate-400">Средняя скорость:</span>
+                <span class="font-semibold" id="tripDetailAvgSpeed">—</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="glass rounded-xl p-4 border border-slate-800">
+            <h4 class="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2"><i class="fa-solid fa-truck"></i> Транспорт</h4>
+            <div class="space-y-2 text-sm">
+              <div class="flex justify-between">
+                <span class="text-slate-400">Название:</span>
+                <span class="font-semibold" id="tripDetailVehicleName">—</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-slate-400">Гос. номер:</span>
+                <span class="font-semibold" id="tripDetailPlate">—</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-slate-400">VIN:</span>
+                <span class="font-semibold text-xs" id="tripDetailVin">—</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-slate-400">Серия:</span>
+                <span class="font-semibold" id="tripDetailSeries">—</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-slate-400">Статус:</span>
+                <span class="font-semibold" id="tripDetailStatus">—</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Правая колонка: Груз и водитель -->
+        <div class="space-y-4">
+          <div class="glass rounded-xl p-4 border border-slate-800">
+            <h4 class="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2"><i class="fa-solid fa-box"></i> Груз</h4>
+            <div class="space-y-2 text-sm">
+              <div class="flex justify-between">
+                <span class="text-slate-400">Описание:</span>
+                <span class="font-semibold text-right" id="tripDetailCargo">—</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-slate-400">Загрузка:</span>
+                <span class="font-semibold" id="tripDetailLoad">—</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-slate-400">Паллеты:</span>
+                <span class="font-semibold" id="tripDetailPallets">—</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-slate-400">Топливо:</span>
+                <span class="font-semibold" id="tripDetailFuel">—</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-slate-400">Состояние:</span>
+                <span class="font-semibold" id="tripDetailHealth">—</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="glass rounded-xl p-4 border border-slate-800">
+            <h4 class="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2"><i class="fa-solid fa-user"></i> Водитель</h4>
+            <div class="space-y-2 text-sm">
+              <div class="flex justify-between">
+                <span class="text-slate-400">Имя:</span>
+                <span class="font-semibold" id="tripDetailDriverName">—</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-slate-400">Телефон:</span>
+                <a href="#" id="tripDetailDriverPhoneLink" class="font-semibold text-emerald-300 hover:text-emerald-200"><span id="tripDetailDriverPhone">—</span></a>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-slate-400">База:</span>
+                <span class="font-semibold" id="tripDetailDriverHome">—</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-slate-400">Стаж:</span>
+                <span class="font-semibold" id="tripDetailDriverExperience">—</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-slate-400">Допуск:</span>
+                <span class="font-semibold" id="tripDetailDriverLicense">—</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-slate-400">Смена:</span>
+                <span class="font-semibold" id="tripDetailDriverShift">—</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="glass rounded-xl p-4 border border-slate-800">
+            <h4 class="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2"><i class="fa-solid fa-chart-line"></i> Прогресс</h4>
+            <div class="space-y-3">
+              <div>
+                <div class="flex justify-between text-xs text-slate-400 mb-1">
+                  <span>Выполнение маршрута</span>
+                  <span id="tripDetailProgressPercent">0%</span>
+                </div>
+                <div class="progress h-2">
+                  <span id="tripDetailProgressBar" style="width:0%"></span>
+                </div>
+              </div>
+              <div class="text-xs text-slate-400 space-y-1">
+                <div class="flex justify-between">
+                  <span>Пройдено км:</span>
+                  <span class="text-white font-semibold" id="tripDetailDoneKm">0</span>
+                </div>
+                <div class="flex justify-between">
+                  <span>Всего км:</span>
+                  <span class="text-white font-semibold" id="tripDetailTotalKm">0</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-6 flex gap-3 justify-end">
+        <button onclick="toggleModal('tripDetailsModal', false)" class="px-4 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-sm font-semibold transition-colors">Закрыть</button>
+        <button onclick="if(selected) { selectVehicle(selected); toggleModal('tripDetailsModal', false); }" class="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold transition-colors">Открыть на карте</button>
+      </div>
+    </div>
+  </div>
+
+    <script src="./assets/js/app.js"></script>
+</body>
+</html>
