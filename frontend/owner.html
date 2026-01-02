@@ -3,189 +3,898 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>RoutoX — Owner</title>
+  <title>RoutoX — Панель владельца</title>
   <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
   <script src="https://kit.fontawesome.com/a2e0e9e5a9.js" crossorigin="anonymous"></script>
-  <link rel="stylesheet" href="./assets/css/style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="./assets/css/routox-unified.css">
+  <style>
+    /* Owner-specific overrides */
+    .nav-pill.active {
+      background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+      box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+    }
+
+    .btn-primary:hover {
+      box-shadow: 0 4px 20px rgba(139, 92, 246, 0.4);
+    }
+
+    .stat-card::before {
+      background: linear-gradient(90deg, #8b5cf6, #10b981);
+    }
+
+    .kpi-value {
+      background: linear-gradient(135deg, #8b5cf6, #10b981);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* Drag & Drop Kanban */
+    .kanban-column {
+      min-height: 300px;
+      transition: all 0.2s ease;
+    }
+
+    .kanban-column.drag-over {
+      background: rgba(139, 92, 246, 0.05);
+      border: 2px dashed rgba(139, 92, 246, 0.3);
+    }
+
+    .employee-card {
+      cursor: grab;
+      transition: all 0.2s ease;
+      user-select: none;
+    }
+
+    .employee-card:active {
+      cursor: grabbing;
+    }
+
+    .employee-card.dragging {
+      opacity: 0.5;
+      transform: rotate(3deg) scale(1.02);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+
+    .employee-card:hover {
+      transform: translateY(-2px);
+      border-color: rgba(139, 92, 246, 0.4);
+    }
+
+    /* Module Cards 3D */
+    .module-card {
+      position: relative;
+      perspective: 1000px;
+      transition: all 0.3s ease;
+    }
+
+    .module-card:hover {
+      transform: translateY(-8px);
+    }
+
+    .module-card::after {
+      content: '';
+      position: absolute;
+      bottom: -8px;
+      left: 15%;
+      right: 15%;
+      height: 15px;
+      background: radial-gradient(ellipse, rgba(0,0,0,0.1) 0%, transparent 70%);
+      filter: blur(4px);
+      transition: all 0.3s ease;
+    }
+
+    .module-card:hover::after {
+      bottom: -12px;
+      left: 10%;
+      right: 10%;
+    }
+
+    .module-icon {
+      width: 56px;
+      height: 56px;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      transition: transform 0.3s ease;
+    }
+
+    .module-card:hover .module-icon {
+      transform: scale(1.1) rotateY(10deg);
+    }
+
+    /* 3D Truck Image Placeholder */
+    .truck-3d {
+      background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(59, 130, 246, 0.1));
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .truck-3d::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 100'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%238b5cf6' stop-opacity='0.3'/%3E%3Cstop offset='100%25' stop-color='%233b82f6' stop-opacity='0.3'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect x='20' y='40' width='100' height='40' rx='4' fill='url(%23g)'/%3E%3Crect x='120' y='50' width='50' height='30' rx='4' fill='url(%23g)'/%3E%3Ccircle cx='50' cy='85' r='12' fill='%23374151'/%3E%3Ccircle cx='90' cy='85' r='12' fill='%23374151'/%3E%3Ccircle cx='150' cy='85' r='12' fill='%23374151'/%3E%3C/svg%3E") center/contain no-repeat;
+      opacity: 0.5;
+    }
+  </style>
 </head>
-<body class="min-h-screen flex flex-col">
-  <header class="glass px-6 py-5 flex flex-col gap-4 sticky top-0 z-20">
-    <div class="flex flex-wrap items-center justify-between gap-4">
-      <div class="flex flex-wrap items-center gap-4">
-        <a href="./owner.html" class="flex items-center gap-3">
-          <div class="brand-mark">R</div>
-          <div>
-            <div class="text-lg font-semibold">RoutoX</div>
-            <div class="text-xs text-slate-400">Owner · Управление</div>
-          </div>
-        </a>
-        <nav class="flex flex-wrap gap-2 text-sm">
-          <a href="./index.html" class="nav-pill"><i class="fa-solid fa-gauge-high"></i><span>Флот</span></a>
-          <a href="./trips.html" class="nav-pill"><i class="fa-solid fa-route"></i><span>Рейсы</span></a>
-          <a href="./analytics.html" class="nav-pill"><i class="fa-solid fa-chart-line"></i><span>Аналитика</span></a>
-          <a href="./inventory.html" class="nav-pill"><i class="fa-solid fa-boxes-stacked"></i><span>Инвентарь</span></a>
-        </nav>
-      </div>
-      <div class="flex items-center gap-2 relative">
-        <button id="notifBtn" class="icon-button" aria-label="Уведомления">
-          <img id="notifIcon" src="./assets/images/notification.gif" alt="Уведомления" class="icon-img hidden" />
-          <span class="notif-dot hidden"></span>
-        </button>
-        <button id="settingsBtn" class="icon-button" aria-label="Настройки">
-          <img src="./assets/images/settings.png" alt="Настройки" class="icon-img" />
-        </button>
-        <span id="roleBadge" class="text-xs px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-200 border border-indigo-500/30">owner</span>
-        <span class="text-xs text-slate-400" id="meEmail">—</span>
-        <button id="logoutBtn" class="glass px-3 py-2 rounded-lg border border-slate-700 hover:border-red-400/60 transition flex items-center gap-2 text-sm">
-          <i class="fa-solid fa-right-from-bracket text-red-300"></i><span>Выйти</span>
-        </button>
-        <div id="notifPanel" class="floating-panel hidden" role="dialog" aria-label="Активные уведомления">
-          <div class="panel-header">Уведомления</div>
-          <div class="panel-body" id="notifList"></div>
+<body class="min-h-screen">
+  <!-- Header -->
+  <header class="glass-panel mx-4 mt-4 px-6 py-4 flex items-center justify-between sticky top-4 z-30">
+    <div class="flex items-center gap-6">
+      <a href="./owner.html" class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center font-bold text-lg text-white shadow-lg">R</div>
+        <div>
+          <div class="font-semibold">RoutoX</div>
+          <div class="text-xs text-muted">Панель владельца</div>
         </div>
-        <div id="settingsPanel" class="floating-panel hidden" role="dialog" aria-label="Системные настройки">
-          <div class="panel-header">Настройки</div>
-          <div class="panel-body space-y-3 text-sm">
-            <label class="flex items-center justify-between gap-3">Часовой пояс
-              <select id="tzSelect" class="input-select">
-                <option value="UTC+3">UTC+3 Москва</option>
-                <option value="UTC+2">UTC+2 Калининград</option>
-                <option value="UTC+5">UTC+5 Екатеринбург</option>
-              </select>
-            </label>
-            <label class="flex items-center justify-between gap-3">Топливо в
-              <select id="fuelUnitSelect" class="input-select">
-                <option value="l">литрах</option>
-                <option value="gal">галлонах</option>
-              </select>
-            </label>
-            <label class="flex items-center justify-between gap-3">Температура
-              <select id="tempUnitSelect" class="input-select">
-                <option value="c">°C</option>
-                <option value="f">°F</option>
-              </select>
-            </label>
-            <label class="flex items-center justify-between gap-3">Оповещения
-              <select id="alertModeSelect" class="input-select">
-                <option value="push">Push + Email</option>
-                <option value="push-only">Только Push</option>
-                <option value="email">Только Email</option>
-              </select>
-            </label>
-          </div>
-        </div>
-        <label id="themeToggle" class="theme-toggle" aria-live="polite">
-          <input type="checkbox" id="themeToggleInput" aria-describedby="themeToggleHint" />
-          <span class="toggle-track">
-            <span class="toggle-icon sun"><i class="fa-solid fa-sun"></i></span>
-            <span class="toggle-icon moon"><i class="fa-solid fa-moon"></i></span>
-            <span class="toggle-thumb"></span>
-          </span>
-          <span id="themeToggleHint" class="sr-only">Переключатель темы</span>
-        </label>
+      </a>
+      <nav id="mainNav" class="flex items-center gap-1 ml-8">
+        <!-- Navigation populated by JS -->
+      </nav>
+    </div>
+    <div class="flex items-center gap-3">
+      <span class="role-badge owner" id="roleBadge">
+        <i class="fa-solid fa-crown"></i>
+        <span id="roleText">Владелец</span>
+      </span>
+      <div class="theme-toggle-track" onclick="toggleTheme()">
+        <div class="theme-toggle-thumb"></div>
       </div>
+      <button class="icon-btn" title="Уведомления">
+        <i class="fa-solid fa-bell text-muted"></i>
+        <span class="badge-dot">7</span>
+      </button>
+      <button class="icon-btn" title="Выход" onclick="logout()"><i class="fa-solid fa-right-from-bracket text-muted"></i></button>
     </div>
   </header>
 
-  <main class="p-6 grid lg:grid-cols-3 gap-4 flex-1">
-    <section class="glass rounded-2xl p-4 lg:col-span-2 space-y-6">
-      <div class="flex items-center justify-between gap-3 flex-wrap">
-        <h2 class="text-lg font-semibold">Сотрудники и роли</h2>
-      </div>
-      <div class="text-sm text-slate-400">
-        Создавайте сотрудников и назначайте роли. Для MVP пароль задаётся при создании.
-      </div>
-
-      <form id="inviteForm" class="grid sm:grid-cols-3 gap-2">
-        <input id="inviteEmail" type="email" required placeholder="email" class="glass rounded-lg border border-slate-700 px-3 py-2 text-sm" />
-        <input id="invitePassword" type="password" required placeholder="password" class="glass rounded-lg border border-slate-700 px-3 py-2 text-sm" />
-        <div class="flex gap-2">
-          <select id="inviteRole" class="input-select w-full">
-            <option value="driver">driver</option>
-            <option value="admin">admin</option>
-            <option value="owner">owner</option>
-          </select>
-          <button type="submit" class="glass px-4 py-2 rounded-lg border border-slate-700 hover:border-emerald-400/60 transition flex items-center gap-2 text-sm whitespace-nowrap">
-            <i class="fa-solid fa-user-plus text-emerald-300"></i><span>Создать</span>
-          </button>
-        </div>
-      </form>
-      <div id="inviteNote" class="text-sm text-slate-400 hidden"></div>
-
-      <div class="mt-4 grid sm:grid-cols-2 gap-3">
-        <div class="glass rounded-xl p-4 border border-slate-800">
-          <div class="text-xs text-slate-400">Owner</div>
-          <div class="text-base font-semibold" id="ownerCount">—</div>
-          <div class="text-xs text-slate-500 mt-1">Полные права</div>
-        </div>
-        <div class="glass rounded-xl p-4 border border-slate-800">
-          <div class="text-xs text-slate-400">Admin</div>
-          <div class="text-base font-semibold" id="adminCount">—</div>
-          <div class="text-xs text-slate-500 mt-1">Заказы, назначение, контроль</div>
-        </div>
-        <div class="glass rounded-xl p-4 border border-slate-800">
-          <div class="text-xs text-slate-400">Driver</div>
-          <div class="text-base font-semibold" id="driverCount">—</div>
-          <div class="text-xs text-slate-500 mt-1">Приём и выполнение рейсов</div>
-        </div>
-        <div class="glass rounded-xl p-4 border border-slate-800">
-          <div class="text-xs text-slate-400">Аудит</div>
-          <div class="text-base font-semibold" id="auditHint">Включён</div>
-          <div class="text-xs text-slate-500 mt-1">События пишутся на сервере</div>
-        </div>
-      </div>
-
-      <div class="glass rounded-xl p-4 border border-slate-800">
-        <div class="flex items-center justify-between gap-3">
-          <div>
-            <div class="text-xs text-slate-400">Список пользователей</div>
-            <div class="text-sm text-slate-400 mt-1">Изменение роли доступно владельцу.</div>
+  <!-- Main Content -->
+  <main class="p-4 space-y-4">
+    <!-- KPI Stats Row -->
+    <div class="grid grid-cols-6 gap-4">
+      <div class="glass-panel stat-card relative overflow-hidden">
+        <div class="gradient-orb w-32 h-32 bg-purple-500 -top-16 -right-16"></div>
+        <div class="relative z-10">
+          <div class="flex items-center justify-between mb-3">
+            <div class="stat-icon bg-gradient-to-br from-purple-500/20 to-violet-500/20 stat-icon-float">
+              <i class="fa-solid fa-ruble-sign text-purple-500"></i>
+            </div>
+            <span class="trend trend-up"><i class="fa-solid fa-arrow-up"></i>+12.5%</span>
           </div>
-          <button id="usersRefreshBtn" class="glass px-3 py-2 rounded-lg border border-slate-700 hover:border-sky-400/60 transition flex items-center gap-2 text-sm">
-            <i class="fa-solid fa-arrows-rotate text-sky-300"></i> Обновить
-          </button>
+          <div class="text-2xl font-bold kpi-value">₽ 12.4M</div>
+          <div class="text-sm text-muted">Выручка (месяц)</div>
         </div>
-        <div id="usersEmpty" class="mt-3 text-sm text-slate-400">—</div>
-        <div id="usersList" class="mt-3 grid gap-2"></div>
       </div>
 
-      <div class="glass rounded-xl p-4 border border-slate-800">
-        <div class="flex items-center justify-between gap-3">
-          <div>
-            <div class="text-xs text-slate-400">Заказы</div>
-            <div class="text-sm text-slate-400 mt-1">Список заказов (создаёт администратор).</div>
+      <div class="glass-panel stat-card relative overflow-hidden">
+        <div class="gradient-orb w-32 h-32 bg-emerald-500 -top-16 -right-16"></div>
+        <div class="relative z-10">
+          <div class="flex items-center justify-between mb-3">
+            <div class="stat-icon bg-gradient-to-br from-emerald-500/20 to-green-500/20 stat-icon-float">
+              <i class="fa-solid fa-arrow-trend-up text-emerald-500"></i>
+            </div>
+            <span class="trend trend-up"><i class="fa-solid fa-arrow-up"></i>+8.3%</span>
           </div>
-          <button id="ordersRefreshBtn" class="glass px-3 py-2 rounded-lg border border-slate-700 hover:border-emerald-400/60 transition flex items-center gap-2 text-sm">
-            <i class="fa-solid fa-arrows-rotate text-emerald-300"></i> Обновить
-          </button>
-        </div>
-        <div id="ordersEmpty" class="mt-3 text-sm text-slate-400">—</div>
-        <div id="ordersList" class="mt-3 grid gap-2"></div>
-      </div>
-    </section>
-
-    <section class="space-y-4">
-      <div class="glass rounded-2xl p-4">
-        <h2 class="text-lg font-semibold">Быстрые действия</h2>
-        <div class="mt-4 grid gap-2 text-sm">
-          <a href="./index.html" class="glass px-4 py-3 rounded-lg border border-slate-700 hover:border-sky-400/60 transition flex items-center justify-between">
-            <span class="flex items-center gap-2"><i class="fa-solid fa-truck text-sky-300"></i>Открыть флот</span>
-            <i class="fa-solid fa-arrow-right text-slate-400"></i>
-          </a>
-          <a href="./trips.html" class="glass px-4 py-3 rounded-lg border border-slate-700 hover:border-emerald-400/60 transition flex items-center justify-between">
-            <span class="flex items-center gap-2"><i class="fa-solid fa-route text-emerald-300"></i>Открыть рейсы</span>
-            <i class="fa-solid fa-arrow-right text-slate-400"></i>
-          </a>
+          <div class="text-2xl font-bold kpi-value">₽ 3.2M</div>
+          <div class="text-sm text-muted">Чистая прибыль</div>
         </div>
       </div>
 
-      <div class="glass rounded-2xl p-4">
-        <h2 class="text-lg font-semibold">Состояние API</h2>
-        <div class="mt-3 text-sm text-slate-400" id="apiStatus">—</div>
+      <div class="glass-panel stat-card relative overflow-hidden">
+        <div class="gradient-orb w-32 h-32 bg-blue-500 -top-16 -right-16"></div>
+        <div class="relative z-10">
+          <div class="flex items-center justify-between mb-3">
+            <div class="stat-icon bg-gradient-to-br from-blue-500/20 to-cyan-500/20 stat-icon-float">
+              <i class="fa-solid fa-truck text-blue-500"></i>
+            </div>
+          </div>
+          <div class="text-2xl font-bold kpi-value">64</div>
+          <div class="text-sm text-muted">Транспорт</div>
+        </div>
       </div>
-    </section>
+
+      <div class="glass-panel stat-card relative overflow-hidden">
+        <div class="gradient-orb w-32 h-32 bg-amber-500 -top-16 -right-16"></div>
+        <div class="relative z-10">
+          <div class="flex items-center justify-between mb-3">
+            <div class="stat-icon bg-gradient-to-br from-amber-500/20 to-orange-500/20 stat-icon-float">
+              <i class="fa-solid fa-users text-amber-500"></i>
+            </div>
+          </div>
+          <div class="text-2xl font-bold kpi-value">89</div>
+          <div class="text-sm text-muted">Сотрудников</div>
+        </div>
+      </div>
+
+      <div class="glass-panel stat-card relative overflow-hidden">
+        <div class="gradient-orb w-32 h-32 bg-cyan-500 -top-16 -right-16"></div>
+        <div class="relative z-10">
+          <div class="flex items-center justify-between mb-3">
+            <div class="stat-icon bg-gradient-to-br from-cyan-500/20 to-teal-500/20 stat-icon-float">
+              <i class="fa-solid fa-route text-cyan-500"></i>
+            </div>
+            <span class="trend trend-up"><i class="fa-solid fa-arrow-up"></i>+15%</span>
+          </div>
+          <div class="text-2xl font-bold kpi-value">458</div>
+          <div class="text-sm text-muted">Рейсов (месяц)</div>
+        </div>
+      </div>
+
+      <div class="glass-panel stat-card relative overflow-hidden">
+        <div class="gradient-orb w-32 h-32 bg-rose-500 -top-16 -right-16"></div>
+        <div class="relative z-10">
+          <div class="flex items-center justify-between mb-3">
+            <div class="stat-icon bg-gradient-to-br from-rose-500/20 to-pink-500/20 stat-icon-float">
+              <i class="fa-solid fa-chart-pie text-rose-500"></i>
+            </div>
+          </div>
+          <div class="text-2xl font-bold kpi-value">25.8%</div>
+          <div class="text-sm text-muted">Маржа</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Grid -->
+    <div class="grid grid-cols-12 gap-4">
+      <!-- Left: Charts -->
+      <section class="col-span-8 space-y-4">
+        <!-- Revenue Chart -->
+        <div class="glass-panel p-5">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h3 class="font-semibold text-lg">Финансовая динамика</h3>
+              <p class="text-sm text-muted">Выручка и расходы за 12 месяцев</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <button class="px-3 py-1.5 rounded-lg bg-purple-500/20 text-purple-500 text-sm font-medium">Месяцы</button>
+              <button class="px-3 py-1.5 rounded-lg text-muted text-sm hover:bg-gray-100">Кварталы</button>
+            </div>
+          </div>
+          <canvas id="revenueChart" height="100"></canvas>
+        </div>
+
+        <!-- Employee Management (Drag & Drop Kanban) -->
+        <div class="glass-panel p-5">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h3 class="font-semibold text-lg">Управление персоналом</h3>
+              <p class="text-sm text-muted">Перетащите карточки для изменения роли</p>
+            </div>
+            <button class="btn btn-primary text-sm" onclick="showUserModal()">
+              <i class="fa-solid fa-user-plus"></i>
+              Добавить
+            </button>
+          </div>
+
+          <!-- Kanban Board -->
+          <div class="grid grid-cols-4 gap-4">
+            <!-- Owners Column -->
+            <div class="kanban-column glass-card p-3 rounded-xl" data-role="owner" ondrop="drop(event)" ondragover="allowDrop(event)" ondragleave="dragLeave(event)">
+              <div class="flex items-center gap-2 mb-3 pb-2 border-b" style="border-color: var(--border-color);">
+                <div class="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center">
+                  <i class="fa-solid fa-crown text-purple-500 text-sm"></i>
+                </div>
+                <div>
+                  <div class="font-semibold text-sm">Владельцы</div>
+                  <div class="text-xs text-muted" id="ownerCount">2</div>
+                </div>
+              </div>
+              <div class="space-y-2" id="ownerList"></div>
+            </div>
+
+            <!-- Admins Column -->
+            <div class="kanban-column glass-card p-3 rounded-xl" data-role="admin" ondrop="drop(event)" ondragover="allowDrop(event)" ondragleave="dragLeave(event)">
+              <div class="flex items-center gap-2 mb-3 pb-2 border-b" style="border-color: var(--border-color);">
+                <div class="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center">
+                  <i class="fa-solid fa-user-shield text-blue-500 text-sm"></i>
+                </div>
+                <div>
+                  <div class="font-semibold text-sm">Админы</div>
+                  <div class="text-xs text-muted" id="adminCount">5</div>
+                </div>
+              </div>
+              <div class="space-y-2" id="adminList"></div>
+            </div>
+
+            <!-- Drivers Column -->
+            <div class="kanban-column glass-card p-3 rounded-xl" data-role="driver" ondrop="drop(event)" ondragover="allowDrop(event)" ondragleave="dragLeave(event)">
+              <div class="flex items-center gap-2 mb-3 pb-2 border-b" style="border-color: var(--border-color);">
+                <div class="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center">
+                  <i class="fa-solid fa-id-card text-emerald-500 text-sm"></i>
+                </div>
+                <div>
+                  <div class="font-semibold text-sm">Водители</div>
+                  <div class="text-xs text-muted" id="driverCount">72</div>
+                </div>
+              </div>
+              <div class="space-y-2 max-h-64 overflow-y-auto custom-scroll" id="driverList"></div>
+            </div>
+
+            <!-- Mechanics Column -->
+            <div class="kanban-column glass-card p-3 rounded-xl" data-role="mechanic" ondrop="drop(event)" ondragover="allowDrop(event)" ondragleave="dragLeave(event)">
+              <div class="flex items-center gap-2 mb-3 pb-2 border-b" style="border-color: var(--border-color);">
+                <div class="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center">
+                  <i class="fa-solid fa-wrench text-amber-500 text-sm"></i>
+                </div>
+                <div>
+                  <div class="font-semibold text-sm">Механики</div>
+                  <div class="text-xs text-muted" id="mechanicCount">10</div>
+                </div>
+              </div>
+              <div class="space-y-2" id="mechanicList"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Modules Grid -->
+        <div class="glass-panel p-5">
+          <h3 class="font-semibold text-lg mb-4">Модули системы</h3>
+          <div class="grid grid-cols-4 gap-4">
+            <a href="./index.html" class="module-card glass-card p-4 text-center block">
+              <div class="module-icon bg-gradient-to-br from-blue-500/20 to-cyan-500/20 mx-auto mb-3">
+                <i class="fa-solid fa-truck text-blue-500"></i>
+              </div>
+              <div class="font-medium">Флот</div>
+              <div class="text-xs text-muted mt-1">64 ТС онлайн</div>
+            </a>
+            <a href="./trips.html" class="module-card glass-card p-4 text-center block">
+              <div class="module-icon bg-gradient-to-br from-emerald-500/20 to-green-500/20 mx-auto mb-3">
+                <i class="fa-solid fa-route text-emerald-500"></i>
+              </div>
+              <div class="font-medium">Рейсы</div>
+              <div class="text-xs text-muted mt-1">24 активных</div>
+            </a>
+            <a href="./geozones.html" class="module-card glass-card p-4 text-center block">
+              <div class="module-icon bg-gradient-to-br from-cyan-500/20 to-teal-500/20 mx-auto mb-3">
+                <i class="fa-solid fa-map-location-dot text-cyan-500"></i>
+              </div>
+              <div class="font-medium">Геозоны</div>
+              <div class="text-xs text-muted mt-1">18 зон</div>
+            </a>
+            <a href="./analytics.html" class="module-card glass-card p-4 text-center block">
+              <div class="module-icon bg-gradient-to-br from-purple-500/20 to-violet-500/20 mx-auto mb-3">
+                <i class="fa-solid fa-chart-line text-purple-500"></i>
+              </div>
+              <div class="font-medium">Аналитика</div>
+              <div class="text-xs text-muted mt-1">BI отчёты</div>
+            </a>
+            <a href="./fuel.html" class="module-card glass-card p-4 text-center block">
+              <div class="module-icon bg-gradient-to-br from-amber-500/20 to-orange-500/20 mx-auto mb-3">
+                <i class="fa-solid fa-gas-pump text-amber-500"></i>
+              </div>
+              <div class="font-medium">Топливо</div>
+              <div class="text-xs text-muted mt-1">₽ 2.4M</div>
+            </a>
+            <a href="./maintenance.html" class="module-card glass-card p-4 text-center block">
+              <div class="module-icon bg-gradient-to-br from-rose-500/20 to-pink-500/20 mx-auto mb-3">
+                <i class="fa-solid fa-tools text-rose-500"></i>
+              </div>
+              <div class="font-medium">ТО</div>
+              <div class="text-xs text-muted mt-1">12 задач</div>
+            </a>
+            <a href="./documents.html" class="module-card glass-card p-4 text-center block">
+              <div class="module-icon bg-gradient-to-br from-indigo-500/20 to-blue-500/20 mx-auto mb-3">
+                <i class="fa-solid fa-file-lines text-indigo-500"></i>
+              </div>
+              <div class="font-medium">Документы</div>
+              <div class="text-xs text-muted mt-1">156 eTTН</div>
+            </a>
+            <a href="./driver.html" class="module-card glass-card p-4 text-center block">
+              <div class="module-icon bg-gradient-to-br from-slate-500/20 to-gray-500/20 mx-auto mb-3">
+                <i class="fa-solid fa-mobile-screen text-slate-500"></i>
+              </div>
+              <div class="font-medium">Моб. приложение</div>
+              <div class="text-xs text-muted mt-1">Водитель</div>
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <!-- Right: Sidebar -->
+      <aside class="col-span-4 space-y-4">
+        <!-- Expenses Chart -->
+        <div class="glass-panel p-5">
+          <h3 class="font-semibold text-lg mb-4">Структура расходов</h3>
+          <canvas id="expensesChart" height="200"></canvas>
+          <div class="mt-4 grid grid-cols-2 gap-2 text-sm">
+            <div class="flex items-center gap-2">
+              <span class="w-3 h-3 rounded-full bg-amber-500"></span>
+              <span class="text-muted">Топливо — 35%</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="w-3 h-3 rounded-full bg-blue-500"></span>
+              <span class="text-muted">ФОТ — 28%</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="w-3 h-3 rounded-full bg-emerald-500"></span>
+              <span class="text-muted">ТО — 18%</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="w-3 h-3 rounded-full bg-purple-500"></span>
+              <span class="text-muted">Прочее — 19%</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="glass-panel p-5">
+          <h3 class="font-semibold text-lg mb-4">Быстрые действия</h3>
+          <div class="space-y-2">
+            <a href="./analytics.html" class="quick-action glass-card">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center">
+                  <i class="fa-solid fa-file-pdf text-purple-500"></i>
+                </div>
+                <span class="font-medium">Выгрузить отчёт</span>
+              </div>
+              <i class="fa-solid fa-chevron-right text-muted ml-auto"></i>
+            </a>
+            <a href="./maintenance.html" class="quick-action glass-card">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center">
+                  <i class="fa-solid fa-calendar-check text-amber-500"></i>
+                </div>
+                <span class="font-medium">График ТО</span>
+              </div>
+              <i class="fa-solid fa-chevron-right text-muted ml-auto"></i>
+            </a>
+            <a href="./fuel.html" class="quick-action glass-card">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-emerald-500/20 flex items-center justify-center">
+                  <i class="fa-solid fa-credit-card text-emerald-500"></i>
+                </div>
+                <span class="font-medium">Топливные карты</span>
+              </div>
+              <i class="fa-solid fa-chevron-right text-muted ml-auto"></i>
+            </a>
+          </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="glass-panel p-5">
+          <h3 class="font-semibold text-lg mb-4">Последние события</h3>
+          <div class="space-y-3 max-h-64 overflow-y-auto custom-scroll">
+            <div class="flex items-start gap-3">
+              <div class="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
+                <i class="fa-solid fa-check text-emerald-500 text-sm"></i>
+              </div>
+              <div class="flex-1">
+                <div class="text-sm font-medium">Рейс #R-2024-458 завершён</div>
+                <div class="text-xs text-muted">TR-001 • Москва → Казань</div>
+                <div class="text-xs text-emerald-500 mt-1">5 минут назад</div>
+              </div>
+            </div>
+            <div class="flex items-start gap-3">
+              <div class="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center flex-shrink-0">
+                <i class="fa-solid fa-user-plus text-blue-500 text-sm"></i>
+              </div>
+              <div class="flex-1">
+                <div class="text-sm font-medium">Новый водитель</div>
+                <div class="text-xs text-muted">Сергей Петров принят</div>
+                <div class="text-xs text-blue-500 mt-1">23 минуты назад</div>
+              </div>
+            </div>
+            <div class="flex items-start gap-3">
+              <div class="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center flex-shrink-0">
+                <i class="fa-solid fa-gas-pump text-amber-500 text-sm"></i>
+              </div>
+              <div class="flex-1">
+                <div class="text-sm font-medium">Заправка TR-023</div>
+                <div class="text-xs text-muted">380 л • ₽ 22,382</div>
+                <div class="text-xs text-amber-500 mt-1">1 час назад</div>
+              </div>
+            </div>
+            <div class="flex items-start gap-3">
+              <div class="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center flex-shrink-0">
+                <i class="fa-solid fa-file-signature text-purple-500 text-sm"></i>
+              </div>
+              <div class="flex-1">
+                <div class="text-sm font-medium">eTTН подписана</div>
+                <div class="text-xs text-muted">Документ #001254</div>
+                <div class="text-xs text-purple-500 mt-1">2 часа назад</div>
+              </div>
+            </div>
+            <div class="flex items-start gap-3">
+              <div class="w-8 h-8 rounded-lg bg-rose-500/20 flex items-center justify-center flex-shrink-0">
+                <i class="fa-solid fa-wrench text-rose-500 text-sm"></i>
+              </div>
+              <div class="flex-1">
+                <div class="text-sm font-medium">ТО завершено</div>
+                <div class="text-xs text-muted">TR-007 • Замена масла</div>
+                <div class="text-xs text-rose-500 mt-1">3 часа назад</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- System Status -->
+        <div class="glass-panel p-5">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="font-semibold text-lg">Состояние системы</h3>
+            <span class="w-3 h-3 rounded-full bg-emerald-500 pulse-online"></span>
+          </div>
+          <div class="space-y-3 text-sm">
+            <div class="flex items-center justify-between">
+              <span class="text-muted">API Backend</span>
+              <span class="text-emerald-500 font-medium">Online</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-muted">База данных</span>
+              <span class="text-emerald-500 font-medium">Online</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-muted">Телеметрия</span>
+              <span class="text-emerald-500 font-medium">Active</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-muted">Аудит логов</span>
+              <span class="text-emerald-500 font-medium">Enabled</span>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </div>
   </main>
 
-  <script src="./assets/js/owner.js"></script>
+  <!-- User Modal -->
+  <div id="userModal" class="modal-backdrop">
+    <div class="modal-content glass-panel p-6">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-xl font-bold">Добавить сотрудника</h2>
+        <button onclick="closeUserModal()" class="icon-btn"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <form class="space-y-4" onsubmit="addUser(event)">
+        <div>
+          <label class="text-sm text-muted mb-2 block">ФИО</label>
+          <input type="text" id="newUserName" placeholder="Иван Иванов" class="input-field" required>
+        </div>
+        <div>
+          <label class="text-sm text-muted mb-2 block">Email</label>
+          <input type="email" id="newUserEmail" placeholder="email@company.ru" class="input-field" required>
+        </div>
+        <div>
+          <label class="text-sm text-muted mb-2 block">Телефон</label>
+          <input type="tel" id="newUserPhone" placeholder="+7 (999) 123-45-67" class="input-field">
+        </div>
+        <div>
+          <label class="text-sm text-muted mb-2 block">Роль</label>
+          <select id="newUserRole" class="input-field">
+            <option value="driver">Водитель</option>
+            <option value="mechanic">Механик</option>
+            <option value="admin">Администратор</option>
+            <option value="owner">Владелец</option>
+          </select>
+        </div>
+        <div class="flex gap-3 pt-4">
+          <button type="submit" class="flex-1 btn btn-primary py-3">Создать</button>
+          <button type="button" onclick="closeUserModal()" class="flex-1 btn btn-outline py-3">Отмена</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // Theme management
+    const savedTheme = localStorage.getItem('routoxTheme') || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+
+    function toggleTheme() {
+      const current = document.documentElement.getAttribute('data-theme');
+      const next = current === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', next);
+      localStorage.setItem('routoxTheme', next);
+      updateChartColors();
+    }
+
+    function getChartColors() {
+      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+      return {
+        gridColor: isDark ? 'rgba(71, 85, 105, 0.2)' : 'rgba(226, 232, 240, 0.8)',
+        textColor: isDark ? '#94a3b8' : '#64748b'
+      };
+    }
+
+    function updateChartColors() {
+      const colors = getChartColors();
+      if (revenueChart) {
+        revenueChart.options.scales.x.grid.color = colors.gridColor;
+        revenueChart.options.scales.x.ticks.color = colors.textColor;
+        revenueChart.options.scales.y.grid.color = colors.gridColor;
+        revenueChart.options.scales.y.ticks.color = colors.textColor;
+        revenueChart.options.plugins.legend.labels.color = colors.textColor;
+        revenueChart.update();
+      }
+    }
+
+    const colors = getChartColors();
+
+    // Revenue Chart
+    const revenueCtx = document.getElementById('revenueChart').getContext('2d');
+    const revenueChart = new Chart(revenueCtx, {
+      type: 'line',
+      data: {
+        labels: ['Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек', 'Янв'],
+        datasets: [{
+          label: 'Выручка (млн ₽)',
+          data: [7.2, 7.8, 8.1, 8.4, 9.2, 10.1, 10.8, 11.2, 11.5, 11.8, 12.1, 12.4],
+          borderColor: '#8b5cf6',
+          backgroundColor: 'rgba(139, 92, 246, 0.1)',
+          fill: true,
+          tension: 0.4,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          pointBackgroundColor: '#8b5cf6',
+          pointBorderColor: '#fff',
+          pointBorderWidth: 2
+        }, {
+          label: 'Расходы (млн ₽)',
+          data: [5.5, 5.9, 6.1, 6.3, 6.9, 7.5, 8.0, 8.3, 8.6, 8.8, 9.0, 9.2],
+          borderColor: '#f59e0b',
+          backgroundColor: 'rgba(245, 158, 11, 0.1)',
+          fill: true,
+          tension: 0.4,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          pointBackgroundColor: '#f59e0b',
+          pointBorderColor: '#fff',
+          pointBorderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true,
+        interaction: { intersect: false, mode: 'index' },
+        plugins: { legend: { display: true, position: 'top', labels: { color: colors.textColor, usePointStyle: true } } },
+        scales: {
+          x: { grid: { color: colors.gridColor }, ticks: { color: colors.textColor } },
+          y: { grid: { color: colors.gridColor }, ticks: { color: colors.textColor } }
+        }
+      }
+    });
+
+    // Expenses Chart
+    const expensesCtx = document.getElementById('expensesChart').getContext('2d');
+    new Chart(expensesCtx, {
+      type: 'doughnut',
+      data: {
+        labels: ['Топливо', 'ФОТ', 'ТО', 'Прочее'],
+        datasets: [{ data: [35, 28, 18, 19], backgroundColor: ['#f59e0b', '#3b82f6', '#10b981', '#8b5cf6'], borderWidth: 0, hoverOffset: 10 }]
+      },
+      options: { responsive: true, plugins: { legend: { display: false } }, cutout: '70%' }
+    });
+
+    // Employees data
+    let employees = [
+      { id: 1, name: 'Владимир Сидоров', role: 'owner', photo: 'https://randomuser.me/api/portraits/men/32.jpg' },
+      { id: 2, name: 'Мария Козлова', role: 'owner', photo: 'https://randomuser.me/api/portraits/women/44.jpg' },
+      { id: 3, name: 'Анна Иванова', role: 'admin', photo: 'https://randomuser.me/api/portraits/women/28.jpg' },
+      { id: 4, name: 'Пётр Козлов', role: 'admin', photo: 'https://randomuser.me/api/portraits/men/45.jpg' },
+      { id: 5, name: 'Дмитрий Волков', role: 'admin', photo: 'https://randomuser.me/api/portraits/men/67.jpg' },
+      { id: 6, name: 'Елена Новикова', role: 'admin', photo: 'https://randomuser.me/api/portraits/women/55.jpg' },
+      { id: 7, name: 'Игорь Смирнов', role: 'admin', photo: 'https://randomuser.me/api/portraits/men/22.jpg' },
+      { id: 8, name: 'Сергей Петров', role: 'driver', photo: 'https://randomuser.me/api/portraits/men/33.jpg' },
+      { id: 9, name: 'Алексей Кузнецов', role: 'driver', photo: 'https://randomuser.me/api/portraits/men/41.jpg' },
+      { id: 10, name: 'Николай Морозов', role: 'driver', photo: 'https://randomuser.me/api/portraits/men/52.jpg' },
+      { id: 11, name: 'Андрей Соколов', role: 'driver', photo: 'https://randomuser.me/api/portraits/men/61.jpg' },
+      { id: 12, name: 'Михаил Попов', role: 'driver', photo: 'https://randomuser.me/api/portraits/men/71.jpg' },
+      { id: 13, name: 'Олег Воробьёв', role: 'mechanic', photo: 'https://randomuser.me/api/portraits/men/15.jpg' },
+      { id: 14, name: 'Виктор Лебедев', role: 'mechanic', photo: 'https://randomuser.me/api/portraits/men/25.jpg' },
+      { id: 15, name: 'Роман Калинин', role: 'mechanic', photo: 'https://randomuser.me/api/portraits/men/35.jpg' },
+    ];
+
+    const roleColors = {
+      owner: 'purple',
+      admin: 'blue',
+      driver: 'emerald',
+      mechanic: 'amber'
+    };
+
+    function renderEmployees() {
+      const lists = {
+        owner: document.getElementById('ownerList'),
+        admin: document.getElementById('adminList'),
+        driver: document.getElementById('driverList'),
+        mechanic: document.getElementById('mechanicList')
+      };
+
+      // Clear lists
+      Object.values(lists).forEach(list => list.innerHTML = '');
+
+      // Render employees
+      employees.forEach(emp => {
+        const card = document.createElement('div');
+        card.className = 'employee-card glass-card p-2 rounded-lg flex items-center gap-2';
+        card.draggable = true;
+        card.dataset.id = emp.id;
+        card.innerHTML = `
+          <img src="${emp.photo}" alt="${emp.name}" class="w-8 h-8 rounded-lg object-cover">
+          <div class="flex-1 min-w-0">
+            <div class="text-sm font-medium truncate">${emp.name}</div>
+          </div>
+          <button class="w-6 h-6 rounded flex items-center justify-center hover:bg-red-50 text-red-400 opacity-0 group-hover:opacity-100 transition-opacity" onclick="removeEmployee(${emp.id})">
+            <i class="fa-solid fa-xmark text-xs"></i>
+          </button>
+        `;
+
+        // Drag events
+        card.addEventListener('dragstart', dragStart);
+        card.addEventListener('dragend', dragEnd);
+
+        lists[emp.role].appendChild(card);
+      });
+
+      // Update counts
+      document.getElementById('ownerCount').textContent = employees.filter(e => e.role === 'owner').length;
+      document.getElementById('adminCount').textContent = employees.filter(e => e.role === 'admin').length;
+      document.getElementById('driverCount').textContent = employees.filter(e => e.role === 'driver').length;
+      document.getElementById('mechanicCount').textContent = employees.filter(e => e.role === 'mechanic').length;
+    }
+
+    let draggedId = null;
+
+    function dragStart(e) {
+      draggedId = e.target.dataset.id;
+      e.target.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+    }
+
+    function dragEnd(e) {
+      e.target.classList.remove('dragging');
+      document.querySelectorAll('.kanban-column').forEach(col => col.classList.remove('drag-over'));
+    }
+
+    function allowDrop(e) {
+      e.preventDefault();
+      e.currentTarget.classList.add('drag-over');
+    }
+
+    function dragLeave(e) {
+      e.currentTarget.classList.remove('drag-over');
+    }
+
+    function drop(e) {
+      e.preventDefault();
+      e.currentTarget.classList.remove('drag-over');
+      
+      const newRole = e.currentTarget.dataset.role;
+      const emp = employees.find(emp => emp.id == draggedId);
+      
+      if (emp && emp.role !== newRole) {
+        emp.role = newRole;
+        renderEmployees();
+        showNotification(`${emp.name} переведён в группу "${getRoleName(newRole)}"`);
+      }
+    }
+
+    function getRoleName(role) {
+      const names = { owner: 'Владельцы', admin: 'Администраторы', driver: 'Водители', mechanic: 'Механики' };
+      return names[role] || role;
+    }
+
+    function removeEmployee(id) {
+      if (confirm('Удалить сотрудника?')) {
+        employees = employees.filter(e => e.id !== id);
+        renderEmployees();
+      }
+    }
+
+    // Modal controls
+    function showUserModal() {
+      document.getElementById('userModal').classList.add('active');
+    }
+
+    function closeUserModal() {
+      document.getElementById('userModal').classList.remove('active');
+    }
+
+    function addUser(e) {
+      e.preventDefault();
+      const name = document.getElementById('newUserName').value;
+      const role = document.getElementById('newUserRole').value;
+      
+      const newId = Math.max(...employees.map(e => e.id)) + 1;
+      const photos = [
+        'https://randomuser.me/api/portraits/men/75.jpg',
+        'https://randomuser.me/api/portraits/men/76.jpg',
+        'https://randomuser.me/api/portraits/women/75.jpg',
+        'https://randomuser.me/api/portraits/women/76.jpg'
+      ];
+      
+      employees.push({
+        id: newId,
+        name: name,
+        role: role,
+        photo: photos[Math.floor(Math.random() * photos.length)]
+      });
+      
+      renderEmployees();
+      closeUserModal();
+      showNotification(`Сотрудник ${name} добавлен`);
+      
+      // Reset form
+      e.target.reset();
+    }
+
+    function showNotification(message) {
+      const notif = document.createElement('div');
+      notif.className = 'fixed bottom-4 right-4 glass-panel px-4 py-3 flex items-center gap-3 z-50 animate-slide-up';
+      notif.innerHTML = `
+        <div class="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center">
+          <i class="fa-solid fa-check text-emerald-500"></i>
+        </div>
+        <span class="font-medium">${message}</span>
+      `;
+      document.body.appendChild(notif);
+      
+      setTimeout(() => {
+        notif.style.opacity = '0';
+        notif.style.transform = 'translateY(20px)';
+        setTimeout(() => notif.remove(), 300);
+      }, 3000);
+    }
+
+    // Add animation style
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+      .animate-slide-up { animation: slideUp 0.3s ease; }
+    `;
+    document.head.appendChild(style);
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeUserModal();
+    });
+
+    // Initial render
+    renderEmployees();
+    
+    // Init theme and navigation on load
+    document.addEventListener('DOMContentLoaded', () => {
+      if (typeof initTheme === 'function') initTheme();
+      initNavigation('owner');
+    });
+
+    // Initialize navigation based on role
+    function initNavigation(currentPage) {
+      const role = localStorage.getItem('user_role') || 'owner';
+      const nav = document.getElementById('mainNav');
+      
+      let navItems = [
+        { href: './owner.html', icon: 'fa-crown', text: 'Обзор', page: 'owner' },
+        { href: './index.html', icon: 'fa-truck', text: 'Флот', page: 'index' },
+        { href: './trips.html', icon: 'fa-route', text: 'Рейсы', page: 'trips' },
+        { href: './geozones.html', icon: 'fa-map-location-dot', text: 'Геозоны', page: 'geozones' },
+        { href: './analytics.html', icon: 'fa-chart-line', text: 'Аналитика', page: 'analytics' },
+        { href: './fuel.html', icon: 'fa-gas-pump', text: 'Топливо', page: 'fuel' },
+        { href: './maintenance.html', icon: 'fa-wrench', text: 'ТО', page: 'maintenance' },
+        { href: './documents.html', icon: 'fa-file-lines', text: 'Документы', page: 'documents' }
+      ];
+      
+      nav.innerHTML = navItems.map(item => 
+        `<a href="${item.href}" class="nav-pill ${item.page === currentPage ? 'active' : ''}"><i class="fa-solid ${item.icon}"></i><span>${item.text}</span></a>`
+      ).join('');
+    }
+
+    // Logout function
+    function logout() {
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('user_role');
+      localStorage.removeItem('demo_mode');
+      window.location.href = './login.html';
+    }
+  </script>
+  <script src="./assets/js/routox-unified.js"></script>
 </body>
 </html>

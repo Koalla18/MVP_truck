@@ -3,722 +3,1756 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Аналитика · RoutoX</title>
+  <title>RoutoX — Аналитика и отчёты</title>
   <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
-  <link rel="stylesheet" href="./assets/css/style.css" />
-  <script defer src="./assets/js/common.js"></script>
-  <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://kit.fontawesome.com/a2e0e9e5a9.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="./assets/css/routox-unified.css">
+  <style>
+    /* Page-specific overrides only */
+    .glass-card { 
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      transition: all 0.3s ease;
+    }
+
+    [data-theme="dark"] .glass-card {
+      background: linear-gradient(135deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%);
+    }
+
+    .glass-card:hover {
+      border-color: rgba(59, 130, 246, 0.3);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+    }
+
+    .nav-pill {
+      padding: 10px 18px;
+      border-radius: 12px;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-secondary);
+    }
+
+    .nav-pill:hover {
+      background: rgba(59, 130, 246, 0.1);
+      color: #3b82f6;
+    }
+
+    .nav-pill.active {
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      color: white;
+      box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      color: white;
+      padding: 10px 20px;
+      border-radius: 12px;
+      font-weight: 500;
+      transition: all 0.2s ease;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 20px rgba(59, 130, 246, 0.4);
+    }
+
+    .icon-btn {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+
+    .icon-btn:hover {
+      background: rgba(59, 130, 246, 0.1);
+      border-color: rgba(59, 130, 246, 0.3);
+    }
+
+    .text-muted { color: var(--text-secondary); }
+
+    .theme-toggle-track {
+      width: 50px;
+      height: 26px;
+      background: var(--border-color);
+      border-radius: 13px;
+      position: relative;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    [data-theme="dark"] .theme-toggle-track { background: #3b82f6; }
+
+    .theme-toggle-thumb {
+      width: 22px;
+      height: 22px;
+      background: white;
+      border-radius: 50%;
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      transition: all 0.3s;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    }
+
+    [data-theme="dark"] .theme-toggle-thumb { left: 26px; }
+
+    .stat-card {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, #3b82f6, #10b981, #8b5cf6);
+      transform: scaleX(0);
+      transition: transform 0.3s ease;
+    }
+
+    .stat-card:hover::before { transform: scaleX(1); }
+
+    .stat-icon {
+      animation: iconFloat 4s ease-in-out infinite;
+    }
+
+    @keyframes iconFloat {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-5px); }
+    }
+
+    .gradient-orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(60px);
+      opacity: 0.15;
+      animation: orbFloat 8s ease-in-out infinite;
+    }
+
+    [data-theme="dark"] .gradient-orb { opacity: 0.3; }
+
+    @keyframes orbFloat {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      50% { transform: translate(20px, -20px) scale(1.1); }
+    }
+
+    .kpi-value {
+      background: linear-gradient(135deg, #3b82f6, #10b981);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .trend-up { background: rgba(16, 185, 129, 0.15); color: #10b981; }
+    .trend-down { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+
+    .progress-ring { transform: rotate(-90deg); }
+    .progress-ring-circle { transition: stroke-dashoffset 0.5s ease; }
+
+    .report-card {
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+
+    .report-card:hover {
+      transform: translateX(8px);
+      border-left-color: #3b82f6;
+    }
+
+    .tab-btn {
+      padding: 10px 20px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.2s ease;
+      color: var(--text-secondary);
+    }
+
+    .tab-btn:hover { color: var(--text-primary); }
+    .tab-btn.active {
+      background: rgba(59, 130, 246, 0.15);
+      color: #3b82f6;
+    }
+
+    .custom-scroll::-webkit-scrollbar { width: 6px; }
+    .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+    .custom-scroll::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 3px; }
+
+    .heatmap-cell {
+      transition: all 0.2s ease;
+      border-radius: 4px;
+    }
+
+    .heatmap-cell:hover {
+      transform: scale(1.2);
+      z-index: 10;
+    }
+
+    .comparison-bar {
+      height: 8px;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .comparison-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.5s ease;
+    }
+
+    .progress-bar {
+      height: 8px;
+      background: var(--border-color);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.5s ease;
+    }
+
+    .tab-btn {
+      padding: 12px 20px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      transition: all 0.2s ease;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+    }
+
+    .tab-btn:hover {
+      background: rgba(59, 130, 246, 0.1);
+      color: var(--text-primary);
+    }
+
+    .tab-btn.active {
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      color: white;
+      box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+    }
+
+    .tab-content {
+      display: none;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
 </head>
-<body class="min-h-screen flex flex-col">
-  <header class="glass px-6 py-5 flex flex-col gap-4 sticky top-0 z-20">
-    <div class="flex flex-wrap items-center justify-between gap-4">
-      <div class="flex flex-wrap items-center gap-4">
-        <a href="./index.html" class="flex items-center gap-3 hover:opacity-90 transition">
-          <div class="brand-mark">R</div>
-          <div>
-            <div class="text-lg font-semibold">RoutoX</div>
-            <div class="text-xs text-slate-400">Управление флотом</div>
-          </div>
-        </a>
-        <nav class="flex flex-wrap gap-2 text-sm">
-          <a href="./index.html" class="nav-pill"><i class="fa-solid fa-gauge-high"></i><span>Флот</span></a>
-          <a href="./trips.html" class="nav-pill"><i class="fa-solid fa-route"></i><span>Рейсы</span></a>
-          <a href="./geozones.html" class="nav-pill"><i class="fa-solid fa-map"></i><span>Геозоны</span></a>
-          <a href="./analytics.html" class="nav-pill nav-pill-active"><i class="fa-solid fa-chart-line"></i><span>Аналитика</span></a>
-          <a href="./inventory.html" class="nav-pill"><i class="fa-solid fa-boxes-stacked"></i><span>Инвентарь</span></a>
-        </nav>
-      </div>
-
-      <div class="flex items-center gap-2 relative">
-        <button id="notifBtn" class="icon-button" aria-label="Уведомления">
-          <img id="notifIcon" src="./assets/images/notification.gif" alt="Уведомления" class="icon-img hidden" />
-          <span class="notif-dot hidden"></span>
-        </button>
-        <button id="settingsBtn" class="icon-button" aria-label="Настройки">
-          <img src="./assets/images/settings.png" alt="Настройки" class="icon-img" />
-        </button>
-        <div class="header-avatar" aria-label="Профиль">LD</div>
-
-        <div id="notifPanel" class="floating-panel hidden" role="dialog" aria-label="Активные уведомления">
-          <div class="panel-header">Активные уведомления</div>
-          <div class="panel-body" id="notifList"></div>
+<body class="min-h-screen">
+  <!-- Header -->
+  <header class="glass-panel mx-4 mt-4 px-6 py-4 flex items-center justify-between sticky top-4 z-30">
+    <div class="flex items-center gap-6">
+      <a href="./index.html" class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-emerald-500 flex items-center justify-center font-bold text-lg text-white">R</div>
+        <div>
+          <div class="font-semibold">RoutoX</div>
+          <div class="text-xs text-muted">Fleet Management</div>
         </div>
-        <div id="settingsPanel" class="floating-panel hidden" role="dialog" aria-label="Системные настройки">
-          <div class="panel-header">Системные настройки</div>
-          <div class="panel-body space-y-3 text-sm">
-            <label class="flex items-center justify-between gap-3">Часовой пояс
-              <select id="tzSelect" class="input-select">
-                <option value="UTC+3">UTC+3 Москва</option>
-                <option value="UTC+2">UTC+2 Калининград</option>
-                <option value="UTC+5">UTC+5 Екатеринбург</option>
-              </select>
-            </label>
-            <label class="flex items-center justify-between gap-3">Топливо в
-              <select id="fuelUnitSelect" class="input-select">
-                <option value="l">литрах</option>
-                <option value="gal">галлонах</option>
-              </select>
-            </label>
-            <label class="flex items-center justify-between gap-3">Температура
-              <select id="tempUnitSelect" class="input-select">
-                <option value="c">°C</option>
-                <option value="f">°F</option>
-              </select>
-            </label>
-            <label class="flex items-center justify-between gap-3">Оповещения
-              <select id="alertModeSelect" class="input-select">
-                <option value="push">Push + Email</option>
-                <option value="push-only">Только Push</option>
-                <option value="email">Только Email</option>
-              </select>
-            </label>
-          </div>
-        </div>
-
-        <label id="themeToggle" class="theme-toggle" aria-live="polite">
-          <input type="checkbox" id="themeToggleInput" aria-describedby="themeToggleHint" />
-          <span class="toggle-track">
-            <span class="toggle-icon sun"><i class="fa-solid fa-sun"></i></span>
-            <span class="toggle-icon moon"><i class="fa-solid fa-moon"></i></span>
-            <span class="toggle-thumb"></span>
-          </span>
-          <span id="themeToggleHint" class="sr-only">Переключатель темы</span>
-        </label>
-      </div>
+      </a>
+      <nav id="mainNav" class="flex items-center gap-1 ml-8">
+        <!-- Navigation populated by JS -->
+      </nav>
     </div>
-
-    <div class="flex items-center justify-between">
-      <h1 class="text-2xl font-semibold">Аналитика</h1>
-      <span class="text-sm text-slate-400">KPI, риски, инциденты</span>
+    <div class="flex items-center gap-3">
+      <div class="flex items-center gap-2 glass-card px-3 py-2">
+        <i class="fa-solid fa-calendar text-muted text-sm"></i>
+        <select id="dateRange" class="bg-transparent text-sm focus:outline-none">
+          <option value="7">Последние 7 дней</option>
+          <option value="30" selected>Последние 30 дней</option>
+          <option value="90">Последние 3 месяца</option>
+          <option value="365">Этот год</option>
+        </select>
+      </div>
+      <span class="role-badge admin" id="roleBadge">
+        <i class="fa-solid fa-user-gear"></i>
+        <span id="roleText">Администратор</span>
+      </span>
+      <div class="theme-toggle-track" onclick="toggleTheme()">
+        <div class="theme-toggle-thumb"></div>
+      </div>
+      <button class="icon-btn" title="Экспорт в PDF" onclick="exportReport()">
+        <i class="fa-solid fa-file-export text-muted"></i>
+      </button>
+      <button class="icon-btn" title="Уведомления">
+        <i class="fa-solid fa-bell text-muted"></i>
+        <span class="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center font-bold">2</span>
+      </button>
+      <button class="icon-btn" title="Выход" onclick="logout()"><i class="fa-solid fa-right-from-bracket text-muted"></i></button>
     </div>
   </header>
 
-  <main class="p-6 space-y-6">
-    <div class="glass rounded-2xl p-4 space-y-3">
-      <div class="flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <h2 class="text-lg font-semibold">Ключевые метрики</h2>
-          <div class="text-xs text-slate-400">Период: последние 30 дней (по created_at)</div>
+  <!-- Main Content -->
+  <main class="p-4 space-y-4">
+    <!-- KPI Stats Row -->
+    <div class="grid grid-cols-6 gap-4">
+      <div class="glass-panel stat-card p-5 relative overflow-hidden">
+        <div class="gradient-orb w-32 h-32 bg-blue-500 -top-16 -right-16"></div>
+        <div class="relative z-10">
+          <div class="flex items-center justify-between mb-3">
+            <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500/20 to-cyan-500/20 flex items-center justify-center stat-icon">
+              <i class="fa-solid fa-ruble-sign text-blue-500 text-xl"></i>
+            </div>
+            <span class="text-xs px-2 py-1 rounded-lg trend-up flex items-center gap-1">
+              <i class="fa-solid fa-arrow-up text-xs"></i>+12.5%
+            </span>
+          </div>
+          <div class="text-2xl font-bold kpi-value">₽ 8.4M</div>
+          <div class="text-sm text-muted">Выручка</div>
         </div>
-        <span class="text-xs text-slate-400" id="metaLabel">Загрузка…</span>
       </div>
-      <div id="kpiGrid" class="analytics-grid"></div>
+
+      <div class="glass-panel stat-card p-5 relative overflow-hidden">
+        <div class="gradient-orb w-32 h-32 bg-emerald-500 -top-16 -right-16"></div>
+        <div class="relative z-10">
+          <div class="flex items-center justify-between mb-3">
+            <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500/20 to-green-500/20 flex items-center justify-center stat-icon">
+              <i class="fa-solid fa-arrow-trend-up text-emerald-500 text-xl"></i>
+            </div>
+            <span class="text-xs px-2 py-1 rounded-lg trend-up flex items-center gap-1">
+              <i class="fa-solid fa-arrow-up text-xs"></i>+8.3%
+            </span>
+          </div>
+          <div class="text-2xl font-bold kpi-value">₽ 2.5M</div>
+          <div class="text-sm text-muted">Прибыль</div>
+        </div>
+      </div>
+
+      <div class="glass-panel stat-card p-5 relative overflow-hidden">
+        <div class="gradient-orb w-32 h-32 bg-purple-500 -top-16 -right-16"></div>
+        <div class="relative z-10">
+          <div class="flex items-center justify-between mb-3">
+            <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center stat-icon">
+              <i class="fa-solid fa-route text-purple-500 text-xl"></i>
+            </div>
+            <span class="text-xs px-2 py-1 rounded-lg trend-up flex items-center gap-1">
+              <i class="fa-solid fa-arrow-up text-xs"></i>+15.2%
+            </span>
+          </div>
+          <div class="text-2xl font-bold kpi-value">342</div>
+          <div class="text-sm text-muted">Рейсов</div>
+        </div>
+      </div>
+
+      <div class="glass-panel stat-card p-5 relative overflow-hidden">
+        <div class="gradient-orb w-32 h-32 bg-amber-500 -top-16 -right-16"></div>
+        <div class="relative z-10">
+          <div class="flex items-center justify-between mb-3">
+            <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 flex items-center justify-center stat-icon">
+              <i class="fa-solid fa-clock text-amber-500 text-xl"></i>
+            </div>
+            <span class="text-xs px-2 py-1 rounded-lg trend-down flex items-center gap-1">
+              <i class="fa-solid fa-arrow-down text-xs"></i>-2.1%
+            </span>
+          </div>
+          <div class="text-2xl font-bold kpi-value">94.2%</div>
+          <div class="text-sm text-muted">Вовремя</div>
+        </div>
+      </div>
+
+      <div class="glass-panel stat-card p-5 relative overflow-hidden">
+        <div class="gradient-orb w-32 h-32 bg-cyan-500 -top-16 -right-16"></div>
+        <div class="relative z-10">
+          <div class="flex items-center justify-between mb-3">
+            <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 flex items-center justify-center stat-icon">
+              <i class="fa-solid fa-road text-cyan-500 text-xl"></i>
+            </div>
+            <span class="text-xs px-2 py-1 rounded-lg trend-up flex items-center gap-1">
+              <i class="fa-solid fa-arrow-up text-xs"></i>+18.4%
+            </span>
+          </div>
+          <div class="text-2xl font-bold kpi-value">128K км</div>
+          <div class="text-sm text-muted">Пробег</div>
+        </div>
+      </div>
+
+      <div class="glass-panel stat-card p-5 relative overflow-hidden">
+        <div class="gradient-orb w-32 h-32 bg-rose-500 -top-16 -right-16"></div>
+        <div class="relative z-10">
+          <div class="flex items-center justify-between mb-3">
+            <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-rose-500/20 to-pink-500/20 flex items-center justify-center stat-icon">
+              <i class="fa-solid fa-truck text-rose-500 text-xl"></i>
+            </div>
+            <span class="text-xs px-2 py-1 rounded-lg trend-up flex items-center gap-1">
+              <i class="fa-solid fa-arrow-up text-xs"></i>+5.2%
+            </span>
+          </div>
+          <div class="text-2xl font-bold kpi-value">87%</div>
+          <div class="text-sm text-muted">Утилизация</div>
+        </div>
+      </div>
     </div>
 
-    <div class="grid xl:grid-cols-3 gap-4">
-      <div class="glass rounded-2xl p-4 space-y-3 xl:col-span-2">
-        <div class="flex items-center justify-between">
-          <h2 class="text-lg font-semibold">Заказы · Динамика</h2>
-          <span class="text-xs text-slate-400">Последние 14 дней</span>
+    <!-- Tabs -->
+    <div class="glass-panel p-2 flex items-center gap-2">
+      <button class="tab-btn active" data-tab="overview">
+        <i class="fa-solid fa-chart-pie mr-2"></i>Обзор
+      </button>
+      <button class="tab-btn" data-tab="finance">
+        <i class="fa-solid fa-coins mr-2"></i>Финансы
+      </button>
+      <button class="tab-btn" data-tab="fleet">
+        <i class="fa-solid fa-truck mr-2"></i>Флот
+      </button>
+      <button class="tab-btn" data-tab="drivers">
+        <i class="fa-solid fa-id-card mr-2"></i>Водители
+      </button>
+      <button class="tab-btn" data-tab="routes">
+        <i class="fa-solid fa-map-marked-alt mr-2"></i>Маршруты
+      </button>
+      <button class="tab-btn" data-tab="reports">
+        <i class="fa-solid fa-file-lines mr-2"></i>Отчёты
+      </button>
+    </div>
+
+    <!-- Tab Content: Overview -->
+    <div id="tab-overview" class="tab-content active">
+      <div class="grid grid-cols-12 gap-4">
+        <!-- Revenue Chart -->
+        <div class="col-span-8 glass-panel p-5">
+          <div class="flex items-center justify-between mb-6">
+            <div>
+              <h3 class="font-semibold text-lg">Выручка и расходы</h3>
+              <p class="text-sm text-muted">Динамика за последние 12 месяцев</p>
+            </div>
+            <div class="flex items-center gap-4">
+              <div class="flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full bg-blue-500"></span>
+                <span class="text-sm text-muted">Выручка</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full bg-red-400"></span>
+                <span class="text-sm text-muted">Расходы</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full bg-emerald-500"></span>
+                <span class="text-sm text-muted">Прибыль</span>
+              </div>
+            </div>
+          </div>
+          <canvas id="revenueChart" height="120"></canvas>
         </div>
-        <div class="h-[260px]"><canvas id="ordersTrendChart" aria-label="График заказов"></canvas></div>
-        <div id="ordersTrendFallback" class="text-sm text-slate-400 hidden">График недоступен</div>
+
+        <!-- Fleet KPI Ring -->
+        <div class="col-span-4 glass-panel p-5">
+          <h3 class="font-semibold text-lg mb-4">Эффективность флота</h3>
+          <div class="flex justify-center mb-4">
+            <div class="relative">
+              <svg class="progress-ring" width="160" height="160">
+                <defs>
+                  <linearGradient id="ringGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#3b82f6"/>
+                    <stop offset="100%" stop-color="#10b981"/>
+                  </linearGradient>
+                </defs>
+                <circle cx="80" cy="80" r="70" fill="none" stroke="currentColor" stroke-width="14" style="color: var(--border-color);"/>
+                <circle class="progress-ring-circle" cx="80" cy="80" r="70" fill="none" stroke="url(#ringGradient)" stroke-width="14" stroke-linecap="round" stroke-dasharray="439.82" stroke-dashoffset="57.18"/>
+              </svg>
+              <div class="absolute inset-0 flex items-center justify-center flex-col">
+                <div class="text-3xl font-bold">87%</div>
+                <div class="text-sm text-muted">KPI</div>
+              </div>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div class="glass-card p-3 text-center">
+              <div class="text-lg font-bold text-emerald-500">92%</div>
+              <div class="text-xs text-muted">Исправность</div>
+            </div>
+            <div class="glass-card p-3 text-center">
+              <div class="text-lg font-bold text-blue-500">85%</div>
+              <div class="text-xs text-muted">Загрузка</div>
+            </div>
+            <div class="glass-card p-3 text-center">
+              <div class="text-lg font-bold text-purple-500">78%</div>
+              <div class="text-xs text-muted">Топливо</div>
+            </div>
+            <div class="glass-card p-3 text-center">
+              <div class="text-lg font-bold text-amber-500">94%</div>
+              <div class="text-xs text-muted">Время</div>
+            </div>
+          </div>
+        </div>
       </div>
-      <div class="glass rounded-2xl p-4 space-y-3">
-        <div class="flex items-center justify-between">
-          <h2 class="text-lg font-semibold">Статусы заказов</h2>
-          <span class="text-xs text-slate-400">Срез</span>
+
+      <!-- Second Row -->
+      <div class="grid grid-cols-12 gap-4 mt-4">
+        <!-- Trips by Status -->
+        <div class="col-span-3 glass-panel p-5">
+          <h3 class="font-semibold text-lg mb-4">Статусы рейсов</h3>
+          <canvas id="tripStatusChart" height="180"></canvas>
         </div>
-        <div class="h-[260px]"><canvas id="ordersStatusChart" aria-label="Статусы заказов"></canvas></div>
-        <div id="ordersStatusFallback" class="text-sm text-slate-400 hidden">График недоступен</div>
+
+        <!-- Heatmap: Orders by Day/Hour -->
+        <div class="col-span-5 glass-panel p-5">
+          <h3 class="font-semibold text-lg mb-4">Активность по дням и часам</h3>
+          <div id="heatmapContainer" class="overflow-x-auto">
+            <div class="flex gap-1 mb-2 ml-8">
+              <span class="text-xs text-muted w-6 text-center">0</span>
+              <span class="text-xs text-muted w-6 text-center">3</span>
+              <span class="text-xs text-muted w-6 text-center">6</span>
+              <span class="text-xs text-muted w-6 text-center">9</span>
+              <span class="text-xs text-muted w-6 text-center">12</span>
+              <span class="text-xs text-muted w-6 text-center">15</span>
+              <span class="text-xs text-muted w-6 text-center">18</span>
+              <span class="text-xs text-muted w-6 text-center">21</span>
+            </div>
+            <div id="heatmap" class="space-y-1"></div>
+          </div>
+        </div>
+
+        <!-- Top Drivers -->
+        <div class="col-span-4 glass-panel p-5">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="font-semibold text-lg">Топ водители</h3>
+            <a href="./driver.html" class="text-sm text-blue-500 hover:underline">Все →</a>
+          </div>
+          <div class="space-y-3 custom-scroll max-h-64 overflow-y-auto">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center font-bold text-xs text-white">1</div>
+              <div class="flex-1">
+                <div class="font-medium text-sm">Иванов Пётр</div>
+                <div class="text-xs text-muted">42 рейса • 12.4K км</div>
+              </div>
+              <div class="text-sm font-bold text-emerald-500">98.5%</div>
+            </div>
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-slate-400 to-slate-500 flex items-center justify-center font-bold text-xs text-white">2</div>
+              <div class="flex-1">
+                <div class="font-medium text-sm">Смирнов Алексей</div>
+                <div class="text-xs text-muted">38 рейсов • 11.2K км</div>
+              </div>
+              <div class="text-sm font-bold text-emerald-500">97.2%</div>
+            </div>
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-700 to-amber-800 flex items-center justify-center font-bold text-xs text-white">3</div>
+              <div class="flex-1">
+                <div class="font-medium text-sm">Козлов Дмитрий</div>
+                <div class="text-xs text-muted">35 рейсов • 10.8K км</div>
+              </div>
+              <div class="text-sm font-bold text-emerald-500">96.8%</div>
+            </div>
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-lg bg-slate-300 flex items-center justify-center font-bold text-xs text-slate-700">4</div>
+              <div class="flex-1">
+                <div class="font-medium text-sm">Новиков Кирилл</div>
+                <div class="text-xs text-muted">32 рейса • 9.6K км</div>
+              </div>
+              <div class="text-sm font-bold text-blue-500">95.4%</div>
+            </div>
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-lg bg-slate-300 flex items-center justify-center font-bold text-xs text-slate-700">5</div>
+              <div class="flex-1">
+                <div class="font-medium text-sm">Морозов Андрей</div>
+                <div class="text-xs text-muted">30 рейсов • 9.2K км</div>
+              </div>
+              <div class="text-sm font-bold text-blue-500">94.1%</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Third Row -->
+      <div class="grid grid-cols-12 gap-4 mt-4">
+        <!-- Fuel Efficiency -->
+        <div class="col-span-6 glass-panel p-5">
+          <h3 class="font-semibold text-lg mb-4">Эффективность топлива по ТС</h3>
+          <canvas id="fuelEfficiencyChart" height="100"></canvas>
+        </div>
+
+        <!-- Vehicle Comparison -->
+        <div class="col-span-3 glass-panel p-5">
+          <h3 class="font-semibold text-lg mb-4">Сравнение ТС</h3>
+          <div class="space-y-4">
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <span class="text-sm">TR-001</span>
+                <span class="text-sm font-medium text-emerald-500">95%</span>
+              </div>
+              <div class="comparison-bar" style="background: var(--border-color);">
+                <div class="comparison-fill bg-gradient-to-r from-emerald-500 to-emerald-400" style="width: 95%"></div>
+              </div>
+            </div>
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <span class="text-sm">TR-007</span>
+                <span class="text-sm font-medium text-blue-500">87%</span>
+              </div>
+              <div class="comparison-bar" style="background: var(--border-color);">
+                <div class="comparison-fill bg-gradient-to-r from-blue-500 to-blue-400" style="width: 87%"></div>
+              </div>
+            </div>
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <span class="text-sm">TR-023</span>
+                <span class="text-sm font-medium text-amber-500">72%</span>
+              </div>
+              <div class="comparison-bar" style="background: var(--border-color);">
+                <div class="comparison-fill bg-gradient-to-r from-amber-500 to-amber-400" style="width: 72%"></div>
+              </div>
+            </div>
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <span class="text-sm">TR-045</span>
+                <span class="text-sm font-medium text-red-500">58%</span>
+              </div>
+              <div class="comparison-bar" style="background: var(--border-color);">
+                <div class="comparison-fill bg-gradient-to-r from-red-500 to-red-400" style="width: 58%"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Reports -->
+        <div class="col-span-3 glass-panel p-5">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="font-semibold text-lg">Отчёты</h3>
+            <button class="text-sm text-blue-500 hover:underline">Создать →</button>
+          </div>
+          <div class="space-y-2">
+            <div class="report-card glass-card p-3 border-l-4 border-l-blue-500">
+              <div class="flex items-center gap-3">
+                <i class="fa-solid fa-file-pdf text-red-500"></i>
+                <div class="flex-1">
+                  <div class="font-medium text-sm">Финансовый</div>
+                  <div class="text-xs text-muted">Январь 2024</div>
+                </div>
+                <i class="fa-solid fa-download text-muted text-sm"></i>
+              </div>
+            </div>
+            <div class="report-card glass-card p-3 border-l-4 border-l-emerald-500">
+              <div class="flex items-center gap-3">
+                <i class="fa-solid fa-file-excel text-emerald-500"></i>
+                <div class="flex-1">
+                  <div class="font-medium text-sm">Топливо</div>
+                  <div class="text-xs text-muted">Январь 2024</div>
+                </div>
+                <i class="fa-solid fa-download text-muted text-sm"></i>
+              </div>
+            </div>
+            <div class="report-card glass-card p-3 border-l-4 border-l-purple-500">
+              <div class="flex items-center gap-3">
+                <i class="fa-solid fa-file-lines text-purple-500"></i>
+                <div class="flex-1">
+                  <div class="font-medium text-sm">Эффективность</div>
+                  <div class="text-xs text-muted">Январь 2024</div>
+                </div>
+                <i class="fa-solid fa-download text-muted text-sm"></i>
+              </div>
+            </div>
+            <div class="report-card glass-card p-3 border-l-4 border-l-amber-500">
+              <div class="flex items-center gap-3">
+                <i class="fa-solid fa-file-contract text-amber-500"></i>
+                <div class="flex-1">
+                  <div class="font-medium text-sm">Водители</div>
+                  <div class="text-xs text-muted">Январь 2024</div>
+                </div>
+                <i class="fa-solid fa-download text-muted text-sm"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Fourth Row: Events -->
+      <div class="grid grid-cols-12 gap-4 mt-4">
+        <div class="col-span-8 glass-panel p-5">
+          <h3 class="font-semibold text-lg mb-4">Последние события</h3>
+          <div class="grid grid-cols-2 gap-4">
+            <div class="space-y-3">
+              <div class="flex items-start gap-3">
+                <div class="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
+                  <i class="fa-solid fa-check text-emerald-500"></i>
+                </div>
+                <div class="flex-1">
+                  <div class="text-sm">Рейс #R-2024-342 завершён</div>
+                  <div class="text-xs text-muted">TR-001 • Москва → СПб • 5 мин назад</div>
+                </div>
+              </div>
+              <div class="flex items-start gap-3">
+                <div class="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center flex-shrink-0">
+                  <i class="fa-solid fa-gas-pump text-blue-500"></i>
+                </div>
+                <div class="flex-1">
+                  <div class="text-sm">Заправка TR-023</div>
+                  <div class="text-xs text-muted">380 л • ₽22,382 • 15 мин назад</div>
+                </div>
+              </div>
+              <div class="flex items-start gap-3">
+                <div class="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center flex-shrink-0">
+                  <i class="fa-solid fa-triangle-exclamation text-amber-500"></i>
+                </div>
+                <div class="flex-1">
+                  <div class="text-sm">Предупреждение о скорости</div>
+                  <div class="text-xs text-muted">TR-012 • 95 км/ч в зоне 60 • 32 мин назад</div>
+                </div>
+              </div>
+            </div>
+            <div class="space-y-3">
+              <div class="flex items-start gap-3">
+                <div class="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center flex-shrink-0">
+                  <i class="fa-solid fa-wrench text-purple-500"></i>
+                </div>
+                <div class="flex-1">
+                  <div class="text-sm">ТО завершено</div>
+                  <div class="text-xs text-muted">TR-007 • Замена масла • 1 час назад</div>
+                </div>
+              </div>
+              <div class="flex items-start gap-3">
+                <div class="w-10 h-10 rounded-xl bg-cyan-500/20 flex items-center justify-center flex-shrink-0">
+                  <i class="fa-solid fa-file-signature text-cyan-500"></i>
+                </div>
+                <div class="flex-1">
+                  <div class="text-sm">eTTН подписана</div>
+                  <div class="text-xs text-muted">#2024-001254 • Все подписи • 2 часа назад</div>
+                </div>
+              </div>
+              <div class="flex items-start gap-3">
+                <div class="w-10 h-10 rounded-xl bg-rose-500/20 flex items-center justify-center flex-shrink-0">
+                  <i class="fa-solid fa-user-plus text-rose-500"></i>
+                </div>
+                <div class="flex-1">
+                  <div class="text-sm">Новый водитель</div>
+                  <div class="text-xs text-muted">Сергей Петров • 3 часа назад</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Costs Breakdown -->
+        <div class="col-span-4 glass-panel p-5">
+          <h3 class="font-semibold text-lg mb-4">Структура расходов</h3>
+          <canvas id="costsChart" height="160"></canvas>
+          <div class="mt-4 grid grid-cols-2 gap-2 text-sm">
+            <div class="flex items-center gap-2">
+              <span class="w-3 h-3 rounded-full bg-amber-500"></span>
+              <span class="text-muted">Топливо — 42%</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="w-3 h-3 rounded-full bg-blue-500"></span>
+              <span class="text-muted">ФОТ — 28%</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="w-3 h-3 rounded-full bg-emerald-500"></span>
+              <span class="text-muted">ТО — 15%</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="w-3 h-3 rounded-full bg-purple-500"></span>
+              <span class="text-muted">Прочее — 15%</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
-    <div class="grid xl:grid-cols-3 gap-4">
-      <div class="glass rounded-2xl p-4 space-y-3">
-        <div class="flex items-center justify-between">
-          <h2 class="text-lg font-semibold">Инциденты</h2>
-          <span class="text-xs text-slate-400">Открытые</span>
+    <!-- Tab Content: Finance -->
+    <div id="tab-finance" class="tab-content">
+      <div class="grid grid-cols-12 gap-4">
+        <!-- Monthly Revenue Breakdown -->
+        <div class="col-span-8 glass-panel p-5">
+          <div class="flex items-center justify-between mb-6">
+            <div>
+              <h3 class="font-semibold text-lg">Финансовый анализ</h3>
+              <p class="text-sm text-muted">Детальная разбивка доходов и расходов</p>
+            </div>
+          </div>
+          <canvas id="financeChart" height="200"></canvas>
         </div>
-        <div class="h-[220px]"><canvas id="incidentsSeverityChart" aria-label="Инциденты по критичности"></canvas></div>
-        <div id="incidentsSeverityFallback" class="text-sm text-slate-400 hidden">График недоступен</div>
-        <div id="incidentList" class="space-y-2"></div>
-      </div>
-
-      <div class="glass rounded-2xl p-4 space-y-3">
-        <div class="flex items-center justify-between">
-          <h2 class="text-lg font-semibold">Риски и SLA</h2>
-          <span class="text-xs text-slate-400">Топ сигналов</span>
+        
+        <!-- Financial KPIs -->
+        <div class="col-span-4 space-y-4">
+          <div class="glass-panel p-5">
+            <h4 class="font-medium mb-4">Ключевые показатели</h4>
+            <div class="space-y-4">
+              <div class="flex items-center justify-between">
+                <span class="text-muted">Средняя выручка за рейс</span>
+                <span class="font-semibold">₽ 24,560</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-muted">Себестоимость км</span>
+                <span class="font-semibold">₽ 48.20</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-muted">Маржинальность</span>
+                <span class="font-semibold text-emerald-500">29.8%</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-muted">ROI по флоту</span>
+                <span class="font-semibold text-emerald-500">18.5%</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="glass-panel p-5">
+            <h4 class="font-medium mb-4">Прогноз на месяц</h4>
+            <div class="text-3xl font-bold kpi-value mb-2">₽ 9.2M</div>
+            <div class="text-sm text-muted mb-4">Ожидаемая выручка</div>
+            <div class="progress-bar">
+              <div class="progress-fill bg-gradient-to-r from-blue-500 to-emerald-500" style="width: 78%"></div>
+            </div>
+            <div class="text-xs text-muted mt-2">78% от целевого показателя</div>
+          </div>
         </div>
-        <div id="riskList" class="space-y-2"></div>
-      </div>
-
-      <div class="glass rounded-2xl p-4 space-y-3">
-        <div class="flex items-center justify-between">
-          <h2 class="text-lg font-semibold">Геозоны</h2>
-          <span class="text-xs text-slate-400">События (24ч)</span>
+        
+        <!-- Expense Categories -->
+        <div class="col-span-6 glass-panel p-5">
+          <h3 class="font-semibold mb-4">Расходы по категориям</h3>
+          <div class="space-y-3">
+            <div class="flex items-center justify-between p-3 glass-card rounded-xl">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center">
+                  <i class="fa-solid fa-gas-pump text-amber-500"></i>
+                </div>
+                <div>
+                  <div class="font-medium">Топливо</div>
+                  <div class="text-sm text-muted">42% от общих расходов</div>
+                </div>
+              </div>
+              <div class="text-right">
+                <div class="font-semibold">₽ 2.48M</div>
+                <div class="text-xs text-red-400">+5.2% к пред. месяцу</div>
+              </div>
+            </div>
+            <div class="flex items-center justify-between p-3 glass-card rounded-xl">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
+                  <i class="fa-solid fa-users text-blue-500"></i>
+                </div>
+                <div>
+                  <div class="font-medium">ФОТ</div>
+                  <div class="text-sm text-muted">28% от общих расходов</div>
+                </div>
+              </div>
+              <div class="text-right">
+                <div class="font-semibold">₽ 1.65M</div>
+                <div class="text-xs text-emerald-400">-1.8% к пред. месяцу</div>
+              </div>
+            </div>
+            <div class="flex items-center justify-between p-3 glass-card rounded-xl">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-emerald-500/20 flex items-center justify-center">
+                  <i class="fa-solid fa-wrench text-emerald-500"></i>
+                </div>
+                <div>
+                  <div class="font-medium">Техобслуживание</div>
+                  <div class="text-sm text-muted">15% от общих расходов</div>
+                </div>
+              </div>
+              <div class="text-right">
+                <div class="font-semibold">₽ 885K</div>
+                <div class="text-xs text-emerald-400">-3.1% к пред. месяцу</div>
+              </div>
+            </div>
+          </div>
         </div>
-        <div id="geozoneEvents" class="space-y-2"></div>
+        
+        <!-- Revenue Sources -->
+        <div class="col-span-6 glass-panel p-5">
+          <h3 class="font-semibold mb-4">Источники выручки</h3>
+          <div class="space-y-3">
+            <div class="flex items-center justify-between p-3 glass-card rounded-xl">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center">
+                  <i class="fa-solid fa-building text-purple-500"></i>
+                </div>
+                <div>
+                  <div class="font-medium">Корпоративные клиенты</div>
+                  <div class="text-sm text-muted">65% выручки</div>
+                </div>
+              </div>
+              <div class="text-right">
+                <div class="font-semibold">₽ 5.46M</div>
+              </div>
+            </div>
+            <div class="flex items-center justify-between p-3 glass-card rounded-xl">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-cyan-500/20 flex items-center justify-center">
+                  <i class="fa-solid fa-store text-cyan-500"></i>
+                </div>
+                <div>
+                  <div class="font-medium">Розничные заказы</div>
+                  <div class="text-sm text-muted">25% выручки</div>
+                </div>
+              </div>
+              <div class="text-right">
+                <div class="font-semibold">₽ 2.10M</div>
+              </div>
+            </div>
+            <div class="flex items-center justify-between p-3 glass-card rounded-xl">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-rose-500/20 flex items-center justify-center">
+                  <i class="fa-solid fa-handshake text-rose-500"></i>
+                </div>
+                <div>
+                  <div class="font-medium">Партнёрские перевозки</div>
+                  <div class="text-sm text-muted">10% выручки</div>
+                </div>
+              </div>
+              <div class="text-right">
+                <div class="font-semibold">₽ 840K</div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
-
-    <div class="glass rounded-2xl p-4">
-      <div class="flex items-center justify-between mb-3">
-        <h2 class="text-lg font-semibold">Топ маршрутов</h2>
-        <span class="text-xs text-slate-400">По количеству заказов</span>
+    
+    <!-- Tab Content: Fleet -->
+    <div id="tab-fleet" class="tab-content">
+      <div class="grid grid-cols-12 gap-4">
+        <!-- Fleet Utilization -->
+        <div class="col-span-8 glass-panel p-5">
+          <div class="flex items-center justify-between mb-6">
+            <div>
+              <h3 class="font-semibold text-lg">Использование флота</h3>
+              <p class="text-sm text-muted">Статистика по транспортным средствам</p>
+            </div>
+          </div>
+          <canvas id="fleetUtilChart" height="200"></canvas>
+        </div>
+        
+        <!-- Fleet Summary -->
+        <div class="col-span-4 space-y-4">
+          <div class="glass-panel p-5">
+            <h4 class="font-medium mb-4">Состояние флота</h4>
+            <div class="space-y-3">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                  <span>В рейсе</span>
+                </div>
+                <span class="font-semibold">45 ТС</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+                  <span>На базе</span>
+                </div>
+                <span class="font-semibold">12 ТС</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+                  <span>На ТО</span>
+                </div>
+                <span class="font-semibold">5 ТС</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <span class="w-2 h-2 rounded-full bg-red-500"></span>
+                  <span>Ремонт</span>
+                </div>
+                <span class="font-semibold">2 ТС</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="glass-panel p-5">
+            <h4 class="font-medium mb-4">Средний пробег</h4>
+            <div class="text-3xl font-bold kpi-value mb-2">2,048 км</div>
+            <div class="text-sm text-muted">в день на единицу</div>
+          </div>
+        </div>
+        
+        <!-- Top Vehicles -->
+        <div class="col-span-12 glass-panel p-5">
+          <h3 class="font-semibold mb-4">Топ транспортных средств по эффективности</h3>
+          <div class="overflow-x-auto">
+            <table class="w-full">
+              <thead>
+                <tr class="text-left text-muted text-sm border-b border-[var(--border-color)]">
+                  <th class="pb-3">ТС</th>
+                  <th class="pb-3">Водитель</th>
+                  <th class="pb-3">Рейсов</th>
+                  <th class="pb-3">Пробег</th>
+                  <th class="pb-3">Расход топлива</th>
+                  <th class="pb-3">Эффективность</th>
+                </tr>
+              </thead>
+              <tbody class="text-sm" id="fleetTable">
+                <tr class="border-b border-[var(--border-color)]">
+                  <td class="py-3 font-medium">TR-001 • Volvo FH</td>
+                  <td class="py-3 text-muted">Иванов А.С.</td>
+                  <td class="py-3">28</td>
+                  <td class="py-3">12,450 км</td>
+                  <td class="py-3">28.5 л/100км</td>
+                  <td class="py-3"><span class="px-2 py-1 rounded-full bg-emerald-500/15 text-emerald-500 text-xs">98%</span></td>
+                </tr>
+                <tr class="border-b border-[var(--border-color)]">
+                  <td class="py-3 font-medium">TR-007 • MAN TGX</td>
+                  <td class="py-3 text-muted">Петров Б.В.</td>
+                  <td class="py-3">25</td>
+                  <td class="py-3">11,200 км</td>
+                  <td class="py-3">31.2 л/100км</td>
+                  <td class="py-3"><span class="px-2 py-1 rounded-full bg-emerald-500/15 text-emerald-500 text-xs">95%</span></td>
+                </tr>
+                <tr class="border-b border-[var(--border-color)]">
+                  <td class="py-3 font-medium">TR-012 • Scania R</td>
+                  <td class="py-3 text-muted">Сидоров В.Г.</td>
+                  <td class="py-3">24</td>
+                  <td class="py-3">10,800 км</td>
+                  <td class="py-3">32.1 л/100км</td>
+                  <td class="py-3"><span class="px-2 py-1 rounded-full bg-blue-500/15 text-blue-500 text-xs">92%</span></td>
+                </tr>
+                <tr class="border-b border-[var(--border-color)]">
+                  <td class="py-3 font-medium">TR-023 • DAF XF</td>
+                  <td class="py-3 text-muted">Козлов Д.Е.</td>
+                  <td class="py-3">22</td>
+                  <td class="py-3">9,850 км</td>
+                  <td class="py-3">29.8 л/100км</td>
+                  <td class="py-3"><span class="px-2 py-1 rounded-full bg-blue-500/15 text-blue-500 text-xs">90%</span></td>
+                </tr>
+                <tr>
+                  <td class="py-3 font-medium">TR-034 • Mercedes Actros</td>
+                  <td class="py-3 text-muted">Новиков Е.Ж.</td>
+                  <td class="py-3">21</td>
+                  <td class="py-3">9,200 км</td>
+                  <td class="py-3">30.5 л/100км</td>
+                  <td class="py-3"><span class="px-2 py-1 rounded-full bg-amber-500/15 text-amber-500 text-xs">87%</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
-      <div id="routeTable" class="space-y-2"></div>
+    </div>
+    
+    <!-- Tab Content: Drivers -->
+    <div id="tab-drivers" class="tab-content">
+      <div class="grid grid-cols-12 gap-4">
+        <!-- Driver Performance -->
+        <div class="col-span-8 glass-panel p-5">
+          <div class="flex items-center justify-between mb-6">
+            <div>
+              <h3 class="font-semibold text-lg">Рейтинг водителей</h3>
+              <p class="text-sm text-muted">По показателям эффективности и безопасности</p>
+            </div>
+          </div>
+          <canvas id="driverPerformanceChart" height="200"></canvas>
+        </div>
+        
+        <!-- Driver Stats -->
+        <div class="col-span-4 space-y-4">
+          <div class="glass-panel p-5">
+            <h4 class="font-medium mb-4">Общая статистика</h4>
+            <div class="space-y-3">
+              <div class="flex items-center justify-between">
+                <span class="text-muted">Всего водителей</span>
+                <span class="font-semibold">64</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-muted">В рейсе</span>
+                <span class="font-semibold text-emerald-500">45</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-muted">Отдых</span>
+                <span class="font-semibold text-blue-500">15</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-muted">Отпуск/больничный</span>
+                <span class="font-semibold text-amber-500">4</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="glass-panel p-5">
+            <h4 class="font-medium mb-4">Безопасность</h4>
+            <div class="text-3xl font-bold kpi-value mb-2">98.5%</div>
+            <div class="text-sm text-muted mb-4">Рейтинг безопасности</div>
+            <div class="text-xs text-emerald-500 flex items-center gap-1">
+              <i class="fa-solid fa-arrow-up"></i>
+              +2.1% к прошлому месяцу
+            </div>
+          </div>
+        </div>
+        
+        <!-- Top Drivers List -->
+        <div class="col-span-12 glass-panel p-5">
+          <h3 class="font-semibold mb-4">Лучшие водители месяца</h3>
+          <div class="grid grid-cols-4 gap-4">
+            <div class="glass-card p-4 text-center relative overflow-hidden">
+              <div class="absolute top-2 right-2 w-8 h-8 rounded-full bg-amber-500 flex items-center justify-center text-white font-bold">1</div>
+              <div class="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-emerald-500 mx-auto mb-3 flex items-center justify-center text-white text-xl font-bold">ИА</div>
+              <div class="font-medium">Иванов Алексей</div>
+              <div class="text-sm text-muted mb-2">28 рейсов</div>
+              <div class="text-emerald-500 font-semibold">98% эффективность</div>
+            </div>
+            <div class="glass-card p-4 text-center relative overflow-hidden">
+              <div class="absolute top-2 right-2 w-8 h-8 rounded-full bg-slate-400 flex items-center justify-center text-white font-bold">2</div>
+              <div class="w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 mx-auto mb-3 flex items-center justify-center text-white text-xl font-bold">ПС</div>
+              <div class="font-medium">Петров Сергей</div>
+              <div class="text-sm text-muted mb-2">25 рейсов</div>
+              <div class="text-emerald-500 font-semibold">96% эффективность</div>
+            </div>
+            <div class="glass-card p-4 text-center relative overflow-hidden">
+              <div class="absolute top-2 right-2 w-8 h-8 rounded-full bg-amber-700 flex items-center justify-center text-white font-bold">3</div>
+              <div class="w-16 h-16 rounded-full bg-gradient-to-br from-cyan-500 to-blue-500 mx-auto mb-3 flex items-center justify-center text-white text-xl font-bold">СМ</div>
+              <div class="font-medium">Сидоров Михаил</div>
+              <div class="text-sm text-muted mb-2">24 рейса</div>
+              <div class="text-emerald-500 font-semibold">95% эффективность</div>
+            </div>
+            <div class="glass-card p-4 text-center relative overflow-hidden">
+              <div class="absolute top-2 right-2 w-8 h-8 rounded-full bg-slate-600 flex items-center justify-center text-white font-bold">4</div>
+              <div class="w-16 h-16 rounded-full bg-gradient-to-br from-amber-500 to-orange-500 mx-auto mb-3 flex items-center justify-center text-white text-xl font-bold">КД</div>
+              <div class="font-medium">Козлов Дмитрий</div>
+              <div class="text-sm text-muted mb-2">22 рейса</div>
+              <div class="text-blue-500 font-semibold">92% эффективность</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Tab Content: Routes -->
+    <div id="tab-routes" class="tab-content">
+      <div class="grid grid-cols-12 gap-4">
+        <!-- Route Map Placeholder -->
+        <div class="col-span-8 glass-panel p-5">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h3 class="font-semibold text-lg">Популярные маршруты</h3>
+              <p class="text-sm text-muted">Анализ маршрутов за период</p>
+            </div>
+          </div>
+          <div class="h-80 rounded-xl bg-gradient-to-br from-slate-800/50 to-slate-900/50 flex items-center justify-center relative overflow-hidden">
+            <div class="absolute inset-0 opacity-20">
+              <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+                    <path d="M 40 0 L 0 0 0 40" fill="none" stroke="currentColor" stroke-width="0.5"/>
+                  </pattern>
+                </defs>
+                <rect width="100%" height="100%" fill="url(#grid)"/>
+              </svg>
+            </div>
+            <div class="text-center z-10">
+              <i class="fa-solid fa-map-location-dot text-4xl text-blue-500 mb-3"></i>
+              <div class="text-muted">Интерактивная карта маршрутов</div>
+              <div class="text-sm text-muted mt-1">Открыть в разделе <a href="./geozones.html" class="text-blue-500 hover:underline">Геозоны</a></div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Route Stats -->
+        <div class="col-span-4 space-y-4">
+          <div class="glass-panel p-5">
+            <h4 class="font-medium mb-4">Статистика маршрутов</h4>
+            <div class="space-y-3">
+              <div class="flex items-center justify-between">
+                <span class="text-muted">Всего маршрутов</span>
+                <span class="font-semibold">156</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-muted">Активных</span>
+                <span class="font-semibold text-emerald-500">28</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-muted">Средняя длина</span>
+                <span class="font-semibold">824 км</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-muted">Ср. время в пути</span>
+                <span class="font-semibold">14.5 ч</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Top Routes -->
+        <div class="col-span-12 glass-panel p-5">
+          <h3 class="font-semibold mb-4">Самые востребованные маршруты</h3>
+          <div class="space-y-3">
+            <div class="flex items-center justify-between p-4 glass-card rounded-xl">
+              <div class="flex items-center gap-4">
+                <div class="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center font-bold text-blue-500">1</div>
+                <div>
+                  <div class="font-medium">Москва → Санкт-Петербург</div>
+                  <div class="text-sm text-muted">710 км • ~9 часов</div>
+                </div>
+              </div>
+              <div class="text-right">
+                <div class="font-semibold">48 рейсов</div>
+                <div class="text-sm text-muted">14% от общего</div>
+              </div>
+            </div>
+            <div class="flex items-center justify-between p-4 glass-card rounded-xl">
+              <div class="flex items-center gap-4">
+                <div class="w-10 h-10 rounded-lg bg-emerald-500/20 flex items-center justify-center font-bold text-emerald-500">2</div>
+                <div>
+                  <div class="font-medium">Москва → Казань</div>
+                  <div class="text-sm text-muted">820 км • ~11 часов</div>
+                </div>
+              </div>
+              <div class="text-right">
+                <div class="font-semibold">35 рейсов</div>
+                <div class="text-sm text-muted">10% от общего</div>
+              </div>
+            </div>
+            <div class="flex items-center justify-between p-4 glass-card rounded-xl">
+              <div class="flex items-center gap-4">
+                <div class="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center font-bold text-purple-500">3</div>
+                <div>
+                  <div class="font-medium">Москва → Нижний Новгород</div>
+                  <div class="text-sm text-muted">420 км • ~5.5 часов</div>
+                </div>
+              </div>
+              <div class="text-right">
+                <div class="font-semibold">32 рейса</div>
+                <div class="text-sm text-muted">9% от общего</div>
+              </div>
+            </div>
+            <div class="flex items-center justify-between p-4 glass-card rounded-xl">
+              <div class="flex items-center gap-4">
+                <div class="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center font-bold text-amber-500">4</div>
+                <div>
+                  <div class="font-medium">Санкт-Петербург → Екатеринбург</div>
+                  <div class="text-sm text-muted">2,150 км • ~26 часов</div>
+                </div>
+              </div>
+              <div class="text-right">
+                <div class="font-semibold">28 рейсов</div>
+                <div class="text-sm text-muted">8% от общего</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Tab Content: Reports -->
+    <div id="tab-reports" class="tab-content">
+      <div class="grid grid-cols-12 gap-4">
+        <!-- Report Generator -->
+        <div class="col-span-8 glass-panel p-5">
+          <div class="flex items-center justify-between mb-6">
+            <div>
+              <h3 class="font-semibold text-lg">Генератор отчётов</h3>
+              <p class="text-sm text-muted">Создание и экспорт отчётов</p>
+            </div>
+          </div>
+          
+          <div class="grid grid-cols-2 gap-4 mb-6">
+            <div>
+              <label class="text-sm text-muted mb-2 block">Тип отчёта</label>
+              <select class="w-full px-4 py-3 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-color)] focus:border-blue-500 focus:outline-none">
+                <option>Финансовый отчёт</option>
+                <option>Отчёт по флоту</option>
+                <option>Отчёт по водителям</option>
+                <option>Отчёт по маршрутам</option>
+                <option>Сводный отчёт</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-sm text-muted mb-2 block">Период</label>
+              <select class="w-full px-4 py-3 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-color)] focus:border-blue-500 focus:outline-none">
+                <option>Последняя неделя</option>
+                <option selected>Последний месяц</option>
+                <option>Последний квартал</option>
+                <option>Последний год</option>
+                <option>Произвольный период</option>
+              </select>
+            </div>
+          </div>
+          
+          <div class="flex gap-3">
+            <button class="btn-primary flex items-center gap-2" onclick="exportReport()">
+              <i class="fa-solid fa-file-pdf"></i>
+              Экспорт в PDF
+            </button>
+            <button class="px-4 py-2 rounded-xl border border-[var(--border-color)] hover:bg-[var(--bg-secondary)] transition-colors flex items-center gap-2">
+              <i class="fa-solid fa-file-excel"></i>
+              Экспорт в Excel
+            </button>
+            <button class="px-4 py-2 rounded-xl border border-[var(--border-color)] hover:bg-[var(--bg-secondary)] transition-colors flex items-center gap-2">
+              <i class="fa-solid fa-envelope"></i>
+              Отправить на email
+            </button>
+          </div>
+        </div>
+        
+        <!-- Scheduled Reports -->
+        <div class="col-span-4 glass-panel p-5">
+          <h4 class="font-medium mb-4">Автоматические отчёты</h4>
+          <div class="space-y-3">
+            <div class="flex items-center justify-between p-3 glass-card rounded-xl">
+              <div class="flex items-center gap-3">
+                <i class="fa-solid fa-calendar-check text-emerald-500"></i>
+                <div>
+                  <div class="font-medium text-sm">Еженедельный</div>
+                  <div class="text-xs text-muted">Пн, 09:00</div>
+                </div>
+              </div>
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" checked class="sr-only peer">
+                <div class="w-9 h-5 bg-slate-600 peer-checked:bg-emerald-500 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all"></div>
+              </label>
+            </div>
+            <div class="flex items-center justify-between p-3 glass-card rounded-xl">
+              <div class="flex items-center gap-3">
+                <i class="fa-solid fa-calendar-days text-blue-500"></i>
+                <div>
+                  <div class="font-medium text-sm">Ежемесячный</div>
+                  <div class="text-xs text-muted">1-е число, 10:00</div>
+                </div>
+              </div>
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" checked class="sr-only peer">
+                <div class="w-9 h-5 bg-slate-600 peer-checked:bg-emerald-500 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all"></div>
+              </label>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Recent Reports -->
+        <div class="col-span-12 glass-panel p-5">
+          <h3 class="font-semibold mb-4">Последние отчёты</h3>
+          <div class="space-y-2">
+            <div class="flex items-center justify-between p-3 rounded-xl hover:bg-[var(--bg-secondary)] transition-colors cursor-pointer">
+              <div class="flex items-center gap-4">
+                <div class="w-10 h-10 rounded-lg bg-red-500/20 flex items-center justify-center">
+                  <i class="fa-solid fa-file-pdf text-red-500"></i>
+                </div>
+                <div>
+                  <div class="font-medium">Финансовый отчёт — Декабрь 2025</div>
+                  <div class="text-sm text-muted">Создан: 01.01.2026, 10:15</div>
+                </div>
+              </div>
+              <button class="text-blue-500 hover:text-blue-400"><i class="fa-solid fa-download"></i></button>
+            </div>
+            <div class="flex items-center justify-between p-3 rounded-xl hover:bg-[var(--bg-secondary)] transition-colors cursor-pointer">
+              <div class="flex items-center gap-4">
+                <div class="w-10 h-10 rounded-lg bg-emerald-500/20 flex items-center justify-center">
+                  <i class="fa-solid fa-file-excel text-emerald-500"></i>
+                </div>
+                <div>
+                  <div class="font-medium">Отчёт по флоту — Q4 2025</div>
+                  <div class="text-sm text-muted">Создан: 28.12.2025, 14:30</div>
+                </div>
+              </div>
+              <button class="text-blue-500 hover:text-blue-400"><i class="fa-solid fa-download"></i></button>
+            </div>
+            <div class="flex items-center justify-between p-3 rounded-xl hover:bg-[var(--bg-secondary)] transition-colors cursor-pointer">
+              <div class="flex items-center gap-4">
+                <div class="w-10 h-10 rounded-lg bg-red-500/20 flex items-center justify-center">
+                  <i class="fa-solid fa-file-pdf text-red-500"></i>
+                </div>
+                <div>
+                  <div class="font-medium">Сводный отчёт — Ноябрь 2025</div>
+                  <div class="text-sm text-muted">Создан: 01.12.2025, 09:00</div>
+                </div>
+              </div>
+              <button class="text-blue-500 hover:text-blue-400"><i class="fa-solid fa-download"></i></button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </main>
 
-  <script src="https://kit.fontawesome.com/a2e0e9e5a9.js" crossorigin="anonymous"></script>
   <script>
-    function esc(v) {
-      return String(v || "")
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;");
+    // Theme management
+    const savedTheme = localStorage.getItem('routoxTheme') || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+
+    function toggleTheme() {
+      const current = document.documentElement.getAttribute('data-theme');
+      const next = current === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', next);
+      localStorage.setItem('routoxTheme', next);
+      updateChartColors();
+      renderHeatmap();
     }
 
-    function parseTs(ts) {
-      if (!ts) return null;
-      const d = new Date(ts);
-      return Number.isNaN(d.getTime()) ? null : d;
-    }
-
-    function fmtTs(ts) {
-      const d = parseTs(ts);
-      if (!d) return "—";
-      return d.toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
-    }
-
-    function clamp(v, min = 0, max = 100) {
-      return Math.max(min, Math.min(max, v));
-    }
-
-    function cssVar(name) {
-      return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-    }
-
-    function hexToRgb(hex) {
-      const h = String(hex || "").trim();
-      if (!h.startsWith("#")) return null;
-      const s = h.slice(1);
-      const full = s.length === 3 ? s.split("").map((c) => c + c).join("") : s;
-      if (full.length !== 6) return null;
-      const n = parseInt(full, 16);
-      if (!Number.isFinite(n)) return null;
-      return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
-    }
-
-    function colorWithAlpha(color, alpha) {
-      const c = String(color || "").trim();
-      if (!c) return `rgba(148,163,184,${alpha})`;
-      if (c.startsWith("#")) {
-        const rgb = hexToRgb(c);
-        if (rgb) return `rgba(${rgb.r},${rgb.g},${rgb.b},${alpha})`;
-      }
-      if (c.startsWith("rgb(")) return c.replace("rgb(", "rgba(").replace(")", `,${alpha})`);
-      if (c.startsWith("rgba(")) return c;
-      return c;
-    }
-
-    function getPalette() {
-      const accent = cssVar("--accent") || "#10b981";
-      const warn = cssVar("--accent-warn") || "#f59e0b";
-      const danger = cssVar("--accent-danger") || "#ef4444";
-      const text = cssVar("--text") || "#e5e7eb";
-      const muted = cssVar("--muted") || "#6b7280";
-      const border = cssVar("--border") || "#1f2937";
+    function getChartColors() {
+      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
       return {
-        accent,
-        warn,
-        danger,
-        text,
-        muted,
-        grid: colorWithAlpha(muted, 0.25),
-        border: colorWithAlpha(border, 0.65),
+        gridColor: isDark ? 'rgba(71, 85, 105, 0.2)' : 'rgba(226, 232, 240, 0.8)',
+        textColor: isDark ? '#94a3b8' : '#64748b',
+        tooltipBg: isDark ? 'rgba(17, 24, 39, 0.95)' : 'rgba(255, 255, 255, 0.95)',
+        tooltipText: isDark ? '#fff' : '#1e293b'
       };
     }
 
-    function startOfDay(d) {
-      const x = new Date(d);
-      x.setHours(0, 0, 0, 0);
-      return x;
-    }
-
-    function addDays(d, days) {
-      const x = new Date(d);
-      x.setDate(x.getDate() + days);
-      return x;
-    }
-
-    function fmtDayLabel(d) {
-      return d.toLocaleDateString("ru-RU", { day: "2-digit", month: "2-digit" });
-    }
-
-    function pickOrdersWindow(orders, days) {
-      const now = new Date();
-      const from = addDays(now, -days);
-      return (orders || []).filter((o) => {
-        const dt = parseTs(o?.created_at);
-        return dt ? dt >= from : true;
-      });
-    }
-
-    function countBy(items, keyFn) {
-      const m = new Map();
-      (items || []).forEach((it) => {
-        const k = keyFn(it);
-        m.set(k, (m.get(k) || 0) + 1);
-      });
-      return m;
-    }
-
-    function renderKpis({ orders, alerts, incidents, vehicles }) {
-      const grid = document.getElementById("kpiGrid");
-      if (!grid) return;
-
-      const totalOrders = orders.length;
-      const completedOrders = orders.filter((o) => o.status === "completed").length;
-      const cancelledOrders = orders.filter((o) => o.status === "cancelled").length;
-      const backlogOrders = orders.filter((o) => o.status === "new" || o.status === "assigned").length;
-      const activeOrders = orders.filter((o) => !["completed", "cancelled"].includes(o.status)).length;
-
-      const acceptedSamples = orders
-        .filter((o) => o.accepted_at && o.created_at)
-        .map((o) => {
-          const a = parseTs(o.accepted_at);
-          const c = parseTs(o.created_at);
-          if (!a || !c) return null;
-          const ms = a.getTime() - c.getTime();
-          return Number.isFinite(ms) ? ms : null;
-        })
-        .filter((v) => v !== null);
-
-      const avgAcceptMins = acceptedSamples.length
-        ? Math.round(acceptedSamples.reduce((s, v) => s + v, 0) / acceptedSamples.length / 60000)
-        : null;
-
-      const acceptanceRate = totalOrders ? Math.round((acceptedSamples.length / totalOrders) * 100) : 0;
-
-      const activeAlerts = alerts.filter((a) => a.status === "created" || a.status === "delivered").length;
-      const openIncidents = incidents.filter((i) => ["open", "acknowledged", "in_progress"].includes(i.status)).length;
-
-      const fleet = vehicles.length;
-      const utilization = fleet ? Math.round((activeOrders / fleet) * 100) : 0;
-
-      const cards = [
-        { title: "Заказы", value: String(totalOrders), hint: `завершено ${completedOrders}`, icon: "fa-route", bar: totalOrders ? (completedOrders / totalOrders) * 100 : 0 },
-        { title: "Активные", value: String(activeOrders), hint: `бэклог ${backlogOrders}`, icon: "fa-bolt", bar: fleet ? (activeOrders / Math.max(fleet, 1)) * 100 : 0 },
-        { title: "Принятие", value: `${acceptanceRate}%`, hint: avgAcceptMins == null ? "—" : `среднее ${avgAcceptMins} мин`, icon: "fa-user-check", bar: acceptanceRate },
-        { title: "Тревоги", value: String(activeAlerts), hint: "active", icon: "fa-triangle-exclamation", bar: clamp(activeAlerts * 12, 0, 100) },
-        { title: "Инциденты", value: String(openIncidents), hint: "open", icon: "fa-shield-halved", bar: clamp(openIncidents * 10, 0, 100) },
-        { title: "Флот", value: String(fleet), hint: `утилизация ${utilization}%`, icon: "fa-truck", bar: clamp((fleet / 60) * 100, 0, 100) },
-        { title: "Отменено", value: String(cancelledOrders), hint: "orders", icon: "fa-ban", bar: totalOrders ? (cancelledOrders / totalOrders) * 100 : 0 },
-      ];
-
-      grid.innerHTML = cards
-        .map((c) => `
-          <div class="analytics-card">
-            <div class="flex items-center justify-between">
-              <div class="text-sm text-slate-300 font-semibold flex items-center gap-2">
-                <i class="fa-solid ${c.icon} text-slate-400"></i>
-                <span>${esc(c.title)}</span>
-              </div>
-              <div class="text-xs pill-muted">live</div>
-            </div>
-            <div class="text-2xl font-semibold mt-1 tabular">${esc(c.value)}</div>
-            <div class="text-xs text-slate-400 mt-1">${esc(c.hint || "")}</div>
-            <div class="analytics-bar"><span style="width:${clamp(c.bar, 3, 100)}%"></span></div>
-          </div>`)
-        .join("");
-    }
-
-    function renderIncidentList(incidents) {
-      const wrap = document.getElementById("incidentList");
-      if (!wrap) return;
-
-      const open = (incidents || [])
-        .filter((i) => ["open", "acknowledged", "in_progress"].includes(i.status))
-        .sort((a, b) => {
-          const aSla = parseTs(a.sla_due_at)?.getTime() || Infinity;
-          const bSla = parseTs(b.sla_due_at)?.getTime() || Infinity;
-          return aSla - bSla;
-        })
-        .slice(0, 5);
-
-      if (!open.length) {
-        wrap.innerHTML = '<div class="text-sm text-slate-400">Нет открытых инцидентов</div>';
-        return;
-      }
-
-      wrap.innerHTML = open
-        .map((i) => {
-          const sev = (i.severity || "").toLowerCase();
-          const color = sev === "critical" || sev === "high" ? "text-red-400" : sev === "medium" ? "text-amber-300" : "text-slate-400";
-          const sla = i.sla_due_at ? `SLA ${fmtTs(i.sla_due_at)}` : "SLA —";
-          return `
-            <div class="rounded-xl border border-slate-800 p-3 bg-slate-900/35 space-y-1">
-              <div class="flex items-center justify-between gap-3">
-                <div class="text-sm font-semibold min-w-0 truncate">${esc(i.title || "Инцидент")}</div>
-                <span class="pill-muted ${color}">${esc(i.severity || "—")}</span>
-              </div>
-              <div class="text-xs text-slate-400">${esc(sla)} · ${esc(i.status || "—")}</div>
-            </div>`;
-        })
-        .join("");
-    }
-
-    function renderRisks({ orders, alerts, incidents }) {
-      const wrap = document.getElementById("riskList");
-      if (!wrap) return;
-
-      const items = [];
-      (incidents || [])
-        .filter((i) => ["open", "acknowledged", "in_progress"].includes(i.status))
-        .forEach((i) => {
-          const sev = (i.severity || "").toLowerCase();
-          const scoreBase = sev === "critical" ? 100 : sev === "high" ? 80 : sev === "medium" ? 60 : 40;
-          const due = parseTs(i.sla_due_at);
-          const minsToDue = due ? Math.round((due.getTime() - Date.now()) / 60000) : null;
-          const urgency = minsToDue == null ? 0 : minsToDue <= 0 ? 35 : minsToDue <= 60 ? 25 : minsToDue <= 240 ? 15 : 0;
-          const escalated = i.escalated_at ? 35 : 0;
-          const score = scoreBase + urgency + escalated;
-          const tone = sev === "critical" || sev === "high" ? "danger" : sev === "medium" ? "warn" : "ok";
-          items.push({ kind: "incident", score, title: i.title || "Инцидент", meta: `severity ${i.severity || "—"} · ${i.sla_due_at ? `SLA ${fmtTs(i.sla_due_at)}` : "SLA —"}`, tone });
-        });
-
-      (alerts || [])
-        .filter((a) => a.status === "created" || a.status === "delivered")
-        .slice(0, 10)
-        .forEach((a) => {
-          items.push({ kind: "alert", score: 55, title: `Тревога по ТС ${a.vehicle_id || "—"}`, meta: a.message || "", tone: "warn" });
-        });
-
-      (orders || [])
-        .filter((o) => o.status === "new" || o.status === "assigned")
-        .slice(0, 10)
-        .forEach((o) => {
-          const route = [o.origin, o.destination].filter(Boolean).join(" → ") || "—";
-          items.push({ kind: "order", score: 35, title: o.title || "Заказ", meta: `${route} · статус ${o.status} · план ${fmtTs(o.planned_depart_at)}`, tone: "ok" });
-        });
-
-      const top = items.sort((a, b) => b.score - a.score).slice(0, 8);
-      if (!top.length) {
-        wrap.innerHTML = '<div class="text-sm text-slate-400">Пока нет сигналов</div>';
-        return;
-      }
-
-      wrap.innerHTML = top
-        .map((r) => {
-          const color = r.tone === "danger" ? "text-red-400" : r.tone === "warn" ? "text-amber-300" : "text-emerald-300";
-          const badge = r.kind === "incident" ? "INC" : r.kind === "alert" ? "ALERT" : "ORDER";
-          return `
-            <div class="rounded-xl border border-slate-800 p-3 bg-slate-900/40 space-y-1">
-              <div class="flex items-center justify-between gap-3">
-                <div class="text-sm font-semibold min-w-0 truncate">${esc(r.title)}</div>
-                <span class="pill-muted ${color}">${badge}</span>
-              </div>
-              <div class="text-xs text-slate-400">${esc(r.meta)}</div>
-            </div>`;
-        })
-        .join("");
-    }
-
-    function renderGeozoneEvents(events) {
-      const wrap = document.getElementById("geozoneEvents");
-      if (!wrap) return;
-      const dayAgo = Date.now() - 24 * 60 * 60 * 1000;
-      const items = (events || [])
-        .filter((e) => {
-          const d = parseTs(e.occurred_at);
-          return d ? d.getTime() >= dayAgo : false;
-        })
-        .slice(0, 8);
-
-      if (!items.length) {
-        wrap.innerHTML = '<div class="text-sm text-slate-400">Нет событий за 24 часа</div>';
-        return;
-      }
-
-      wrap.innerHTML = items
-        .map((e) => {
-          const t = (e.event_type || "").toLowerCase();
-          const color = t === "enter" ? "text-emerald-300" : t === "exit" ? "text-sky-300" : "text-slate-400";
-          return `
-            <div class="rounded-xl border border-slate-800 p-3 bg-slate-900/35 flex items-start justify-between gap-3">
-              <div class="min-w-0">
-                <div class="text-sm font-semibold truncate">${esc(e.geozone_id || "Геозона")}</div>
-                <div class="text-xs text-slate-400">ТС ${esc(e.vehicle_id || "—")} · ${fmtTs(e.occurred_at)}</div>
-              </div>
-              <span class="pill-muted ${color}">${esc(e.event_type || "evt")}</span>
-            </div>`;
-        })
-        .join("");
-    }
-
-    function renderRoutes(orders) {
-      const table = document.getElementById("routeTable");
-      if (!table) return;
-      const groups = new Map();
-      (orders || []).forEach((o) => {
-        const key = [o.origin || "—", o.destination || "—"].join(" → ");
-        const g = groups.get(key) || { route: key, count: 0, durations: [], last: null };
-        g.count += 1;
-        const dep = parseTs(o.planned_depart_at);
-        const arr = parseTs(o.planned_arrive_at);
-        if (dep && arr) {
-          const mins = Math.round((arr.getTime() - dep.getTime()) / 60000);
-          if (Number.isFinite(mins) && mins > 0) g.durations.push(mins);
+    function updateChartColors() {
+      const colors = getChartColors();
+      const allCharts = [revenueChart, tripStatusChart, fuelChart, costsChart];
+      if (financeChart) allCharts.push(financeChart);
+      if (fleetUtilChart) allCharts.push(fleetUtilChart);
+      if (driverPerformanceChart) allCharts.push(driverPerformanceChart);
+      
+      allCharts.forEach(chart => {
+        if (!chart) return;
+        if (chart.options.scales?.x) {
+          chart.options.scales.x.grid.color = colors.gridColor;
+          chart.options.scales.x.ticks.color = colors.textColor;
         }
-        const c = parseTs(o.created_at);
-        if (c && (!g.last || c > g.last)) g.last = c;
-        groups.set(key, g);
+        if (chart.options.scales?.y) {
+          chart.options.scales.y.grid.color = colors.gridColor;
+          chart.options.scales.y.ticks.color = colors.textColor;
+        }
+        if (chart.options.scales?.r) {
+          chart.options.scales.r.angleLines.color = colors.gridColor;
+          chart.options.scales.r.grid.color = colors.gridColor;
+          chart.options.scales.r.pointLabels.color = colors.textColor;
+        }
+        if (chart.options.plugins?.legend?.labels) {
+          chart.options.plugins.legend.labels.color = colors.textColor;
+        }
+        chart.update();
       });
-
-      const rows = Array.from(groups.values()).sort((a, b) => b.count - a.count).slice(0, 8);
-      if (!rows.length) {
-        table.innerHTML = '<div class="text-sm text-slate-400">Нет данных по маршрутам</div>';
-        return;
-      }
-
-      table.innerHTML = rows
-        .map((r) => {
-          const avg = r.durations.length ? Math.round(r.durations.reduce((s, v) => s + v, 0) / r.durations.length) : null;
-          const avgLabel = avg == null ? "—" : `${Math.floor(avg / 60)}ч ${avg % 60}м`;
-          const lastLabel = r.last ? r.last.toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "—";
-          return `
-            <div class="rounded-xl border border-slate-800 p-3 bg-slate-900/30 space-y-1">
-              <div class="flex items-center justify-between text-sm font-semibold">
-                <span class="truncate">${esc(r.route)}</span>
-                <span class="pill-muted">${r.count} заказов</span>
-              </div>
-              <div class="text-xs text-slate-400 flex items-center justify-between gap-3">
-                <span>План длит.: ${esc(avgLabel)}</span>
-                <span class="tabular">последн.: ${esc(lastLabel)}</span>
-              </div>
-            </div>`;
-        })
-        .join("");
     }
 
-    let ordersTrendChart;
-    let ordersStatusChart;
-    let incidentsSeverityChart;
+    const colors = getChartColors();
 
-    function destroyCharts() {
-      [ordersTrendChart, ordersStatusChart, incidentsSeverityChart].forEach((c) => {
-        try { c?.destroy(); } catch {}
-      });
-      ordersTrendChart = null;
-      ordersStatusChart = null;
-      incidentsSeverityChart = null;
-    }
-
-    function setChartFallback(id, on) {
-      const el = document.getElementById(id);
-      if (!el) return;
-      el.classList.toggle("hidden", !on);
-    }
-
-    function renderCharts({ orders, incidents }) {
-      destroyCharts();
-      setChartFallback("ordersTrendFallback", false);
-      setChartFallback("ordersStatusFallback", false);
-      setChartFallback("incidentsSeverityFallback", false);
-
-      if (!window.Chart) {
-        setChartFallback("ordersTrendFallback", true);
-        setChartFallback("ordersStatusFallback", true);
-        setChartFallback("incidentsSeverityFallback", true);
-        return;
-      }
-
-      const pal = getPalette();
-      const commonOptions = {
+    // Revenue Chart
+    const revenueCtx = document.getElementById('revenueChart').getContext('2d');
+    const revenueChart = new Chart(revenueCtx, {
+      type: 'line',
+      data: {
+        labels: ['Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек', 'Янв'],
+        datasets: [{
+          label: 'Выручка',
+          data: [5.2, 5.8, 6.1, 5.9, 6.5, 7.2, 7.8, 7.5, 7.9, 8.1, 7.8, 8.4],
+          borderColor: '#3b82f6',
+          backgroundColor: 'rgba(59, 130, 246, 0.1)',
+          fill: true,
+          tension: 0.4,
+          pointRadius: 4,
+          pointBackgroundColor: '#3b82f6',
+          pointBorderColor: '#fff',
+          pointBorderWidth: 2
+        }, {
+          label: 'Расходы',
+          data: [3.8, 4.1, 4.3, 4.2, 4.6, 5.0, 5.4, 5.2, 5.5, 5.7, 5.5, 5.9],
+          borderColor: '#f87171',
+          backgroundColor: 'rgba(248, 113, 113, 0.1)',
+          fill: true,
+          tension: 0.4,
+          pointRadius: 4,
+          pointBackgroundColor: '#f87171',
+          pointBorderColor: '#fff',
+          pointBorderWidth: 2
+        }, {
+          label: 'Прибыль',
+          data: [1.4, 1.7, 1.8, 1.7, 1.9, 2.2, 2.4, 2.3, 2.4, 2.4, 2.3, 2.5],
+          borderColor: '#10b981',
+          backgroundColor: 'rgba(16, 185, 129, 0.1)',
+          fill: true,
+          tension: 0.4,
+          pointRadius: 4,
+          pointBackgroundColor: '#10b981',
+          pointBorderColor: '#fff',
+          pointBorderWidth: 2
+        }]
+      },
+      options: {
         responsive: true,
-        maintainAspectRatio: false,
+        interaction: { intersect: false, mode: 'index' },
         plugins: {
-          legend: { labels: { color: pal.text } },
-          tooltip: { backgroundColor: colorWithAlpha(pal.border, 0.95), titleColor: pal.text, bodyColor: pal.text, borderColor: pal.border, borderWidth: 1 },
+          legend: { display: false },
+          tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label}: ₽${ctx.raw}M` } }
         },
-      };
-
-      // Orders trend (14 days)
-      const now = startOfDay(new Date());
-      const from = addDays(now, -13);
-      const labels = [];
-      const buckets = new Map();
-      for (let i = 0; i < 14; i++) {
-        const d = addDays(from, i);
-        const key = d.toISOString().slice(0, 10);
-        labels.push(fmtDayLabel(d));
-        buckets.set(key, 0);
-      }
-      (orders || []).forEach((o) => {
-        const d = parseTs(o.created_at);
-        if (!d) return;
-        const key = startOfDay(d).toISOString().slice(0, 10);
-        if (!buckets.has(key)) return;
-        buckets.set(key, (buckets.get(key) || 0) + 1);
-      });
-      const trendData = Array.from(buckets.values());
-
-      const trendCanvas = document.getElementById("ordersTrendChart");
-      if (trendCanvas) {
-        ordersTrendChart = new Chart(trendCanvas, {
-          type: "line",
-          data: {
-            labels,
-            datasets: [{
-              label: "Заказы",
-              data: trendData,
-              borderColor: pal.accent,
-              backgroundColor: colorWithAlpha(pal.accent, 0.18),
-              fill: true,
-              tension: 0.35,
-              pointRadius: 3,
-              pointBackgroundColor: pal.accent,
-            }],
-          },
-          options: {
-            ...commonOptions,
-            scales: {
-              x: { ticks: { color: pal.muted }, grid: { color: pal.grid } },
-              y: { ticks: { color: pal.muted }, grid: { color: pal.grid }, beginAtZero: true, suggestedMax: Math.max(3, ...trendData) + 1 },
-            },
-          },
-        });
-      }
-
-      // Orders by status
-      const statusMap = countBy(orders || [], (o) => o.status || "unknown");
-      const statusKeys = Array.from(statusMap.keys());
-      const statusCounts = statusKeys.map((k) => statusMap.get(k) || 0);
-      const statusColors = statusKeys.map((k) => {
-        if (k === "completed") return colorWithAlpha(pal.accent, 0.85);
-        if (k === "cancelled") return colorWithAlpha(pal.danger, 0.85);
-        if (k === "in_progress") return colorWithAlpha(pal.warn, 0.85);
-        if (k === "accepted") return colorWithAlpha(pal.accent, 0.55);
-        if (k === "assigned") return colorWithAlpha(pal.warn, 0.55);
-        if (k === "new") return colorWithAlpha(pal.text, 0.25);
-        return colorWithAlpha(pal.muted, 0.35);
-      });
-
-      const statusCanvas = document.getElementById("ordersStatusChart");
-      if (statusCanvas) {
-        ordersStatusChart = new Chart(statusCanvas, {
-          type: "doughnut",
-          data: {
-            labels: statusKeys,
-            datasets: [{
-              label: "Заказы",
-              data: statusCounts,
-              backgroundColor: statusColors,
-              borderColor: pal.border,
-              borderWidth: 1,
-            }],
-          },
-          options: { ...commonOptions, cutout: "68%" },
-        });
-      }
-
-      // Incidents severity (open)
-      const openInc = (incidents || []).filter((i) => ["open", "acknowledged", "in_progress"].includes(i.status));
-      const sevOrder = ["critical", "high", "medium", "low"];
-      const sevCounts = sevOrder.map((s) => openInc.filter((i) => (i.severity || "").toLowerCase() === s).length);
-      const sevColors = [
-        colorWithAlpha(pal.danger, 0.85),
-        colorWithAlpha(pal.danger, 0.6),
-        colorWithAlpha(pal.warn, 0.65),
-        colorWithAlpha(pal.text, 0.25),
-      ];
-
-      const sevCanvas = document.getElementById("incidentsSeverityChart");
-      if (sevCanvas) {
-        incidentsSeverityChart = new Chart(sevCanvas, {
-          type: "bar",
-          data: {
-            labels: ["Critical", "High", "Medium", "Low"],
-            datasets: [{
-              label: "Открытые",
-              data: sevCounts,
-              backgroundColor: sevColors,
-              borderColor: pal.border,
-              borderWidth: 1,
-              borderRadius: 10,
-            }],
-          },
-          options: {
-            ...commonOptions,
-            scales: {
-              x: { ticks: { color: pal.muted }, grid: { color: pal.grid } },
-              y: { ticks: { color: pal.muted }, grid: { color: pal.grid }, beginAtZero: true, suggestedMax: Math.max(2, ...sevCounts) + 1 },
-            },
-          },
-        });
-      }
-    }
-
-    function renderEmptyState() {
-      const grid = document.getElementById("kpiGrid");
-      if (grid && !grid.innerHTML.trim()) {
-        grid.innerHTML = `
-          <div class="analytics-card">
-            <div class="text-sm text-slate-300 font-semibold">Нет данных</div>
-            <div class="text-xs text-slate-400 mt-1">Проверьте, что backend запущен и вы вошли под admin/owner</div>
-          </div>`;
-      }
-      const lists = ["incidentList", "riskList", "geozoneEvents", "routeTable"];
-      lists.forEach((id) => {
-        const el = document.getElementById(id);
-        if (el && !el.innerHTML.trim()) el.innerHTML = '<div class="text-sm text-slate-400">Нет данных</div>';
-      });
-    }
-
-    window.addEventListener("DOMContentLoaded", async () => {
-      const meta = document.getElementById("metaLabel");
-      try {
-        const { token } = await window.RoutoxCommon.requireAuth({ allowRoles: ["admin", "owner"] });
-        if (!token) return;
-
-        await window.RoutoxCommon.initHeaderPanels(token);
-
-        const [ordersRaw, alertsRaw, incidentsRaw, vehiclesRaw, geozoneEventsRaw] = await Promise.all([
-          window.RoutoxCommon.apiRequest("/orders", token).catch(() => []),
-          window.RoutoxCommon.apiRequest("/alerts", token).catch(() => []),
-          window.RoutoxCommon.apiRequest("/incidents?limit=200", token).catch(() => []),
-          window.RoutoxCommon.apiRequest("/vehicles", token).catch(() => []),
-          window.RoutoxCommon.apiRequest("/geozones/events?limit=200", token).catch(() => []),
-        ]);
-
-        const orders = Array.isArray(ordersRaw) ? ordersRaw : [];
-        const alerts = Array.isArray(alertsRaw) ? alertsRaw : [];
-        const incidents = Array.isArray(incidentsRaw) ? incidentsRaw : [];
-        const vehicles = Array.isArray(vehiclesRaw) ? vehiclesRaw : [];
-        const events = Array.isArray(geozoneEventsRaw) ? geozoneEventsRaw : [];
-
-        const orders30 = pickOrdersWindow(orders, 30);
-
-        renderKpis({ orders: orders30, alerts, incidents, vehicles });
-        renderIncidentList(incidents);
-        renderRisks({ orders: orders30, alerts, incidents });
-        renderGeozoneEvents(events);
-        renderRoutes(orders30);
-
-        try {
-          renderCharts({ orders: orders30, incidents });
-        } catch {
-          setChartFallback("ordersTrendFallback", true);
-          setChartFallback("ordersStatusFallback", true);
-          setChartFallback("incidentsSeverityFallback", true);
+        scales: {
+          x: { grid: { color: colors.gridColor }, ticks: { color: colors.textColor } },
+          y: { grid: { color: colors.gridColor }, ticks: { color: colors.textColor, callback: (val) => `₽${val}M` } }
         }
-
-        renderEmptyState();
-
-        if (meta) {
-          meta.textContent = `обновлено ${new Date().toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })} · заказы ${orders30.length} · тревоги ${alerts.length}`;
-        }
-
-        document.getElementById("themeToggleInput")?.addEventListener("change", () => {
-          try { renderCharts({ orders: orders30, incidents }); } catch {}
-        });
-      } catch (e) {
-        if (meta) meta.textContent = esc(e?.message || "Ошибка загрузки аналитики");
-        renderEmptyState();
       }
     });
+
+    // Trip Status Chart
+    const tripStatusCtx = document.getElementById('tripStatusChart').getContext('2d');
+    const tripStatusChart = new Chart(tripStatusCtx, {
+      type: 'doughnut',
+      data: {
+        labels: ['Завершены', 'В пути', 'Запланированы', 'Отменены'],
+        datasets: [{ data: [342, 28, 45, 12], backgroundColor: ['#10b981', '#3b82f6', '#f59e0b', '#ef4444'], borderWidth: 0, hoverOffset: 10 }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { position: 'bottom', labels: { color: colors.textColor, usePointStyle: true, padding: 10 } } },
+        cutout: '60%'
+      }
+    });
+
+    // Fuel Efficiency Chart
+    const fuelCtx = document.getElementById('fuelEfficiencyChart').getContext('2d');
+    const fuelChart = new Chart(fuelCtx, {
+      type: 'bar',
+      data: {
+        labels: ['TR-001', 'TR-007', 'TR-012', 'TR-023', 'TR-034', 'TR-045'],
+        datasets: [{
+          label: 'Факт',
+          data: [28.5, 31.2, 35.8, 29.4, 32.1, 38.5],
+          backgroundColor: 'rgba(59, 130, 246, 0.8)',
+          borderRadius: 8
+        }, {
+          label: 'Норма',
+          data: [30, 30, 32, 30, 32, 32],
+          backgroundColor: 'rgba(16, 185, 129, 0.3)',
+          borderRadius: 8
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { labels: { color: colors.textColor, usePointStyle: true } } },
+        scales: {
+          x: { grid: { display: false }, ticks: { color: colors.textColor } },
+          y: { grid: { color: colors.gridColor }, ticks: { color: colors.textColor, callback: (val) => `${val} л/100км` } }
+        }
+      }
+    });
+
+    // Costs Chart
+    const costsCtx = document.getElementById('costsChart').getContext('2d');
+    const costsChart = new Chart(costsCtx, {
+      type: 'doughnut',
+      data: {
+        labels: ['Топливо', 'ФОТ', 'ТО', 'Прочее'],
+        datasets: [{ data: [42, 28, 15, 15], backgroundColor: ['#f59e0b', '#3b82f6', '#10b981', '#8b5cf6'], borderWidth: 0, hoverOffset: 10 }]
+      },
+      options: { responsive: true, plugins: { legend: { display: false } }, cutout: '70%' }
+    });
+
+    // Finance Chart (for Finance tab)
+    let financeChart = null;
+    function initFinanceChart() {
+      if (financeChart) return;
+      const ctx = document.getElementById('financeChart');
+      if (!ctx) return;
+      financeChart = new Chart(ctx.getContext('2d'), {
+        type: 'bar',
+        data: {
+          labels: ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'],
+          datasets: [{
+            label: 'Доходы',
+            data: [5.2, 5.8, 6.1, 5.9, 6.5, 7.2, 7.8, 7.5, 7.9, 8.1, 7.8, 8.4],
+            backgroundColor: 'rgba(59, 130, 246, 0.8)',
+            borderRadius: 6
+          }, {
+            label: 'Расходы',
+            data: [3.8, 4.1, 4.3, 4.2, 4.6, 5.0, 5.4, 5.2, 5.5, 5.7, 5.5, 5.9],
+            backgroundColor: 'rgba(239, 68, 68, 0.8)',
+            borderRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { labels: { color: colors.textColor } } },
+          scales: {
+            x: { grid: { display: false }, ticks: { color: colors.textColor } },
+            y: { grid: { color: colors.gridColor }, ticks: { color: colors.textColor, callback: (val) => `₽${val}M` } }
+          }
+        }
+      });
+    }
+
+    // Fleet Utilization Chart (for Fleet tab)
+    let fleetUtilChart = null;
+    function initFleetChart() {
+      if (fleetUtilChart) return;
+      const ctx = document.getElementById('fleetUtilChart');
+      if (!ctx) return;
+      fleetUtilChart = new Chart(ctx.getContext('2d'), {
+        type: 'line',
+        data: {
+          labels: ['1', '5', '10', '15', '20', '25', '30'],
+          datasets: [{
+            label: 'Утилизация флота',
+            data: [82, 85, 88, 84, 87, 91, 87],
+            borderColor: '#3b82f6',
+            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+            fill: true,
+            tension: 0.4
+          }, {
+            label: 'Простои',
+            data: [18, 15, 12, 16, 13, 9, 13],
+            borderColor: '#f59e0b',
+            backgroundColor: 'rgba(245, 158, 11, 0.1)',
+            fill: true,
+            tension: 0.4
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { labels: { color: colors.textColor } } },
+          scales: {
+            x: { grid: { color: colors.gridColor }, ticks: { color: colors.textColor } },
+            y: { grid: { color: colors.gridColor }, ticks: { color: colors.textColor, callback: (val) => `${val}%` }, max: 100 }
+          }
+        }
+      });
+    }
+
+    // Driver Performance Chart (for Drivers tab)
+    let driverPerformanceChart = null;
+    function initDriverChart() {
+      if (driverPerformanceChart) return;
+      const ctx = document.getElementById('driverPerformanceChart');
+      if (!ctx) return;
+      driverPerformanceChart = new Chart(ctx.getContext('2d'), {
+        type: 'radar',
+        data: {
+          labels: ['Эффективность', 'Безопасность', 'Пунктуальность', 'Экономия топлива', 'Рейтинг клиентов', 'Соблюдение РТО'],
+          datasets: [{
+            label: 'Средний показатель',
+            data: [85, 92, 88, 78, 90, 95],
+            backgroundColor: 'rgba(59, 130, 246, 0.2)',
+            borderColor: '#3b82f6',
+            pointBackgroundColor: '#3b82f6'
+          }, {
+            label: 'Лучший водитель',
+            data: [98, 99, 96, 92, 98, 100],
+            backgroundColor: 'rgba(16, 185, 129, 0.2)',
+            borderColor: '#10b981',
+            pointBackgroundColor: '#10b981'
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { labels: { color: colors.textColor } } },
+          scales: {
+            r: {
+              angleLines: { color: colors.gridColor },
+              grid: { color: colors.gridColor },
+              pointLabels: { color: colors.textColor },
+              ticks: { display: false }
+            }
+          }
+        }
+      });
+    }
+
+    // Heatmap
+    function renderHeatmap() {
+      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+      const container = document.getElementById('heatmap');
+      const days = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+      const hours = 8;
+      
+      // Sample activity data (0-10 scale)
+      const data = [
+        [2,1,0,3,5,7,8,6],
+        [1,0,1,4,6,8,9,7],
+        [0,1,2,5,7,9,8,5],
+        [1,0,2,4,6,8,7,4],
+        [2,1,3,5,7,9,8,6],
+        [0,0,1,2,3,4,3,2],
+        [0,0,0,1,2,2,1,1]
+      ];
+
+      container.innerHTML = days.map((day, dayIndex) => {
+        const cells = data[dayIndex].map((value, hourIndex) => {
+          const opacity = value / 10;
+          const bgColor = isDark 
+            ? `rgba(59, 130, 246, ${opacity})` 
+            : `rgba(59, 130, 246, ${opacity * 0.8 + 0.1})`;
+          return `<div class="heatmap-cell w-6 h-6" style="background: ${bgColor};" title="${day} ${hourIndex * 3}:00 - ${value * 10}%"></div>`;
+        }).join('');
+        return `<div class="flex items-center gap-1"><span class="text-xs text-muted w-6">${day}</span>${cells}</div>`;
+      }).join('');
+    }
+
+    // Tab switching
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        const tabId = `tab-${btn.dataset.tab}`;
+        document.getElementById(tabId).classList.add('active');
+        
+        // Initialize charts when tab is opened
+        if (btn.dataset.tab === 'finance') initFinanceChart();
+        if (btn.dataset.tab === 'fleet') initFleetChart();
+        if (btn.dataset.tab === 'drivers') initDriverChart();
+      });
+    });
+
+    // Export report
+    function exportReport() {
+      alert('Отчёт будет экспортирован в PDF. В реальном приложении здесь откроется диалог выбора формата и параметров отчёта.');
+    }
+
+    // Date range change
+    document.getElementById('dateRange').addEventListener('change', function() {
+      // In real app, this would reload data for selected period
+      console.log('Date range changed to:', this.value, 'days');
+    });
+
+    // Initial render
+    renderHeatmap();
+
+    // Role management
+    document.addEventListener('DOMContentLoaded', () => {
+      initNavigation('analytics');
+      if (typeof updateRoleBadge === 'function') updateRoleBadge();
+    });
+
+    // Initialize navigation based on role
+    function initNavigation(currentPage) {
+      const role = localStorage.getItem('user_role') || 'admin';
+      const nav = document.getElementById('mainNav');
+      
+      let navItems = [];
+      
+      if (role === 'owner') {
+        navItems.push({ href: './owner.html', icon: 'fa-crown', text: 'Обзор', page: 'owner' });
+      }
+      
+      navItems = navItems.concat([
+        { href: './index.html', icon: 'fa-truck', text: 'Флот', page: 'index' },
+        { href: './trips.html', icon: 'fa-route', text: 'Рейсы', page: 'trips' },
+        { href: './geozones.html', icon: 'fa-map-location-dot', text: 'Геозоны', page: 'geozones' },
+        { href: './analytics.html', icon: 'fa-chart-line', text: 'Аналитика', page: 'analytics' },
+        { href: './fuel.html', icon: 'fa-gas-pump', text: 'Топливо', page: 'fuel' },
+        { href: './maintenance.html', icon: 'fa-wrench', text: 'ТО', page: 'maintenance' },
+        { href: './documents.html', icon: 'fa-file-lines', text: 'Документы', page: 'documents' }
+      ]);
+      
+      nav.innerHTML = navItems.map(item => 
+        `<a href="${item.href}" class="nav-pill ${item.page === currentPage ? 'active' : ''}"><i class="fa-solid ${item.icon}"></i><span>${item.text}</span></a>`
+      ).join('');
+    }
+
+    // Logout function
+    function logout() {
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('user_role');
+      localStorage.removeItem('demo_mode');
+      window.location.href = './login.html';
+    }
   </script>
+  <script src="./assets/js/routox-unified.js"></script>
 </body>
 </html>

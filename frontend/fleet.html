@@ -1,736 +1,725 @@
 <!DOCTYPE html>
-<!--
-RoutoX — Intelligent Fleet Management Dashboard
-This single-page demo recreates the described PDF layout: dark tech look, responsive grid, interactive vehicle list,
-live-ish metric jitter, mechanical status LEDs, map & alert modals, and add-vehicle form. Built with Tailwind CDN + vanilla JS.
--->
-<html lang="en">
+<html lang="ru">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Панель RoutoX</title>
+  <title>RoutoX — Флот</title>
+  <link rel="stylesheet" href="./assets/css/routox-unified.css">
   <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
   <script src="https://kit.fontawesome.com/a2e0e9e5a9.js" crossorigin="anonymous"></script>
-  <link rel="stylesheet" href="./assets/css/style.css" />
-  <script defer src="./assets/js/app.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    /* Fleet page specific styles */
+    #fleetMap { border-radius: 16px; z-index: 1; height: 400px; }
+    .leaflet-control-zoom { border: none !important; border-radius: 10px !important; overflow: hidden; }
+    .leaflet-control-zoom a { background: var(--bg-secondary) !important; color: var(--text-primary) !important; border: 1px solid var(--border-color) !important; }
+
+    .vehicle-card {
+      transition: all 0.3s ease;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .vehicle-card::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 4px;
+      border-radius: 4px 0 0 4px;
+      transition: all 0.3s ease;
+    }
+
+    .vehicle-card.online::before { background: linear-gradient(180deg, #10b981, #059669); }
+    .vehicle-card.offline::before { background: #6b7280; }
+    .vehicle-card.maintenance::before { background: #f59e0b; }
+    .vehicle-card.alert::before { background: #ef4444; }
+
+    .vehicle-card:hover {
+      transform: translateX(4px);
+      border-color: rgba(59, 130, 246, 0.4);
+    }
+
+    .vehicle-card.selected {
+      border-color: rgba(59, 130, 246, 0.6);
+      background: rgba(59, 130, 246, 0.05);
+    }
+
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    .status-dot.online { background: #10b981; box-shadow: 0 0 10px rgba(16, 185, 129, 0.5); }
+    .status-dot.offline { background: #6b7280; animation: none; }
+    .status-dot.maintenance { background: #f59e0b; }
+    .status-dot.alert { background: #ef4444; }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.7; transform: scale(1.1); }
+    }
+
+    .metric-card {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .metric-card::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, #3b82f6, #10b981);
+      transform: scaleX(0);
+      transition: transform 0.3s ease;
+    }
+
+    .metric-card:hover::after {
+      transform: scaleX(1);
+    }
+
+    .kpi-value {
+      background: linear-gradient(135deg, #3b82f6, #10b981);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .truck-3d {
+      perspective: 500px;
+    }
+
+    .truck-3d-inner {
+      transform-style: preserve-3d;
+      animation: truckFloat 4s ease-in-out infinite;
+    }
+
+    @keyframes truckFloat {
+      0%, 100% { transform: rotateY(-5deg) rotateX(5deg) translateY(0); }
+      50% { transform: rotateY(5deg) rotateX(-5deg) translateY(-10px); }
+    }
+
+    .progress-bar {
+      height: 8px;
+      background: var(--border-color);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.5s ease;
+    }
+
+    .progress-fill.excellent { background: linear-gradient(90deg, #10b981, #34d399); }
+    .progress-fill.good { background: linear-gradient(90deg, #3b82f6, #60a5fa); }
+    .progress-fill.warning { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+    .progress-fill.critical { background: linear-gradient(90deg, #ef4444, #f87171); }
+
+    /* 3D Truck Icon SVG */
+    .truck-icon-3d {
+      filter: drop-shadow(0 10px 20px rgba(59, 130, 246, 0.3));
+    }
+
+    /* Role badge */
+    .role-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .role-badge.admin {
+      background: rgba(59, 130, 246, 0.15);
+      color: #3b82f6;
+      border: 1px solid rgba(59, 130, 246, 0.3);
+    }
+
+    .role-badge.owner {
+      background: rgba(139, 92, 246, 0.15);
+      color: #8b5cf6;
+      border: 1px solid rgba(139, 92, 246, 0.3);
+    }
+
+    .stat-value {
+      font-size: 28px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #3b82f6, #10b981);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .live-pulse { animation: pulse 2s ease-in-out infinite; }
+
+    .tab-btn { 
+      padding: 8px 16px; 
+      border-radius: 10px; 
+      font-size: 13px; 
+      color: var(--text-secondary); 
+      transition: all 0.2s ease; 
+      font-weight: 500; 
+    }
+    .tab-btn:hover { color: #3b82f6; background: rgba(59, 130, 246, 0.08); }
+    .tab-btn.active { background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; }
+  </style>
 </head>
-<body class="min-h-screen flex flex-col">
+<body class="min-h-screen">
   <!-- Header -->
-  <header class="glass px-6 py-5 flex flex-col gap-4 sticky top-0 z-20">
-    <div class="flex flex-wrap items-center justify-between gap-4">
-      <div class="flex flex-wrap items-center gap-4">
-        <a href="./index.html" class="flex items-center gap-3">
-          <div class="brand-mark">R</div>
-          <div>
-            <div class="text-lg font-semibold">RoutoX</div>
-            <div class="text-xs text-slate-400">Управление флотом</div>
-          </div>
-        </a>
-        <nav class="flex flex-wrap gap-2 text-sm">
-          <a href="./index.html" class="nav-pill nav-pill-active"><i class="fa-solid fa-gauge-high"></i><span>Флот</span></a>
-          <a href="./trips.html" class="nav-pill"><i class="fa-solid fa-route"></i><span>Рейсы</span></a>
-          <a href="./geozones.html" class="nav-pill"><i class="fa-solid fa-map"></i><span>Геозоны</span></a>
-          <a href="./analytics.html" class="nav-pill"><i class="fa-solid fa-chart-line"></i><span>Аналитика</span></a>
-          <a href="./inventory.html" class="nav-pill"><i class="fa-solid fa-boxes-stacked"></i><span>Инвентарь</span></a>
-        </nav>
-      </div>
-      <div class="flex items-center gap-2 relative">
-        <button id="notifBtn" class="icon-button" aria-label="Уведомления">
-          <img id="notifIcon" src="./assets/images/notification.gif" alt="Уведомления" class="icon-img hidden" />
-          <span class="notif-dot hidden"></span>
-        </button>
-        <button id="settingsBtn" class="icon-button" aria-label="Настройки">
-          <img src="./assets/images/settings.png" alt="Настройки" class="icon-img" />
-        </button>
-        <div class="header-avatar" aria-label="Профиль">LD</div>
-        <div id="notifPanel" class="floating-panel hidden" role="dialog" aria-label="Активные уведомления">
-          <div class="panel-header">Активные уведомления</div>
-          <div class="panel-body" id="notifList">
-            <!-- filled by JS -->
-          </div>
+  <header class="glass-panel mx-4 mt-4 px-6 py-4 flex items-center justify-between sticky top-4 z-30">
+    <div class="flex items-center gap-6">
+      <a href="./fleet.html" class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold text-lg shadow-lg">R</div>
+        <div>
+          <div class="font-semibold text-lg">RoutoX</div>
+          <div class="text-xs text-muted">Управление флотом</div>
         </div>
-        <div id="settingsPanel" class="floating-panel hidden" role="dialog" aria-label="Системные настройки">
-          <div class="panel-header">Системные настройки</div>
-          <div class="panel-body space-y-3 text-sm">
-            <label class="flex items-center justify-between gap-3">Часовой пояс
-              <select id="tzSelect" class="input-select">
-                <option value="UTC+3">UTC+3 Москва</option>
-                <option value="UTC+2">UTC+2 Калининград</option>
-                <option value="UTC+5">UTC+5 Екатеринбург</option>
-              </select>
-            </label>
-            <label class="flex items-center justify-between gap-3">Топливо в
-              <select id="fuelUnitSelect" class="input-select">
-                <option value="l">литрах</option>
-                <option value="gal">галлонах</option>
-              </select>
-            </label>
-            <label class="flex items-center justify-between gap-3">Температура
-              <select id="tempUnitSelect" class="input-select">
-                <option value="c">°C</option>
-                <option value="f">°F</option>
-              </select>
-            </label>
-            <label class="flex items-center justify-between gap-3">Оповещения
-              <select id="alertModeSelect" class="input-select">
-                <option value="push">Push + Email</option>
-                <option value="push-only">Только Push</option>
-                <option value="email">Только Email</option>
-              </select>
-            </label>
-          </div>
-        </div>
-      </div>
+      </a>
+      <nav class="flex gap-2">
+        <a href="./fleet.html" class="nav-pill active"><i class="fa-solid fa-truck"></i><span>Флот</span></a>
+        <a href="./trips.html" class="nav-pill"><i class="fa-solid fa-route"></i><span>Рейсы</span></a>
+        <a href="./geozones.html" class="nav-pill"><i class="fa-solid fa-map-location-dot"></i><span>Геозоны</span></a>
+        <a href="./analytics.html" class="nav-pill"><i class="fa-solid fa-chart-line"></i><span>Аналитика</span></a>
+        <a href="./fuel.html" class="nav-pill"><i class="fa-solid fa-gas-pump"></i><span>Топливо</span></a>
+        <a href="./maintenance.html" class="nav-pill"><i class="fa-solid fa-wrench"></i><span>ТО</span></a>
+        <a href="./documents.html" class="nav-pill"><i class="fa-solid fa-file-lines"></i><span>Документы</span></a>
+      </nav>
     </div>
-    <div class="flex flex-col gap-3">
-      <div class="top-metrics grid md:grid-cols-2 xl:grid-cols-4 gap-3">
-        <div class="metric-hero">
-          <div class="metric-hero-icon"><i class="fa-solid fa-truck"></i></div>
-          <div>
-            <div class="metric-hero-label">Активные</div>
-            <div class="metric-hero-value" id="metricActiveFleet">—</div>
-            <div class="metric-hero-sub" id="metricActiveHint">фур онлайн</div>
-          </div>
-        </div>
-        <div class="metric-hero warn">
-          <div class="metric-hero-icon"><i class="fa-solid fa-screwdriver-wrench"></i></div>
-          <div>
-            <div class="metric-hero-label">Техобслуживание</div>
-            <div class="metric-hero-value" id="metricMaintenance">—</div>
-            <div class="metric-hero-sub" id="metricMaintenanceHint">в сервисе</div>
-          </div>
-        </div>
-        <div class="metric-hero info">
-          <div class="metric-hero-icon"><i class="fa-solid fa-gauge-high"></i></div>
-          <div>
-            <div class="metric-hero-label">Эффективность</div>
-            <div class="metric-hero-value" id="metricEfficiency">—</div>
-            <div class="metric-hero-sub" id="metricEfficiencyHint">средняя загрузка</div>
-          </div>
-        </div>
-        <div class="metric-hero sky">
-          <div class="metric-hero-icon"><i class="fa-solid fa-boxes-stacked"></i></div>
-          <div>
-            <div class="metric-hero-label">Грузы в пути</div>
-            <div class="metric-hero-value" id="metricCargoValue">—</div>
-            <div class="metric-hero-sub" id="metricCargoHint">паллет</div>
-          </div>
-        </div>
+    <div class="flex items-center gap-3">
+      <div class="flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-500/15 border border-emerald-500/30">
+        <span class="w-2 h-2 rounded-full bg-emerald-500 live-pulse"></span>
+        <span class="text-sm text-emerald-600 font-medium">Live</span>
       </div>
-      <div class="flex items-center justify-between gap-3 flex-wrap">
-        <span class="text-xs text-slate-400">Данные обновляются каждые 30 секунд</span>
-        <div class="flex items-center gap-3">
-          <button id="addVehicleBtn" class="glass px-4 py-2 rounded-lg border border-slate-700 hover:border-emerald-400/60 transition flex items-center gap-2">
-            <i class="fa-solid fa-plus text-emerald-300"></i><span>Добавить транспорт</span>
-          </button>
-          <label id="themeToggle" class="theme-toggle" aria-live="polite">
-            <input type="checkbox" id="themeToggleInput" aria-describedby="themeToggleHint" />
-            <span class="toggle-track">
-              <span class="toggle-icon sun"><i class="fa-solid fa-sun"></i></span>
-              <span class="toggle-icon moon"><i class="fa-solid fa-moon"></i></span>
-              <span class="toggle-thumb"></span>
-            </span>
-            <span id="themeToggleHint" class="sr-only">Переключатель темы</span>
-          </label>
-        </div>
+      <span class="role-badge admin" id="roleBadge">
+        <i class="fa-solid fa-user-gear"></i>
+        <span id="roleText">Администратор</span>
+      </span>
+      <button class="icon-btn" id="notifBtn">
+        <i class="fa-solid fa-bell"></i>
+        <span class="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-[10px] text-white flex items-center justify-center">3</span>
+      </button>
+      <div class="theme-toggle-track" onclick="toggleTheme()">
+        <div class="theme-toggle-thumb"></div>
       </div>
+      <button class="icon-btn" onclick="logout()">
+        <i class="fa-solid fa-right-from-bracket"></i>
+      </button>
     </div>
   </header>
 
-  <!-- Main Grid -->
-  <main class="p-6 grid lg:grid-cols-[320px_1fr_320px] gap-4 flex-1">
-    <!-- Track List -->
-    <section class="glass rounded-2xl p-4 flex flex-col min-h-[70vh]">
-      <div class="flex items-center justify-between mb-3">
-        <h2 class="text-lg font-semibold">Список маршрутов</h2>
-        <span class="text-xs text-slate-400">Колонна · Онлайн</span>
+  <!-- Main Content -->
+  <main class="p-4 grid lg:grid-cols-[340px_1fr] gap-4">
+    <!-- Left Sidebar - Vehicle List -->
+    <div class="space-y-4">
+      <!-- Stats -->
+      <div class="glass-panel p-4">
+        <div class="grid grid-cols-4 gap-2">
+          <div class="stat-card glass-card p-3 text-center">
+            <div class="stat-value" id="onlineCount">12</div>
+            <div class="text-xs text-muted mt-1">Онлайн</div>
+          </div>
+          <div class="stat-card glass-card p-3 text-center">
+            <div class="stat-value" id="offlineCount">3</div>
+            <div class="text-xs text-muted mt-1">Офлайн</div>
+          </div>
+          <div class="stat-card glass-card p-3 text-center">
+            <div class="stat-value" id="maintenanceCount">2</div>
+            <div class="text-xs text-muted mt-1">На ТО</div>
+          </div>
+          <div class="stat-card glass-card p-3 text-center">
+            <div class="stat-value" id="alertCount">1</div>
+            <div class="text-xs text-muted mt-1">Тревога</div>
+          </div>
+        </div>
       </div>
-      <div id="trackList" class="space-y-3 overflow-y-auto scroll-slim">
-        <!-- Cards injected by JS -->
-      </div>
-    </section>
 
-    <!-- Center Panels -->
-    <section class="space-y-4">
-      <!-- Selected vehicle hero -->
-      <div class="glass hero-panel rounded-3xl p-6 border border-slate-800">
-        <div class="grid gap-6 items-center lg:grid-cols-[1.1fr_0.9fr] relative">
+      <!-- Search & Filter -->
+      <div class="glass-panel p-4">
+        <div class="relative mb-3">
+          <i class="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-muted"></i>
+          <input type="text" placeholder="Поиск по номеру, водителю..." class="input-field w-full pl-10" id="searchInput">
+        </div>
+        <div class="flex gap-2">
+          <button class="tab-btn active" data-filter="all">Все</button>
+          <button class="tab-btn" data-filter="online">Онлайн</button>
+          <button class="tab-btn" data-filter="offline">Офлайн</button>
+          <button class="tab-btn" data-filter="alert">Тревога</button>
+        </div>
+      </div>
+
+      <!-- Vehicle List -->
+      <div class="glass-panel p-4 max-h-[50vh] overflow-y-auto custom-scroll" id="vehicleList">
+        <!-- Vehicle cards will be inserted here -->
+      </div>
+
+      <!-- Add Vehicle Button -->
+      <button class="btn-primary w-full flex items-center justify-center gap-2" onclick="openAddVehicleModal()">
+        <i class="fa-solid fa-plus"></i>
+        Добавить транспорт
+      </button>
+    </div>
+
+    <!-- Right Content Area -->
+    <div class="space-y-4">
+      <!-- Selected Vehicle Hero -->
+      <div class="glass-panel p-6" id="vehicleHero">
+        <div class="grid lg:grid-cols-2 gap-6">
+          <!-- Vehicle Info -->
           <div class="space-y-4">
-            <div>
-              <p class="text-xs uppercase tracking-[0.25em] text-slate-400">Центральный контроль</p>
-              <div id="selName" class="text-3xl font-semibold mt-1">MANTTOX</div>
-              <div class="mt-2 text-sm text-slate-400" id="selCargo">Груз: SCOOT (D3000g) · Маршрут: 2B / 6B/1F</div>
-            </div>
-            <div id="selStatuses" class="flex gap-2 flex-wrap text-xs"></div>
-            <div id="statusControls" class="flex flex-wrap gap-2 text-xs mt-2">
-              <button class="status-btn" data-status="В сопровождении">В сопровождении</button>
-              <button class="status-btn" data-status="Под охраной">Под охраной</button>
-              <button class="status-btn" data-status="В пути">В пути</button>
-              <button class="status-btn" data-status="На разгрузке">На разгрузке</button>
-              <button class="status-btn" data-status="На погрузке">На погрузке</button>
-              <button class="status-btn" data-status="Свободен">Свободен</button>
-            </div>
-            <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
-              <div class="hero-badge">
-                <span class="hero-badge-label">ETA</span>
-                <span class="hero-badge-value" id="heroEta">17:45</span>
-                <span class="hero-badge-sub">Минск</span>
-              </div>
-              <div class="hero-badge">
-                <span class="hero-badge-label">Дистанция</span>
-                <span class="hero-badge-value" id="heroDistance">780 км</span>
-                <span class="hero-badge-sub">На маршруте</span>
-              </div>
-              <div class="hero-badge">
-                <span class="hero-badge-label">Связь</span>
-                <span class="hero-badge-value">Стойкая</span>
-                <span class="hero-badge-sub">Канал 4B</span>
-              </div>
-            </div>
-            <div class="flex flex-wrap gap-2">
-              <button id="mapBtn" class="glass px-4 py-2 rounded-lg border border-slate-700 hover:border-emerald-400/60 flex items-center gap-2 text-sm">
-                <i class="fa-solid fa-map text-emerald-300"></i> Карта
-              </button>
-              <button id="alertBtn" class="glass px-4 py-2 rounded-lg border border-slate-700 hover:border-red-400/60 flex items-center gap-2 text-sm">
-                <i class="fa-solid fa-bell text-red-300"></i> Тревога
-              </button>
-              <button id="deleteVehicleBtn" class="glass px-4 py-2 rounded-lg border border-slate-700 hover:border-red-400/60 flex items-center gap-2 text-sm">
-                <i class="fa-solid fa-trash text-red-400"></i> Удалить фуру
-              </button>
-            </div>
-          </div>
-          <div class="hero-visual">
-            <img id="heroImage" src="./assets/images/truck-data.png" alt="Изображение грузовика" class="hero-truck" loading="lazy" />
-            <div class="hero-overlay top-4 left-4">
-              <span class="hero-overlay-label">Загрузка</span>
-              <span class="hero-overlay-value" id="heroLoadValue">77%</span>
-            </div>
-            <div class="hero-overlay top-4 right-4">
-              <span class="hero-overlay-label">Госномер</span>
-              <span class="hero-overlay-value" id="heroPlateValue">А123ВС 16 RUS</span>
-            </div>
-            <div class="hero-overlay bottom-6 right-4">
-              <span class="hero-overlay-label">Скорость</span>
-              <span class="hero-overlay-value" id="heroSpeedValue">68 км/ч</span>
-            </div>
-            <div class="hero-overlay bottom-6 left-4">
-              <span class="hero-overlay-label">Температура</span>
-              <span class="hero-overlay-value" id="heroTempValue">24°C</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="grid sm:grid-cols-3 gap-4 mt-6">
-          <div class="glass rounded-xl p-3 border border-slate-800 flex items-center gap-3">
-            <div class="w-12 h-12 rounded-full flex items-center justify-center text-lg font-semibold pulse dev-circle dev-ok" id="devCircle">0°</div>
-            <div>
-              <div class="text-xs text-slate-400">Отклонение узла</div>
-              <div class="text-base font-semibold" id="devLabel">Стабильно</div>
-            </div>
-          </div>
-          <div class="glass rounded-xl p-3 border border-slate-800 flex items-center gap-3">
-            <i class="fa-solid fa-temperature-half text-orange-300 text-xl"></i>
-            <div class="flex-1">
-              <div class="text-xs text-slate-400">Температура</div>
-              <div class="flex items-center gap-2">
-                <div class="text-base font-semibold" id="tempVal">24°C</div>
-                <span class="text-xs px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-200 border border-orange-500/30">Норма</span>
-              </div>
-            </div>
-          </div>
-          <div class="glass rounded-xl p-3 border border-slate-800">
-            <div class="flex items-center justify-between text-xs text-slate-400">
-              <span>Загрузка</span><span id="rollValLabel">60%</span>
-            </div>
-            <div class="progress mt-2"><span id="rollBar" class="bg-emerald-500/70 w-[60%]"></span></div>
-          </div>
-        </div>
-      </div>
-      
-      <!-- Driver + truck info -->
-      <div class="grid gap-4 md:grid-cols-2">
-        <div class="glass rounded-2xl p-4">
-          <div class="flex items-center gap-4">
-            <button class="driver-avatar" id="driverAvatarBtn" aria-label="Открыть профиль водителя"><span id="driverAvatar">АМ</span></button>
-            <div class="flex-1">
-              <div class="flex items-center justify-between gap-2 flex-wrap">
-                <div>
-                  <div class="text-lg font-semibold" id="driverName">Артем Малышев</div>
-                  <div class="text-sm text-slate-400" id="driverStatus">На линии · 4ч 12м</div>
-                  <div class="text-xs text-slate-500" id="driverHome">База: Казань</div>
+            <div class="flex items-center gap-4">
+              <div class="truck-3d">
+                <div class="truck-3d-inner">
+                  <svg width="100" height="60" viewBox="0 0 100 60" class="truck-icon-3d">
+                    <defs>
+                      <linearGradient id="truckGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color:#3b82f6"/>
+                        <stop offset="100%" style="stop-color:#2563eb"/>
+                      </linearGradient>
+                    </defs>
+                    <rect x="30" y="10" width="65" height="35" rx="4" fill="url(#truckGrad)"/>
+                    <rect x="5" y="20" width="30" height="25" rx="3" fill="#60a5fa"/>
+                    <rect x="10" y="23" width="20" height="12" rx="2" fill="#0ea5e9"/>
+                    <circle cx="20" cy="50" r="8" fill="#1e293b" stroke="#475569" stroke-width="2"/>
+                    <circle cx="50" cy="50" r="8" fill="#1e293b" stroke="#475569" stroke-width="2"/>
+                    <circle cx="80" cy="50" r="8" fill="#1e293b" stroke="#475569" stroke-width="2"/>
+                  </svg>
                 </div>
-                <a id="driverCall" href="tel:+7" class="call-chip" aria-label="Позвонить водителю"><i class="fa-solid fa-phone"></i><span id="driverPhone">+7</span></a>
+              </div>
+              <div>
+                <div class="text-2xl font-bold" id="heroName">MAN TGX 18.500</div>
+                <div class="text-muted" id="heroPlate">А 123 ВС 116</div>
+                <div class="flex items-center gap-2 mt-2">
+                  <span class="status-dot online" id="heroStatus"></span>
+                  <span class="text-sm" id="heroStatusText">В пути</span>
+                </div>
               </div>
             </div>
-            <button class="icon-button" aria-label="Связаться с водителем"><i class="fa-solid fa-headset"></i></button>
-          </div>
-          <div class="grid grid-cols-1 gap-3 text-sm mt-4">
-            <div class="data-pill">
-              <span class="pill-label">Стаж</span>
-              <span class="pill-value" id="driverExperience">9 лет</span>
-            </div>
-            <div class="data-pill">
-              <span class="pill-label">Смена</span>
-              <span class="pill-value" id="driverShift">4ч 12м</span>
-            </div>
-            <div class="data-pill">
-              <span class="pill-label">До лимита (12ч)</span>
-              <span class="pill-value" id="driverRemaining">—</span>
-            </div>
-            <div class="data-pill">
-              <span class="pill-label">Допуск</span>
-              <span class="pill-value" id="driverLicense">CE</span>
-            </div>
-            <div class="data-pill">
-              <span class="pill-label">Отдых</span>
-              <span class="pill-value" id="driverRest">через 1ч</span>
-            </div>
-            <div class="data-pill">
-              <span class="pill-label">Телефон</span>
-              <span class="pill-value" id="driverPhonePill">+7</span>
-            </div>
-          </div>
-        </div>
-        <div class="glass rounded-2xl p-4">
-          <div class="flex items-center justify-between">
-            <div>
-              <h3 class="text-lg font-semibold">Параметры фуры</h3>
-              <p class="text-xs text-slate-500">VIN · <span id="truckVin">SDK-8831</span></p>
-            </div>
-            <span class="truck-tag" id="truckSeries">SDK · AM</span>
-          </div>
-          <div class="space-y-4 mt-4">
-            <div>
-              <div class="truck-spec">
-                <span class="spec-label">Загрузка</span>
-                <span class="spec-value" id="truckLoadValue">77%</span>
-              </div>
-              <div class="text-xs text-slate-400" id="truckPallets">28/38 пал.</div>
-              <div class="metric-bar"><span id="truckLoadBar"></span></div>
-            </div>
-            <div>
-              <div class="truck-spec">
-                <span class="spec-label">Топливо</span>
-                <span class="spec-value" id="truckFuelValue">480 л</span>
-              </div>
-              <div class="text-xs text-slate-400" id="truckFuelStatus">72%</div>
-              <div class="metric-bar"><span id="truckFuelBar"></span></div>
-            </div>
-            <div class="grid grid-cols-2 gap-3">
-              <div class="spec-card">
-                <span class="spec-card-label">Температура</span>
-                <span class="spec-card-value" id="truckTempValue">24°C</span>
-                <p class="spec-card-sub">Стабилизирована</p>
-              </div>
-              <div class="spec-card">
-                <span class="spec-card-label">Состояние</span>
-                <span class="spec-card-value" id="truckHealthValue">94%</span>
-                <p class="spec-card-sub">Узелов в норме</p>
-              </div>
-            </div>
-            <div class="data-card">
-              <div class="data-row"><span>Шасси</span><span id="truckChassis">6x4</span></div>
-              <div class="data-row"><span>Полная масса</span><span id="truckMass">38 т</span></div>
-              <div class="data-row"><span>Высота/длина</span><span id="truckSize">4.0 м / 13.6 м</span></div>
-              <div class="data-row"><span>Осевая нагрузка</span><span id="truckAxle">11.5 / 10 / 10 т</span></div>
-            </div>
-            <div class="fault-block" id="faultBlock">
-              <div class="fault-title">Ошибки узлов</div>
-              <div class="fault-grid">
-                <button class="fault-btn" data-fault="ABS">ABS</button>
-                <button class="fault-btn" data-fault="Пневмо">Пневмо</button>
-                <button class="fault-btn" data-fault="Давление шин">Давление шин</button>
-                <button class="fault-btn" data-fault="Колодки">Колодки</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
 
-      <!-- Live truck map -->
-      <div class="glass rounded-2xl p-4">
-        <div class="flex items-center justify-between flex-wrap gap-2">
+            <!-- Driver Info -->
+            <div class="glass-card p-4">
+              <div class="flex items-center gap-4">
+                <div class="avatar w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold" id="driverAvatar">АМ</div>
+                <div class="flex-1">
+                  <div class="font-semibold" id="driverName">Артём Малышев</div>
+                  <div class="text-sm text-muted" id="driverStatus">На линии · 4ч 12м</div>
+                </div>
+                <a href="tel:" class="icon-btn" id="driverCall">
+                  <i class="fa-solid fa-phone"></i>
+                </a>
+              </div>
+            </div>
+
+            <!-- Quick Stats -->
+            <div class="grid grid-cols-3 gap-3">
+              <div class="glass-card p-3 text-center">
+                <div class="text-xs text-muted">Скорость</div>
+                <div class="text-xl font-bold" id="heroSpeed">68</div>
+                <div class="text-xs text-muted">км/ч</div>
+              </div>
+              <div class="glass-card p-3 text-center">
+                <div class="text-xs text-muted">До цели</div>
+                <div class="text-xl font-bold" id="heroEta">4.5</div>
+                <div class="text-xs text-muted">часов</div>
+              </div>
+              <div class="glass-card p-3 text-center">
+                <div class="text-xs text-muted">Пробег</div>
+                <div class="text-xl font-bold" id="heroDistance">312</div>
+                <div class="text-xs text-muted">км</div>
+              </div>
+            </div>
+
+            <!-- Progress Bars -->
+            <div class="space-y-3">
+              <div>
+                <div class="flex justify-between text-sm mb-1">
+                  <span>Топливо</span>
+                  <span id="fuelPercent">72%</span>
+                </div>
+                <div class="progress-bar">
+                  <div class="progress-fill good" style="width: 72%" id="fuelBar"></div>
+                </div>
+              </div>
+              <div>
+                <div class="flex justify-between text-sm mb-1">
+                  <span>Загрузка</span>
+                  <span id="loadPercent">85%</span>
+                </div>
+                <div class="progress-bar">
+                  <div class="progress-fill excellent" style="width: 85%" id="loadBar"></div>
+                </div>
+              </div>
+              <div>
+                <div class="flex justify-between text-sm mb-1">
+                  <span>Состояние ТС</span>
+                  <span id="healthPercent">94%</span>
+                </div>
+                <div class="progress-bar">
+                  <div class="progress-fill excellent" style="width: 94%" id="healthBar"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Map -->
           <div>
-            <h3 class="text-lg font-semibold">Маршрут фуры</h3>
-            <p class="text-xs text-slate-500">Реальный трек от точки A до точки B</p>
-          </div>
-          <div class="text-xs text-slate-400" id="routeProgressLabel">Пройдено 0%</div>
-        </div>
-        <div class="route-map mt-4" id="liveMap">
-          <svg viewBox="0 0 100 40" preserveAspectRatio="xMidYMid slice">
-            <defs>
-              <linearGradient id="routeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stop-color="#22c55e" />
-                <stop offset="100%" stop-color="#0ea5e9" />
-              </linearGradient>
-            </defs>
-            <rect x="2" y="10" width="96" height="20" rx="10" fill="url(#routeGrad)" opacity="0.12" />
-            <line x1="6" y1="20" x2="94" y2="20" stroke="#1e293b" stroke-width="2.5" stroke-linecap="round" />
-            <line id="routeDoneLine" x1="6" y1="20" x2="6" y2="20" stroke="url(#routeGrad)" stroke-width="3" stroke-linecap="round" />
-            <circle id="pointA" cx="6" cy="20" r="2.5" fill="#22c55e" />
-            <circle id="pointB" cx="94" cy="20" r="2.5" fill="#0ea5e9" />
-            <circle id="truckDot" cx="20" cy="20" r="3.3" fill="#f97316" stroke="#fff" stroke-width="0.6" />
-          </svg>
-          <div class="route-meta">
-            <div>
-              <div class="text-xs text-slate-400">Пункт А</div>
-              <div class="font-semibold" id="routeFrom">—</div>
-              <div class="text-xs text-slate-500" id="routeStartTime">Старт —</div>
-            </div>
-            <div class="text-center">
-              <div class="text-xs text-slate-400">Дистанция</div>
-              <div class="font-semibold" id="routeDistance">— км</div>
-              <div class="text-xs text-slate-500" id="routeSpeed">Ср. скорость —</div>
-            </div>
-            <div class="text-right">
-              <div class="text-xs text-slate-400">Пункт B</div>
-              <div class="font-semibold" id="routeTo">—</div>
-              <div class="text-xs text-slate-500" id="routeEta">ETA —</div>
+            <div id="fleetMap" class="rounded-xl"></div>
+            <div class="grid grid-cols-3 gap-3 mt-4">
+              <div class="glass-card p-3">
+                <div class="flex items-center gap-2 mb-1">
+                  <div class="w-2 h-2 rounded-full bg-emerald-500"></div>
+                  <span class="text-xs text-muted">Откуда</span>
+                </div>
+                <div class="font-medium" id="routeFrom">Казань</div>
+              </div>
+              <div class="glass-card p-3">
+                <div class="flex items-center gap-2 mb-1">
+                  <i class="fa-solid fa-road text-xs text-blue-500"></i>
+                  <span class="text-xs text-muted">Маршрут</span>
+                </div>
+                <div class="font-medium" id="routeCode">М7-Р239</div>
+              </div>
+              <div class="glass-card p-3">
+                <div class="flex items-center gap-2 mb-1">
+                  <div class="w-2 h-2 rounded-full bg-orange-500"></div>
+                  <span class="text-xs text-muted">Куда</span>
+                </div>
+                <div class="font-medium" id="routeTo">Минск</div>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Route / Activity -->
-      <div class="glass rounded-2xl p-4">
-        <div class="flex items-center justify-between flex-wrap gap-2">
-          <h3 class="text-lg font-semibold">Маршрут / Узлы</h3>
-          <span class="text-xs text-slate-400">Живой маршрут</span>
-        </div>
-        <div class="mt-4">
-          <div class="flex items-center gap-3 mb-4">
-            <div class="node"></div>
-            <div class="flex-1 route-line"></div>
-            <div class="node"></div>
-            <div class="flex-1 route-line"></div>
-            <div class="node-warn"></div>
-            <div class="flex-1 route-line"></div>
-            <div class="node"></div>
-          </div>
-          <div class="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
-            <div class="glass rounded-xl p-3 border border-slate-800">
-              <div class="text-xs text-slate-400">Активность за день</div>
-              <div class="font-semibold" id="metricActive">4ч 12м</div>
+      <!-- Bottom Grid -->
+      <div class="grid lg:grid-cols-3 gap-4">
+        <!-- Cargo Info -->
+        <div class="glass-card p-4">
+          <h3 class="font-semibold flex items-center gap-2 mb-4">
+            <i class="fa-solid fa-boxes-stacked text-blue-500"></i>
+            Груз
+          </h3>
+          <div class="space-y-3">
+            <div class="flex justify-between">
+              <span class="text-muted">Тип груза</span>
+              <span class="font-medium" id="cargoType">Электроника</span>
             </div>
-            <div class="glass rounded-xl p-3 border border-slate-800">
-              <div class="text-xs text-slate-400">Просушка (10 мин)</div>
-              <div class="font-semibold" id="metricDry">7 циклов</div>
+            <div class="flex justify-between">
+              <span class="text-muted">Вес</span>
+              <span class="font-medium" id="cargoWeight">18.5 т</span>
             </div>
-            <div class="glass rounded-xl p-3 border border-slate-800">
-              <div class="text-xs text-slate-400">Средняя скорость</div>
-              <div class="font-semibold" id="metricSpeed">68 км/ч</div>
+            <div class="flex justify-between">
+              <span class="text-muted">Паллеты</span>
+              <span class="font-medium" id="cargoPallets">28 / 38</span>
             </div>
-            <div class="glass rounded-xl p-3 border border-slate-800">
-              <div class="text-xs text-slate-400">Использование кузова</div>
-              <div class="font-semibold" id="metricTrunk">Включено</div>
-            </div>
-            <div class="glass rounded-xl p-3 border border-slate-800">
-              <div class="text-xs text-slate-400">Полоса</div>
-              <div class="font-semibold" id="metricRunway">Штатный день</div>
-            </div>
-            <div class="glass rounded-xl p-3 border border-slate-800">
-              <div class="text-xs text-slate-400">Гимм-3</div>
-              <div class="font-semibold" id="metricGymm">42 ед</div>
+            <div class="flex justify-between">
+              <span class="text-muted">Стоимость</span>
+              <span class="font-medium text-emerald-500" id="cargoValue">₽ 2.4 млн</span>
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- Live truck map -->
-      <div class="glass rounded-2xl p-4">
-        <div class="flex items-center justify-between flex-wrap gap-2">
-          <div>
-            <h3 class="text-lg font-semibold">Маршрут фуры</h3>
-            <p class="text-xs text-slate-500">Реальный трек от точки A до точки B</p>
-          </div>
-          <div class="text-xs text-slate-400" id="routeProgressLabel">Пройдено 0%</div>
-        </div>
-        <div class="route-map mt-4" id="liveMap">
-          <svg viewBox="0 0 100 40" preserveAspectRatio="xMidYMid slice">
-            <defs>
-              <linearGradient id="routeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stop-color="#22c55e" />
-                <stop offset="100%" stop-color="#0ea5e9" />
-              </linearGradient>
-            </defs>
-            <rect x="2" y="10" width="96" height="20" rx="10" fill="url(#routeGrad)" opacity="0.12" />
-            <line x1="6" y1="20" x2="94" y2="20" stroke="#1e293b" stroke-width="2.5" stroke-linecap="round" />
-            <line id="routeDoneLine" x1="6" y1="20" x2="6" y2="20" stroke="url(#routeGrad)" stroke-width="3" stroke-linecap="round" />
-            <circle id="pointA" cx="6" cy="20" r="2.5" fill="#22c55e" />
-            <circle id="pointB" cx="94" cy="20" r="2.5" fill="#0ea5e9" />
-            <circle id="truckDot" cx="20" cy="20" r="3.3" fill="#f97316" stroke="#fff" stroke-width="0.6" />
-          </svg>
-          <div class="route-meta">
-            <div>
-              <div class="text-xs text-slate-400">Пункт А</div>
-              <div class="font-semibold" id="routeFrom">—</div>
-              <div class="text-xs text-slate-500" id="routeStartTime">Старт —</div>
-            </div>
-            <div class="text-center">
-              <div class="text-xs text-slate-400">Дистанция</div>
-              <div class="font-semibold" id="routeDistance">— км</div>
-              <div class="text-xs text-slate-500" id="routeSpeed">Ср. скорость —</div>
-            </div>
-            <div class="text-right">
-              <div class="text-xs text-slate-400">Пункт B</div>
-              <div class="font-semibold" id="routeTo">—</div>
-              <div class="text-xs text-slate-500" id="routeEta">ETA —</div>
+        <!-- Temperature -->
+        <div class="glass-card p-4">
+          <h3 class="font-semibold flex items-center gap-2 mb-4">
+            <i class="fa-solid fa-temperature-half text-orange-500"></i>
+            Температура
+          </h3>
+          <div class="text-center py-4">
+            <div class="text-4xl font-bold" id="tempValue">+4°C</div>
+            <div class="text-sm text-muted mt-2">Норма: от +2° до +8°</div>
+            <div class="badge badge-success mt-2">
+              <i class="fa-solid fa-check mr-1"></i>В норме
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- Cargo layout -->
-      <div class="glass rounded-2xl p-4">
-        <div class="flex items-center justify-between flex-wrap gap-2">
-          <div>
-            <h3 class="text-lg font-semibold">Компоновка кузова</h3>
-            <p class="text-xs text-slate-400">Точное распределение грузов и температур</p>
-          </div>
-          <span class="text-xs text-slate-500" id="cargoUpdated">Обновлено только что</span>
-        </div>
-        <div class="cargo-layout mt-4" id="cargoLayout">
-          <div class="cargo-zone zone-cold" data-zone="cold">
-            <div class="zone-label">Фронт · Холод</div>
-            <div class="zone-value" id="zoneColdValue">14 пал.</div>
-            <div class="zone-status" id="zoneColdTemp">4°C · вакуум</div>
-          </div>
-          <div class="cargo-zone zone-dry" data-zone="dry">
-            <div class="zone-label">Секция Dry</div>
-            <div class="zone-value" id="zoneDryValue">10 пал.</div>
-            <div class="zone-status" id="zoneDryTemp">12°C · сухо</div>
-          </div>
-          <div class="cargo-zone zone-fragile" data-zone="fragile">
-            <div class="zone-label">Хрупкие</div>
-            <div class="zone-value" id="zoneFragileValue">6 пал.</div>
-            <div class="zone-status" id="zoneFragileTemp">18°C · контроль</div>
-          </div>
-          <div class="cargo-zone zone-aux" data-zone="aux">
-            <div class="zone-label">Aux / Док</div>
-            <div class="zone-value" id="zoneAuxValue">4 пал.</div>
-            <div class="zone-status" id="zoneAuxTemp">22°C · поддержка</div>
-          </div>
-        </div>
-        <div class="cargo-sketch mt-4">
-          <div class="sketch-row">
-            <div class="sketch-cell cold" data-zone="cold"><span>Холод</span></div>
-            <div class="sketch-cell dry" data-zone="dry"><span>Dry</span></div>
-            <div class="sketch-cell fragile" data-zone="fragile"><span>Хрупкие</span></div>
-            <div class="sketch-cell aux" data-zone="aux"><span>Док</span></div>
-          </div>
-          <div class="sketch-meta">
-            <span id="sketchColdMeta">Холод: 0 пал.</span>
-            <span id="sketchDryMeta">Dry: 0 пал.</span>
-            <span id="sketchFragileMeta">Хрупкие: 0 пал.</span>
-            <span id="sketchAuxMeta">Док: 0 пал.</span>
-          </div>
-        </div>
-        <div class="cargo-detail" id="cargoDetail">
-          <div class="cargo-detail-title">Детали зоны</div>
-          <div class="cargo-detail-body"><span id="cargoZoneLabel">Выберите зону</span><span id="cargoZoneInfo" class="text-slate-300"></span></div>
-        </div>
-        <div class="grid md:grid-cols-3 gap-3 mt-4 text-sm">
-          <div class="mini-stat">
-            <span class="mini-stat-label">Сердцевина</span>
-            <div class="mini-stat-value" id="cargoCoreTemp">3.8°C</div>
-            <p class="text-xs text-slate-400">Допуск 2-5°C</p>
-          </div>
-          <div class="mini-stat">
-            <span class="mini-stat-label">Влажность</span>
-            <div class="mini-stat-value" id="cargoHumidity">52%</div>
-            <p class="text-xs text-slate-400">Стабилизаторы активны</p>
-          </div>
-          <div class="mini-stat">
-            <span class="mini-stat-label">Давление</span>
-            <div class="mini-stat-value" id="cargoPressure">1.01 бар</div>
-            <p class="text-xs text-slate-400">P03 · компенсация</p>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Right Column -->
-    <section class="space-y-4">
-      <!-- Mechanical condition -->
-      <div class="glass rounded-2xl p-4">
-        <div class="flex items-center justify-between mb-3">
-          <h3 class="text-lg font-semibold">Механическое состояние</h3>
-          <span class="text-xs text-slate-500">Датчики</span>
-        </div>
-        <div id="mechanicalList" class="grid grid-cols-2 gap-3 text-sm">
-          <!-- Populated by JS -->
-        </div>
-      </div>
-
-      <!-- Camera control -->
-      <div class="glass rounded-2xl p-4 space-y-4">
-        <div class="flex items-center justify-between gap-3 flex-wrap">
-          <div>
-            <h3 class="text-lg font-semibold" id="cameraTitle">Внутренний вид</h3>
-            <p class="text-xs text-slate-500" id="cameraSubtitle">Основная камера в кабине</p>
-          </div>
-          <div class="flex items-center gap-2 flex-wrap justify-end">
-            <div class="flex gap-2 flex-wrap">
-              <button class="camera-tab camera-tab-active" data-view="inside">Внутренний вид</button>
-              <button class="camera-tab" data-view="panorama">Панорама</button>
-              <button class="camera-tab" data-view="cargo">Фото из кузова</button>
+        <!-- Recent Events -->
+        <div class="glass-card p-4">
+          <h3 class="font-semibold flex items-center gap-2 mb-4">
+            <i class="fa-solid fa-clock-rotate-left text-purple-500"></i>
+            События
+          </h3>
+          <div class="space-y-3 text-sm" id="eventsList">
+            <div class="flex items-center gap-3">
+              <div class="w-2 h-2 rounded-full bg-emerald-500"></div>
+              <div class="flex-1">
+                <div>Прошёл КПП Казань</div>
+                <div class="text-xs text-muted">12:45</div>
+              </div>
             </div>
-            <button class="icon-button" id="cameraRefresh" aria-label="Обновить поток"><i class="fa-solid fa-rotate"></i></button>
-          </div>
-        </div>
-        <div class="camera-feed">
-          <img id="cameraImage" src="./assets/images/cab-view.png" alt="Просмотр с камеры" loading="lazy" />
-          <span class="feed-badge flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> LIVE</span>
-          <span class="feed-badge hd-right" id="cameraLabel">CabCam 01 · 1080p HDR</span>
-          <div class="feed-meta">
-            <div>
-              <div class="text-xs text-slate-400">Курс</div>
-              <div class="font-semibold" id="cameraCourse">СЗ · 315°</div>
+            <div class="flex items-center gap-3">
+              <div class="w-2 h-2 rounded-full bg-blue-500"></div>
+              <div class="flex-1">
+                <div>Заправка на АЗС Лукойл</div>
+                <div class="text-xs text-muted">11:30</div>
+              </div>
             </div>
-            <div class="text-right">
-              <div class="text-xs text-slate-400">Зум</div>
-              <div class="font-semibold" id="cameraZoom">x2.4</div>
+            <div class="flex items-center gap-3">
+              <div class="w-2 h-2 rounded-full bg-orange-500"></div>
+              <div class="flex-1">
+                <div>Отдых водителя (45 мин)</div>
+                <div class="text-xs text-muted">10:00</div>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </section>
+    </div>
   </main>
 
-  <!-- Toast -->
-  <div id="toast" class="fixed bottom-4 right-4 z-30 hidden">
-    <div class="glass rounded-xl px-4 py-3 border border-emerald-500/40 text-sm flex items-center gap-3 shadow-lg">
-      <i class="fa-solid fa-circle-check text-emerald-300"></i>
-      <span id="toastMsg">Тревога отправлена</span>
-    </div>
-  </div>
-
-  <!-- Modal: Map -->
-  <div id="mapModal" class="modal fixed inset-0 hidden items-center justify-center z-40">
-    <div class="glass rounded-2xl p-6 w-[90%] max-w-3xl border border-slate-700 relative fade-in">
-      <button class="absolute top-3 right-3 text-slate-400 hover:text-white" onclick="toggleModal('mapModal', false)"><i class="fa-solid fa-xmark"></i></button>
-      <h3 class="text-lg font-semibold mb-4 flex items-center gap-2"><i class="fa-solid fa-map-location-dot text-emerald-300"></i> Онлайн-карта</h3>
-      <div class="h-72 bg-slate-900/70 border border-slate-800 rounded-xl overflow-hidden relative">
-        <iframe id="mapFrame" title="Карта маршрута" class="w-full h-full border-0" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
-        <div id="mapFallback" class="absolute inset-0 flex items-center justify-center text-slate-400 text-sm bg-slate-900/60 hidden">
-          Не удалось загрузить карту
-        </div>
+  <!-- Add Vehicle Modal -->
+  <div class="modal-backdrop hidden" id="addVehicleModal">
+    <div class="glass-panel p-6 w-full max-w-lg m-4">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-xl font-bold">Добавить транспорт</h2>
+        <button onclick="closeAddVehicleModal()" class="icon-btn">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
       </div>
-    </div>
-  </div>
-
-  <!-- Modal: Add vehicle -->
-  <div id="addModal" class="modal fixed inset-0 hidden items-center justify-center z-40">
-    <div class="glass rounded-2xl p-6 w-[90%] max-w-md border border-slate-700 relative fade-in">
-      <button class="absolute top-3 right-3 text-slate-400 hover:text-white" onclick="toggleModal('addModal', false)"><i class="fa-solid fa-xmark"></i></button>
-      <h3 class="text-lg font-semibold mb-4 flex items-center gap-2"><i class="fa-solid fa-plus text-emerald-300"></i> Добавить транспорт</h3>
-      <form id="addForm" class="space-y-3">
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="text-sm text-slate-300">Название*</label>
-            <input required name="name" class="mt-1 w-full rounded-lg bg-slate-800 border border-slate-700 px-3 py-2" placeholder="например, VOLVO FH" />
-          </div>
-          <div>
-            <label class="text-sm text-slate-300">Гос номер*</label>
-            <input required name="plate" class="mt-1 w-full rounded-lg bg-slate-800 border border-slate-700 px-3 py-2" placeholder="А123ВС 16 RUS" />
-          </div>
-        </div>
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="text-sm text-slate-300">VIN*</label>
-            <input required name="vin" class="mt-1 w-full rounded-lg bg-slate-800 border border-slate-700 px-3 py-2" placeholder="17 символов" />
-          </div>
-          <div>
-            <label class="text-sm text-slate-300">Серия</label>
-            <input name="series" class="mt-1 w-full rounded-lg bg-slate-800 border border-slate-700 px-3 py-2" placeholder="например, R450" />
-          </div>
-        </div>
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="text-sm text-slate-300">Маршрут</label>
-            <input name="route" class="mt-1 w-full rounded-lg bg-slate-800 border border-slate-700 px-3 py-2" placeholder="М7 · Р239" />
-          </div>
-          <div>
-            <label class="text-sm text-slate-300">Груз</label>
-            <input name="cargo" class="mt-1 w-full rounded-lg bg-slate-800 border border-slate-700 px-3 py-2" placeholder="Что везем" />
-          </div>
-        </div>
-        <div class="grid grid-cols-2 gap-3 items-end">
-          <div>
-            <label class="text-sm text-slate-300">Статус</label>
-            <select name="status" id="addStatus" class="mt-1 w-full rounded-lg bg-slate-800 border border-slate-700 px-3 py-2">
-              <option>В пути</option>
-              <option>Простаивает</option>
-              <option>Обслуживание</option>
-            </select>
-          </div>
-          <div id="loadField">
-            <label class="text-sm text-slate-300">Загрузка (%)</label>
-            <input type="number" min="0" max="100" name="load" class="mt-1 w-full rounded-lg bg-slate-800 border border-slate-700 px-3 py-2" value="60" />
-          </div>
+      <form id="addVehicleForm" class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium mb-2">Госномер</label>
+          <input type="text" class="input-field w-full" placeholder="А 123 ВС 116" required>
         </div>
         <div>
-          <label class="text-sm text-slate-300">Фото (png/jpg/webp)</label>
-          <input type="file" accept="image/*" name="photo" class="mt-1 w-full text-sm text-slate-300" />
+          <label class="block text-sm font-medium mb-2">Модель</label>
+          <input type="text" class="input-field w-full" placeholder="MAN TGX 18.500" required>
         </div>
-        <div class="text-xs text-slate-400">Поля с * обязательны</div>
-        <button class="w-full mt-2 bg-emerald-600 hover:bg-emerald-500 rounded-lg py-2 font-semibold">Добавить</button>
+        <div>
+          <label class="block text-sm font-medium mb-2">VIN</label>
+          <input type="text" class="input-field w-full" placeholder="WMA12345678901234">
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-2">Водитель</label>
+          <select class="input-field w-full">
+            <option value="">Выберите водителя</option>
+            <option>Артём Малышев</option>
+            <option>Сергей Иванов</option>
+            <option>Дмитрий Козлов</option>
+          </select>
+        </div>
+        <div class="flex gap-3 pt-4">
+          <button type="button" onclick="closeAddVehicleModal()" class="flex-1 px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 font-medium">
+            Отмена
+          </button>
+          <button type="submit" class="btn-primary flex-1">
+            Добавить
+          </button>
+        </div>
       </form>
     </div>
   </div>
 
-  <!-- Modal: Sensor detail -->
-  <div id="sensorModal" class="modal fixed inset-0 hidden items-center justify-center z-40">
-    <div class="glass rounded-2xl p-6 w-[90%] max-w-md border border-slate-700 relative fade-in">
-      <button class="absolute top-3 right-3 text-slate-400 hover:text-white" onclick="toggleModal('sensorModal', false)"><i class="fa-solid fa-xmark"></i></button>
-      <h3 class="text-lg font-semibold mb-3 flex items-center gap-2"><i class="fa-solid fa-microchip text-sky-300"></i> Деталь датчика</h3>
-      <div class="space-y-2 text-sm">
-        <div class="flex items-center justify-between"><span class="text-slate-400">Датчик</span><span id="sensorName">—</span></div>
-        <div class="flex items-center justify-between"><span class="text-slate-400">Статус</span><span id="sensorStatus">—</span></div>
-        <div class="text-xs text-slate-400" id="sensorHint">—</div>
-      </div>
-      <button class="mt-4 w-full bg-slate-800 hover:bg-slate-700 rounded-lg py-2 text-sm" onclick="toggleModal('sensorModal', false)">Закрыть</button>
-    </div>
-  </div>
+  <script src="./assets/js/routox-unified.js"></script>
+  <script>
+    // Sample vehicle data
+    const vehicles = [
+      { id: 1, plate: 'А 123 ВС 116', model: 'MAN TGX 18.500', status: 'online', driver: 'Артём Малышев', speed: 68, fuel: 72, load: 85, health: 94, from: 'Казань', to: 'Минск', lat: 55.45, lng: 49.12 },
+      { id: 2, plate: 'В 456 ЕК 116', model: 'Volvo FH16', status: 'online', driver: 'Сергей Иванов', speed: 72, fuel: 45, load: 60, health: 88, from: 'Москва', to: 'СПб', lat: 55.75, lng: 37.62 },
+      { id: 3, plate: 'С 789 НМ 116', model: 'Scania R500', status: 'maintenance', driver: 'Дмитрий Козлов', speed: 0, fuel: 90, load: 0, health: 45, from: '-', to: '-', lat: 55.30, lng: 49.05 },
+      { id: 4, plate: 'Е 012 РС 116', model: 'DAF XF', status: 'offline', driver: 'Алексей Петров', speed: 0, fuel: 30, load: 0, health: 92, from: '-', to: '-', lat: 54.98, lng: 48.80 },
+      { id: 5, plate: 'К 345 ТУ 116', model: 'Mercedes Actros', status: 'online', driver: 'Михаил Сидоров', speed: 85, fuel: 68, load: 95, health: 97, from: 'Нижний', to: 'Самара', lat: 56.32, lng: 44.00 },
+      { id: 6, plate: 'М 678 ФХ 116', model: 'Iveco Stralis', status: 'alert', driver: 'Виктор Новиков', speed: 45, fuel: 15, load: 70, health: 78, from: 'Уфа', to: 'Челябинск', lat: 54.73, lng: 55.97 },
+      { id: 7, plate: 'Н 901 ЦЧ 116', model: 'MAN TGS', status: 'online', driver: 'Андрей Белов', speed: 55, fuel: 82, load: 100, health: 91, from: 'Екб', to: 'Пермь', lat: 56.84, lng: 60.60 },
+      { id: 8, plate: 'О 234 ШЩ 116', model: 'Volvo FM', status: 'offline', driver: 'Павел Черных', speed: 0, fuel: 65, load: 0, health: 85, from: '-', to: '-', lat: 55.03, lng: 82.92 },
+    ];
 
-  <!-- Modal: Status confirm -->
-  <div id="statusModal" class="modal fixed inset-0 hidden items-center justify-center z-40">
-    <div class="glass rounded-2xl p-6 w-[90%] max-w-sm border border-slate-700 relative fade-in">
-      <button class="absolute top-3 right-3 text-slate-400 hover:text-white" onclick="toggleModal('statusModal', false)"><i class="fa-solid fa-xmark"></i></button>
-      <h3 class="text-lg font-semibold mb-3 flex items-center gap-2"><i class="fa-solid fa-circle-exclamation text-amber-300"></i> Подтвердите смену</h3>
-      <p class="text-sm text-slate-300" id="statusMessage">Сменить статус?</p>
-      <div class="mt-4 grid grid-cols-2 gap-2 text-sm">
-        <button id="statusNo" class="w-full bg-slate-800 hover:bg-slate-700 rounded-lg py-2">Нет</button>
-        <button id="statusYes" class="w-full bg-emerald-600 hover:bg-emerald-500 rounded-lg py-2 text-slate-900 font-semibold">Да</button>
-      </div>
-    </div>
-  </div>
+    let selectedVehicle = vehicles[0];
+    let map = null;
+    let markers = [];
 
-  <!-- Modal: Driver profile edit -->
-  <div id="profileModal" class="modal fixed inset-0 hidden items-center justify-center z-40">
-    <div class="glass rounded-2xl p-6 w-[90%] max-w-md border border-slate-700 relative fade-in">
-      <button class="absolute top-3 right-3 text-slate-400 hover:text-white" onclick="toggleModal('profileModal', false)"><i class="fa-solid fa-xmark"></i></button>
-      <h3 class="text-lg font-semibold mb-3 flex items-center gap-2"><i class="fa-solid fa-user-gear text-emerald-300"></i> Профиль водителя</h3>
-      <form id="profileForm" class="space-y-4">
-        <div class="form-grid">
-          <label class="form-label">Имя</label>
-          <input name="name" class="form-input" />
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+      initTheme();
+      checkRole();
+      renderVehicleList();
+      selectVehicle(vehicles[0]);
+      initMap();
+      updateStats();
+    });
+
+    // Check user role
+    function checkRole() {
+      const role = localStorage.getItem('user_role') || 'admin';
+      const roleBadge = document.getElementById('roleBadge');
+      const roleText = document.getElementById('roleText');
+      
+      if (role === 'owner') {
+        roleBadge.className = 'role-badge owner';
+        roleText.textContent = 'Владелец';
+        roleBadge.querySelector('i').className = 'fa-solid fa-crown';
+      } else {
+        roleBadge.className = 'role-badge admin';
+        roleText.textContent = 'Администратор';
+        roleBadge.querySelector('i').className = 'fa-solid fa-user-gear';
+      }
+    }
+
+    // Update stats
+    function updateStats() {
+      document.getElementById('onlineCount').textContent = vehicles.filter(v => v.status === 'online').length;
+      document.getElementById('offlineCount').textContent = vehicles.filter(v => v.status === 'offline').length;
+      document.getElementById('maintenanceCount').textContent = vehicles.filter(v => v.status === 'maintenance').length;
+      document.getElementById('alertCount').textContent = vehicles.filter(v => v.status === 'alert').length;
+    }
+
+    // Render vehicle list
+    function renderVehicleList(filter = 'all') {
+      const container = document.getElementById('vehicleList');
+      const filtered = filter === 'all' ? vehicles : vehicles.filter(v => v.status === filter);
+      
+      container.innerHTML = filtered.map(v => `
+        <div class="glass-card vehicle-card ${v.status} p-4 mb-3 ${selectedVehicle?.id === v.id ? 'selected' : ''}" onclick="selectVehicle(vehicles.find(x => x.id === ${v.id}))">
+          <div class="flex items-center gap-4">
+            <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-700 dark:to-slate-800 flex items-center justify-center">
+              <i class="fa-solid fa-truck text-xl ${v.status === 'online' ? 'text-emerald-500' : v.status === 'alert' ? 'text-red-500' : v.status === 'maintenance' ? 'text-amber-500' : 'text-slate-400'}"></i>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2">
+                <span class="font-semibold">${v.plate}</span>
+                <span class="status-dot ${v.status}"></span>
+              </div>
+              <div class="text-sm text-muted truncate">${v.model}</div>
+              <div class="text-xs text-muted">${v.driver}</div>
+            </div>
+            <div class="text-right">
+              <div class="text-lg font-bold">${v.speed}</div>
+              <div class="text-xs text-muted">км/ч</div>
+            </div>
+          </div>
         </div>
-        <div class="form-grid">
-          <label class="form-label">Телефон</label>
-          <input name="phone" class="form-input" />
+      `).join('');
+    }
+
+    // Select vehicle
+    function selectVehicle(vehicle) {
+      selectedVehicle = vehicle;
+      
+      document.getElementById('heroName').textContent = vehicle.model;
+      document.getElementById('heroPlate').textContent = vehicle.plate;
+      document.getElementById('heroStatus').className = `status-dot ${vehicle.status}`;
+      
+      const statusTexts = { online: 'В пути', maintenance: 'На ТО', alert: 'Тревога', offline: 'Офлайн' };
+      document.getElementById('heroStatusText').textContent = statusTexts[vehicle.status] || 'Неизвестно';
+      
+      document.getElementById('driverName').textContent = vehicle.driver;
+      document.getElementById('driverAvatar').textContent = vehicle.driver.split(' ').map(n => n[0]).join('');
+      
+      document.getElementById('heroSpeed').textContent = vehicle.speed;
+      document.getElementById('fuelPercent').textContent = vehicle.fuel + '%';
+      document.getElementById('fuelBar').style.width = vehicle.fuel + '%';
+      document.getElementById('fuelBar').className = `progress-fill ${vehicle.fuel > 50 ? 'good' : vehicle.fuel > 25 ? 'warning' : 'critical'}`;
+      
+      document.getElementById('loadPercent').textContent = vehicle.load + '%';
+      document.getElementById('loadBar').style.width = vehicle.load + '%';
+      
+      document.getElementById('healthPercent').textContent = vehicle.health + '%';
+      document.getElementById('healthBar').style.width = vehicle.health + '%';
+      document.getElementById('healthBar').className = `progress-fill ${vehicle.health > 80 ? 'excellent' : vehicle.health > 50 ? 'good' : 'warning'}`;
+      
+      document.getElementById('routeFrom').textContent = vehicle.from;
+      document.getElementById('routeTo').textContent = vehicle.to;
+      
+      renderVehicleList(document.querySelector('.tab-btn.active')?.dataset.filter || 'all');
+      
+      if (map) {
+        map.setView([vehicle.lat, vehicle.lng], 8);
+      }
+    }
+
+    // Initialize map
+    function initMap() {
+      map = L.map('fleetMap').setView([55.45, 49.12], 5);
+      
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap'
+      }).addTo(map);
+      
+      vehicles.forEach(v => {
+        const color = v.status === 'online' ? '#10b981' : v.status === 'alert' ? '#ef4444' : v.status === 'maintenance' ? '#f59e0b' : '#6b7280';
+        const marker = L.circleMarker([v.lat, v.lng], {
+          radius: 10,
+          fillColor: color,
+          color: '#fff',
+          weight: 2,
+          fillOpacity: 0.8
+        }).addTo(map);
+        
+        marker.bindPopup(`<b>${v.plate}</b><br>${v.model}<br>${v.driver}`);
+        marker.on('click', () => selectVehicle(v));
+        markers.push(marker);
+      });
+    }
+
+    // Filter handlers
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        renderVehicleList(btn.dataset.filter);
+      });
+    });
+
+    // Search
+    document.getElementById('searchInput').addEventListener('input', (e) => {
+      const query = e.target.value.toLowerCase();
+      const filtered = vehicles.filter(v => 
+        v.plate.toLowerCase().includes(query) || 
+        v.driver.toLowerCase().includes(query) ||
+        v.model.toLowerCase().includes(query)
+      );
+      
+      const container = document.getElementById('vehicleList');
+      container.innerHTML = filtered.map(v => `
+        <div class="glass-card vehicle-card ${v.status} p-4 mb-3 ${selectedVehicle?.id === v.id ? 'selected' : ''}" onclick="selectVehicle(vehicles.find(x => x.id === ${v.id}))">
+          <div class="flex items-center gap-4">
+            <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-700 dark:to-slate-800 flex items-center justify-center">
+              <i class="fa-solid fa-truck text-xl ${v.status === 'online' ? 'text-emerald-500' : v.status === 'alert' ? 'text-red-500' : v.status === 'maintenance' ? 'text-amber-500' : 'text-slate-400'}"></i>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2">
+                <span class="font-semibold">${v.plate}</span>
+                <span class="status-dot ${v.status}"></span>
+              </div>
+              <div class="text-sm text-muted truncate">${v.model}</div>
+              <div class="text-xs text-muted">${v.driver}</div>
+            </div>
+            <div class="text-right">
+              <div class="text-lg font-bold">${v.speed}</div>
+              <div class="text-xs text-muted">км/ч</div>
+            </div>
+          </div>
         </div>
-        <div class="form-grid">
-          <label class="form-label">База</label>
-          <input name="home" class="form-input" />
-        </div>
-        <div class="form-grid">
-          <label class="form-label">Статус</label>
-          <input name="status" class="form-input" />
-        </div>
-        <button class="w-full mt-2 bg-emerald-600 hover:bg-emerald-500 rounded-lg py-2 font-semibold">Сохранить</button>
-      </form>
-    </div>
-  </div>
+      `).join('');
+    });
+
+    // Modal handlers
+    function openAddVehicleModal() {
+      document.getElementById('addVehicleModal').classList.remove('hidden');
+    }
+
+    function closeAddVehicleModal() {
+      document.getElementById('addVehicleModal').classList.add('hidden');
+    }
+
+    // Logout
+    function logout() {
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('user_role');
+      localStorage.removeItem('demo_mode');
+      window.location.href = './login.html';
+    }
+  </script>
 </body>
 </html>

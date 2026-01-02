@@ -1,5 +1,6 @@
 // Shared frontend helpers for RoutoX static pages (vanilla JS)
-const ROUTOX_API_BASE_URL = "http://localhost:8000/api/v1";
+// Use relative URL - nginx proxies /api/* to backend
+const ROUTOX_API_BASE_URL = window.location.port === "8080" ? "/api/v1" : "http://localhost:8000/api/v1";
 
 function routoxGetToken() {
   try {
@@ -47,7 +48,24 @@ async function routoxApiRequest(endpoint, token, options = {}) {
 }
 
 async function routoxFetchMe(token) {
+  // Check if demo token (for local mode without backend)
+  if (token && token.startsWith("demo_")) {
+    try {
+      const payload = JSON.parse(atob(token.replace("demo_", "")));
+      return { 
+        email: payload.email, 
+        role: payload.role,
+        name: payload.email.split("@")[0]
+      };
+    } catch {
+      throw new Error("Invalid demo token");
+    }
+  }
   return await routoxApiRequest("/auth/me", token);
+}
+
+function isDemoMode() {
+  return localStorage.getItem("demo_mode") === "true";
 }
 
 // Theme + settings

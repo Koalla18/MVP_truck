@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 180" fill="none">
+  <!-- Background - inside truck trailer -->
+  <rect width="320" height="180" fill="#1e293b"/>
+  
+  <!-- Floor perspective -->
+  <polygon points="0,180 320,180 280,100 40,100" fill="#334155"/>
+  
+  <!-- Left wall -->
+  <polygon points="0,0 0,180 40,100 40,20" fill="#475569"/>
+  
+  <!-- Right wall -->
+  <polygon points="320,0 320,180 280,100 280,20" fill="#475569"/>
+  
+  <!-- Ceiling -->
+  <polygon points="0,0 320,0 280,20 40,20" fill="#64748b"/>
+  
+  <!-- Roof ribs -->
+  <line x1="80" y1="15" x2="100" y2="25" stroke="#94a3b8" stroke-width="2"/>
+  <line x1="120" y1="15" x2="140" y2="25" stroke="#94a3b8" stroke-width="2"/>
+  <line x1="160" y1="15" x2="160" y2="25" stroke="#94a3b8" stroke-width="2"/>
+  <line x1="200" y1="15" x2="180" y2="25" stroke="#94a3b8" stroke-width="2"/>
+  <line x1="240" y1="15" x2="220" y2="25" stroke="#94a3b8" stroke-width="2"/>
+  
+  <!-- Wall ribs left -->
+  <line x1="10" y1="40" x2="42" y2="50" stroke="#64748b" stroke-width="2"/>
+  <line x1="10" y1="80" x2="42" y2="70" stroke="#64748b" stroke-width="2"/>
+  <line x1="10" y1="120" x2="42" y2="90" stroke="#64748b" stroke-width="2"/>
+  
+  <!-- Wall ribs right -->
+  <line x1="310" y1="40" x2="278" y2="50" stroke="#64748b" stroke-width="2"/>
+  <line x1="310" y1="80" x2="278" y2="70" stroke="#64748b" stroke-width="2"/>
+  <line x1="310" y1="120" x2="278" y2="90" stroke="#64748b" stroke-width="2"/>
+  
+  <!-- Cargo boxes -->
+  <!-- Back left box -->
+  <rect x="55" y="60" width="50" height="50" fill="#3b82f6" opacity="0.8"/>
+  <rect x="55" y="60" width="50" height="10" fill="#60a5fa"/>
+  <rect x="55" y="60" width="5" height="50" fill="#2563eb"/>
+  
+  <!-- Back right box -->
+  <rect x="215" y="60" width="50" height="50" fill="#3b82f6" opacity="0.8"/>
+  <rect x="215" y="60" width="50" height="10" fill="#60a5fa"/>
+  <rect x="260" y="60" width="5" height="50" fill="#2563eb"/>
+  
+  <!-- Middle boxes -->
+  <rect x="80" y="90" width="60" height="45" fill="#10b981" opacity="0.8"/>
+  <rect x="80" y="90" width="60" height="8" fill="#34d399"/>
+  
+  <rect x="180" y="90" width="60" height="45" fill="#10b981" opacity="0.8"/>
+  <rect x="180" y="90" width="60" height="8" fill="#34d399"/>
+  
+  <!-- Front box -->
+  <rect x="120" y="110" width="80" height="50" fill="#f59e0b" opacity="0.8"/>
+  <rect x="120" y="110" width="80" height="10" fill="#fbbf24"/>
+  <text x="160" y="145" text-anchor="middle" font-family="Arial" font-size="10" fill="white" font-weight="bold">FRAGILE</text>
+  
+  <!-- Camera overlay elements -->
+  <!-- Corners -->
+  <path d="M10 30 L10 10 L30 10" stroke="#10b981" stroke-width="2" fill="none"/>
+  <path d="M290 10 L310 10 L310 30" stroke="#10b981" stroke-width="2" fill="none"/>
+  <path d="M10 150 L10 170 L30 170" stroke="#10b981" stroke-width="2" fill="none"/>
+  <path d="M290 170 L310 170 L310 150" stroke="#10b981" stroke-width="2" fill="none"/>
+  
+  <!-- Recording indicator -->
+  <circle cx="300" cy="20" r="5" fill="#ef4444"/>
+  
+  <!-- Timestamp area -->
+  <rect x="10" y="155" width="80" height="18" rx="2" fill="rgba(0,0,0,0.6)"/>
+  <text x="50" y="168" text-anchor="middle" font-family="monospace" font-size="10" fill="white">04:39:16</text>
+</svg>

@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 300" fill="none">
+  <!-- Background shadow -->
+  <ellipse cx="400" cy="280" rx="350" ry="15" fill="#e2e8f0" opacity="0.5"/>
+  
+  <!-- Trailer body -->
+  <rect x="120" y="60" width="580" height="160" rx="4" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2"/>
+  
+  <!-- Trailer frame lines -->
+  <line x1="120" y1="90" x2="700" y2="90" stroke="#e2e8f0" stroke-width="1"/>
+  <line x1="120" y1="190" x2="700" y2="190" stroke="#e2e8f0" stroke-width="1"/>
+  
+  <!-- Vertical dividers -->
+  <line x1="192" y1="60" x2="192" y2="220" stroke="#e2e8f0" stroke-width="1" stroke-dasharray="4,4"/>
+  <line x1="264" y1="60" x2="264" y2="220" stroke="#e2e8f0" stroke-width="1" stroke-dasharray="4,4"/>
+  <line x1="336" y1="60" x2="336" y2="220" stroke="#e2e8f0" stroke-width="1" stroke-dasharray="4,4"/>
+  <line x1="408" y1="60" x2="408" y2="220" stroke="#e2e8f0" stroke-width="1" stroke-dasharray="4,4"/>
+  <line x1="480" y1="60" x2="480" y2="220" stroke="#e2e8f0" stroke-width="1" stroke-dasharray="4,4"/>
+  <line x1="552" y1="60" x2="552" y2="220" stroke="#e2e8f0" stroke-width="1" stroke-dasharray="4,4"/>
+  <line x1="624" y1="60" x2="624" y2="220" stroke="#e2e8f0" stroke-width="1" stroke-dasharray="4,4"/>
+  
+  <!-- Trailer front (cabin connection) -->
+  <rect x="80" y="100" width="45" height="120" rx="4" fill="#64748b"/>
+  <rect x="85" y="110" width="35" height="40" rx="2" fill="#94a3b8"/>
+  
+  <!-- Cabin -->
+  <path d="M20 130 L60 100 L80 100 L80 220 L20 220 Z" fill="#3b82f6"/>
+  <rect x="25" y="110" width="30" height="25" rx="2" fill="#93c5fd"/>
+  <rect x="25" y="145" width="15" height="30" rx="1" fill="#1e40af"/>
+  
+  <!-- Wheels -->
+  <circle cx="55" cy="235" r="25" fill="#1e293b"/>
+  <circle cx="55" cy="235" r="15" fill="#475569"/>
+  <circle cx="55" cy="235" r="5" fill="#1e293b"/>
+  
+  <circle cx="250" cy="235" r="25" fill="#1e293b"/>
+  <circle cx="250" cy="235" r="15" fill="#475569"/>
+  <circle cx="250" cy="235" r="5" fill="#1e293b"/>
+  
+  <circle cx="310" cy="235" r="25" fill="#1e293b"/>
+  <circle cx="310" cy="235" r="15" fill="#475569"/>
+  <circle cx="310" cy="235" r="5" fill="#1e293b"/>
+  
+  <circle cx="580" cy="235" r="25" fill="#1e293b"/>
+  <circle cx="580" cy="235" r="15" fill="#475569"/>
+  <circle cx="580" cy="235" r="5" fill="#1e293b"/>
+  
+  <circle cx="640" cy="235" r="25" fill="#1e293b"/>
+  <circle cx="640" cy="235" r="15" fill="#475569"/>
+  <circle cx="640" cy="235" r="5" fill="#1e293b"/>
+  
+  <!-- Trailer undercarriage -->
+  <rect x="120" y="220" width="580" height="8" fill="#64748b"/>
+  
+  <!-- Mud flaps -->
+  <rect x="215" y="245" width="130" height="10" rx="2" fill="#334155"/>
+  <rect x="545" y="245" width="130" height="10" rx="2" fill="#334155"/>
+  
+  <!-- Rear lights -->
+  <rect x="695" y="180" width="8" height="30" rx="2" fill="#ef4444"/>
+  <rect x="695" y="100" width="8" height="30" rx="2" fill="#f97316"/>
+  
+  <!-- Company logo area -->
+  <rect x="350" y="130" width="100" height="40" rx="4" fill="#3b82f6" opacity="0.1"/>
+  <text x="400" y="155" text-anchor="middle" font-family="Arial" font-size="14" font-weight="bold" fill="#3b82f6">RoutoX</text>
+</svg>

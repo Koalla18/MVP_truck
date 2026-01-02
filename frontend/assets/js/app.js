@@ -1,5 +1,6 @@
 // API Configuration
-const API_BASE_URL = "http://localhost:8000/api/v1";
+// Use relative URL when running through nginx on port 8080
+const API_BASE_URL = window.location.port === "8080" ? "/api/v1" : "http://localhost:8000/api/v1";
 let authToken = localStorage.getItem("auth_token") || null;
 
 // API Helper functions
@@ -130,11 +131,19 @@ const notificationPool = [
 ];
 const truckImages = {
   "MAN TGX": "./assets/images/truck-man-tgx.png",
+  "MAN TGX #2": "./assets/images/truck-man-tgx.png",
   "SCANIA R-SERIES": "./assets/images/truck-scania-r-series.png",
+  "Scania R500 #3": "./assets/images/truck-scania-r-series.png",
   "VOLVO FX": "./assets/images/truck-volvo-fx.png",
+  "Volvo FH16 #1": "./assets/images/truck-volvo-fx.png",
   "FREIGHTLINER 260": "./assets/images/truck-freightliner-260.png",
   "DURASTAR": "./assets/images/truck-durastar.png",
-  "FREIGHTLINER M2": "./assets/images/truck-freightliner-m2.png"
+  "FREIGHTLINER M2": "./assets/images/truck-freightliner-m2.png",
+  "Mercedes Actros #4": "./assets/images/truck-freightliner-260.png",
+  "DAF XF #5": "./assets/images/truck-durastar.png",
+  "Iveco Stralis #6": "./assets/images/truck-freightliner-m2.png",
+  "Renault T #7": "./assets/images/truck-man-tgx.png",
+  "КАМАЗ 5490 #8": "./assets/images/truck-scania-r-series.png"
 };
 const cameraViews = {
   inside: { name: "Внутренний вид", src: "./assets/images/cab-view.png", desc: "Основная камера в кабине", label: "CabCam · 1080p HDR", zoom: "x2.4" },
@@ -357,6 +366,21 @@ const fallbackData = {
 
 const STORAGE_KEY = "routox-fleet";
 const DRIVER_STORAGE_KEY = "routox-drivers";
+const STORAGE_VERSION = "v2"; // Increment to force cache refresh
+
+// Check and clear outdated storage
+function checkStorageVersion() {
+  const storedVersion = localStorage.getItem("routox-version");
+  if (storedVersion !== STORAGE_VERSION) {
+    console.log("Storage version changed, clearing old data...");
+    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(DRIVER_STORAGE_KEY);
+    localStorage.setItem("routox-version", STORAGE_VERSION);
+  }
+}
+
+// Run version check on load
+checkStorageVersion();
 
 function readStoredVehicles() {
   try {
@@ -449,13 +473,35 @@ function updateCargoLayout() {
   showCargoDetail("cold");
 }
 function dedupeVehicles(list = []) {
-  const seen = new Set();
-  return list.filter((v) => {
+  const byKey = new Map();
+  list.forEach((v) => {
     const key = v.plate || v.name;
-    if (!key || seen.has(key)) return false;
-    seen.add(key);
-    return true;
+    if (!key) return;
+    const existing = byKey.get(key);
+    if (!existing) {
+      byKey.set(key, { ...v });
+    } else {
+      // Merge vehicles: API data takes priority for driver info
+      // Apply stored user modifications for non-driver fields
+      Object.keys(v).forEach((k) => {
+        if (k === 'driver') return; // handle driver separately
+        if (v[k] !== undefined && v[k] !== null && v[k] !== '') {
+          if (existing[k] === undefined || existing[k] === null || existing[k] === '') {
+            existing[k] = v[k];
+          }
+        }
+      });
+      // ALWAYS prefer driver with phone (from API)
+      const hasExistingPhone = existing.driver && existing.driver.phone && existing.driver.phone.length > 5;
+      const hasNewPhone = v.driver && v.driver.phone && v.driver.phone.length > 5;
+      if (hasNewPhone && !hasExistingPhone) {
+        existing.driver = { ...(existing.driver || {}), ...v.driver };
+      } else if (!existing.driver && v.driver) {
+        existing.driver = v.driver;
+      }
+    }
   });
+  return Array.from(byKey.values());
 }
 
 function dedupeDrivers(list = []) {
@@ -505,14 +551,41 @@ function ensureFleetCount(list = [], min = 6) {
 }
 
 function resolveDriver(driverId, fallbackDriver) {
-  const found = drivers.find((d) => d.id === driverId);
-  return found || fallbackDriver || drivers[0] || null;
+  // First try to find by driverId
+  if (driverId) {
+    const found = drivers.find((d) => d.id === driverId);
+    if (found) return found;
+  }
+  // Then try fallback driver object (from API)
+  if (fallbackDriver && fallbackDriver.name) {
+    return {
+      id: fallbackDriver.id || `api-${Date.now()}`,
+      name: fallbackDriver.name,
+      phone: fallbackDriver.phone || '',
+      home: fallbackDriver.home || fallbackDriver.home_base || '',
+      license: fallbackDriver.license || fallbackDriver.license_class || 'CE',
+      status: fallbackDriver.status || `На линии · рейтинг ${fallbackDriver.rating || '95%'}`,
+      rating: fallbackDriver.rating || '95%',
+      experience: fallbackDriver.experience || '5 лет',
+      shift: fallbackDriver.shift || '3ч 00м',
+      rest: fallbackDriver.rest || 'через 2ч',
+    };
+  }
+  // Finally return first driver from pool
+  return drivers[0] || null;
 }
 
 function assignDriverToVehicle(vehicle, driverId) {
   if (!vehicle) return vehicle;
+  // If vehicle already has driver from API, don't override
+  if (vehicle.driver && vehicle.driver.name) {
+    return vehicle;
+  }
   const resolved = resolveDriver(driverId);
-  if (resolved) vehicle.driverId = resolved.id;
+  if (resolved) {
+    vehicle.driverId = resolved.id;
+    vehicle.driver = resolved;
+  }
   return vehicle;
 }
 
@@ -536,7 +609,23 @@ function enrichVehicle(v = {}, idx = 0) {
   // Use provided values or fallback to defaults
   const distanceTotal = v.distanceTotal !== undefined ? v.distanceTotal : (620 + Math.floor(Math.random() * 320));
   const distanceDone = v.distanceDone !== undefined ? v.distanceDone : Math.max(140, Math.floor(distanceTotal * (0.35 + Math.random() * 0.45)));
-  const img = v.image || truckImages[v.name] || "./assets/images/truck-data.png";
+  // Get image - try exact name match first, then partial match
+  let img = v.image;
+  if (!img && v.name) {
+    // Try exact match
+    img = truckImages[v.name];
+    // If not found, try partial match (for API vehicles like "Volvo FH16 #1")
+    if (!img) {
+      const nameLower = v.name.toLowerCase();
+      for (const [key, val] of Object.entries(truckImages)) {
+        if (nameLower.includes(key.toLowerCase().split(' ')[0]) || key.toLowerCase().includes(nameLower.split(' ')[0])) {
+          img = val;
+          break;
+        }
+      }
+    }
+  }
+  img = img || "./assets/images/truck-data.png";
   const driverId = v.driverId || driverPool[idx % driverPool.length].id;
   return {
     ...v,
@@ -564,13 +653,9 @@ function enrichDriver(d = {}, idx = 0) {
     status: d.status || "На линии",
     experience: d.experience || "5 лет",
     phone: d.phone || "",
-    license: d.license || d.license_class || "C",
-    shift: d.shift || "—",
-    rest: d.rest || "—",
+    license: d.license || d.license_class || "CE",
     shift: d.shift || "3ч 00м",
     rest: d.rest || "через 2ч",
-    license: d.license || "CE",
-    phone: d.phone || "",
   };
 }
 
@@ -621,6 +706,70 @@ function renderMechanical() {
       `;
     })
     .join("");
+  
+  // Also update the new visual mechanical condition bars
+  updateMechanicalBars();
+}
+
+// New visual Mechanical Condition bars (like on the reference image)
+function updateMechanicalBars() {
+  if (!selected) return;
+  
+  // Generate values based on vehicle health
+  const baseHealth = parseInt(selected.health) || 90;
+  const jitter = () => Math.round(Math.random() * 6 - 3);
+  
+  const values = {
+    engine: clamp(baseHealth - 4 + jitter(), 50, 100),
+    brakes: clamp(baseHealth - 1 + jitter(), 50, 100),
+    tires: clamp(baseHealth - 10 + jitter(), 50, 100),
+    oil: clamp(baseHealth - 5 + jitter(), 50, 100),
+    suspension: clamp(baseHealth + 2 + jitter(), 50, 100)
+  };
+  
+  // Calculate overall
+  const overall = Math.round((values.engine + values.brakes + values.tires + values.oil + values.suspension) / 5);
+  
+  // Update overall
+  setText('mechOverallPercent', `${overall}%`);
+  
+  // Determine status label
+  const overallStatus = document.querySelector('#mechOverallPercent + span');
+  if (overallStatus) {
+    if (overall >= 85) {
+      overallStatus.className = 'flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
+      overallStatus.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-400"></span> Optimal';
+    } else if (overall >= 70) {
+      overallStatus.className = 'flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30';
+      overallStatus.innerHTML = '<span class="w-2 h-2 rounded-full bg-amber-400"></span> Warning';
+    } else {
+      overallStatus.className = 'flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-red-500/20 text-red-400 border border-red-500/30';
+      overallStatus.innerHTML = '<span class="w-2 h-2 rounded-full bg-red-400"></span> Critical';
+    }
+  }
+  
+  // Update each bar
+  Object.entries(values).forEach(([key, value]) => {
+    const percentEl = document.getElementById(`mech${capitalize(key)}Percent`);
+    const barEl = document.getElementById(`mech${capitalize(key)}Bar`);
+    
+    if (percentEl) percentEl.textContent = `${value}%`;
+    if (barEl) {
+      barEl.style.height = `${value}%`;
+      // Color based on value
+      if (value >= 85) {
+        barEl.style.background = 'linear-gradient(to top, #3b82f6 0%, #60a5fa 50%, #93c5fd 100%)';
+      } else if (value >= 70) {
+        barEl.style.background = 'linear-gradient(to top, #f59e0b 0%, #fbbf24 50%, #fde68a 100%)';
+      } else {
+        barEl.style.background = 'linear-gradient(to top, #ef4444 0%, #f87171 50%, #fca5a5 100%)';
+      }
+    }
+  });
+}
+
+function capitalize(str) {
+  return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
 function renderTrackList() {
@@ -634,34 +783,55 @@ function renderTrackList() {
     const loadLabel = `${toOne(v.load ?? 0)}%`;
     const progress = v.distanceTotal ? clamp((v.distanceDone / v.distanceTotal) * 100, 0, 100) : v.load || 0;
     const statusLabels = [v.status, v.status2, v.status3].filter(Boolean);
+    const isFree = v.status === "Свободен" || v.status_main === "Свободен";
     const card = document.createElement("button");
     card.className = "w-full glass rounded-xl p-3 text-left border border-slate-800 hover:border-emerald-400/50 transition";
     if (v === selected) card.classList.add("card-active");
-    card.innerHTML = `
-      <div class="flex items-center justify-between">
-        <div class="font-semibold">${v.name}</div>
-        <span class="text-xs px-2 py-1 rounded-full bg-slate-800 border border-slate-700">${v.tag || "SDK"}</span>
-      </div>
-      <div class="mt-1 text-xs text-slate-400 flex gap-2 flex-wrap">
-        ${statusLabels.length ? statusLabels.map((s) => `<span>${s}</span>`).join("") : `<span>Без статусов</span>`}
-        ${v.cargo ? `<span>Груз: ${v.cargo}</span>` : ""}
-        ${v.route ? `<span>Маршрут: ${v.route}</span>` : ""}
-        ${v.origin ? `<span>${v.origin} → ${v.destination}</span>` : ""}
-      </div>
-      <div class="mt-2 space-y-1">
-        ${v.status === "Обслуживание"
+    
+    if (isFree) {
+      // Свободная фура - без груза и маршрута
+      card.innerHTML = `
+        <div class="flex items-center justify-between">
+          <div class="font-semibold">${v.name}</div>
+          <span class="text-xs px-2 py-1 rounded-full bg-emerald-800/30 border border-emerald-600/50 text-emerald-300">Свободен</span>
+        </div>
+        <div class="mt-1 text-xs text-slate-500">
+          <span><i class="fa-solid fa-location-dot mr-1"></i>Без маршрута</span>
+        </div>
+        <div class="mt-2 flex items-center gap-2 text-xs text-slate-400">
+          <span><i class="fa-solid fa-gas-pump mr-1"></i>${v.fuel || 100}%</span>
+          <span><i class="fa-solid fa-heart-pulse mr-1"></i>${v.health || '100%'}</span>
+          <span class="text-emerald-400/70"><i class="fa-solid fa-circle-check mr-1"></i>Готов к загрузке</span>
+        </div>
+      `;
+    } else {
+      // Фура в работе
+      card.innerHTML = `
+        <div class="flex items-center justify-between">
+          <div class="font-semibold">${v.name}</div>
+          <span class="text-xs px-2 py-1 rounded-full bg-slate-800 border border-slate-700">${v.tag || "SDK"}</span>
+        </div>
+        <div class="mt-1 text-xs text-slate-400 flex gap-2 flex-wrap">
+          ${statusLabels.length ? statusLabels.map((s) => `<span>${s}</span>`).join("") : `<span>Без статусов</span>`}
+          ${v.cargo ? `<span>Груз: ${v.cargo}</span>` : ""}
+          ${v.route ? `<span>Маршрут: ${v.route}</span>` : ""}
+          ${v.origin ? `<span>${v.origin} → ${v.destination}</span>` : ""}
+        </div>
+        <div class="mt-2 space-y-1">
+          ${v.status === "Обслуживание"
           ? `<div class="text-xs text-amber-400">На обслуживании · загрузка не учитывается</div>`
           : `<div class="flex items-center justify-between text-xs">
               <span>Загрузка</span><span>${loadLabel}</span>
             </div>
             <div class="progress mt-1"><span style="width:${clamp(v.load ?? 0, 5, 100)}%" class="${(v.load ?? 0) > 85 ? "bg-amber-400/80" : "bg-emerald-500/70"}"></span></div>`}
-        <div class="flex items-center justify-between text-[11px] text-slate-400">
-          <span>Прогресс рейса</span>
-          <span>${progress.toFixed(1)}%</span>
+          <div class="flex items-center justify-between text-[11px] text-slate-400">
+            <span>Прогресс рейса</span>
+            <span>${progress.toFixed(1)}%</span>
+          </div>
+          <div class="progress"><span style="width:${progress}%" class="bg-sky-400/70"></span></div>
         </div>
-        <div class="progress"><span style="width:${progress}%" class="bg-sky-400/70"></span></div>
-      </div>
-    `;
+      `;
+    }
     card.onclick = () => selectVehicle(v);
     trackListEl.appendChild(card);
   });
@@ -886,11 +1056,50 @@ function updateSelected() {
   if (heroImage) heroImage.src = selected.image || "./assets/images/truck-data.png";
   setText("heroPlateValue", selected.plate || "—");
 
+  // Update cargo constructor truck thumbnail
+  const cargoTruckThumb = document.getElementById("cargoTruckThumb");
+  if (cargoTruckThumb) cargoTruckThumb.src = selected.image || "./assets/images/truck-data.png";
+  setText("cargoTruckName", selected.name || "—");
+  
+  // Update cargo constructor truck SVG image
+  updateCargoTruckImage();
+
   updateDriverCard();
   updateTruckStats();
   updateCargoLayout();
   updateRouteMap();
+  updateMechanicalBars();
   metricTweaks();
+  
+  // Update camera vehicle ID
+  setText('cameraVehicleId', selected.plate ? selected.plate.split(' ')[0] : 'TR-001');
+}
+
+// Update the truck SVG in cargo constructor based on selected vehicle
+function updateCargoTruckImage() {
+  if (!selected) return;
+  
+  const truckConfig = getTruckConfig(selected.name);
+  const truckSvgContainer = document.getElementById('cargoTruckSvg');
+  const cargoGridOverlay = document.getElementById('cargoGridOverlay');
+  
+  if (truckSvgContainer && truckConfig.image) {
+    // Load the specific truck SVG
+    fetch(truckConfig.image)
+      .then(res => res.ok ? res.text() : null)
+      .then(svgContent => {
+        if (svgContent) {
+          truckSvgContainer.innerHTML = svgContent;
+        }
+      })
+      .catch(() => {});
+  }
+  
+  // Update cargo grid position based on truck trailer dimensions
+  if (cargoGridOverlay) {
+    const style = getCargoGridStyle(truckConfig);
+    cargoGridOverlay.style.cssText = style + ' position: absolute;';
+  }
 }
 
 function metricTweaks() {
@@ -1005,6 +1214,10 @@ function selectVehicle(v) {
   renderTrips();
   renderGeoMap();
   renderAnalytics();
+  // Load cargo for selected vehicle
+  if (typeof loadDemoCargoForVehicle === 'function') {
+    loadDemoCargoForVehicle(v);
+  }
 }
 
 // Async API version
@@ -1128,6 +1341,71 @@ function addVehicleLocal(payload) {
   renderHeaderMetrics();
 }
 
+// Leaflet map instance
+let routeLeafletMap = null;
+let routeMarkers = [];
+let routeLine = null;
+let truckMarker = null;
+
+// City coordinates for demo routes
+const cityCoords = {
+  'Казань': [55.7887, 49.1221],
+  'Москва': [55.7558, 37.6173],
+  'Минск': [53.9006, 27.5590],
+  'Санкт-Петербург': [59.9311, 30.3609],
+  'Нижний Новгород': [56.2965, 43.9361],
+  'Екатеринбург': [56.8389, 60.6057],
+  'Самара': [53.1959, 50.1002],
+  'Воронеж': [51.6720, 39.1843],
+  'Краснодар': [45.0355, 38.9753],
+  'Ростов-на-Дону': [47.2357, 39.7015],
+  'Новосибирск': [55.0084, 82.9357],
+  'Челябинск': [55.1644, 61.4368],
+  'Пермь': [58.0105, 56.2502],
+  'Уфа': [54.7388, 55.9721],
+  'Красноярск': [56.0153, 92.8932],
+  'Рига': [56.9496, 24.1052],
+  'Киев': [50.4501, 30.5234],
+  'Варшава': [52.2297, 21.0122],
+  'Берлин': [52.5200, 13.4050],
+  'Прага': [50.0755, 14.4378],
+};
+
+function initRouteLeafletMap() {
+  const mapContainer = document.getElementById('routeMapLeaflet');
+  if (!mapContainer) return;
+  
+  // Destroy previous instance if exists
+  if (routeLeafletMap) {
+    routeLeafletMap.remove();
+    routeLeafletMap = null;
+  }
+  
+  // Initialize map centered on Russia
+  routeLeafletMap = L.map('routeMapLeaflet', {
+    center: [55.7558, 49.0],
+    zoom: 5,
+    zoomControl: true,
+    attributionControl: false,
+  });
+  
+  // Dark theme tile layer
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    maxZoom: 19,
+  }).addTo(routeLeafletMap);
+  
+  // Custom truck icon
+  const truckIcon = L.divIcon({
+    html: '<div class="truck-map-marker"><i class="fa-solid fa-truck text-lg"></i></div>',
+    className: 'truck-marker-wrapper',
+    iconSize: [36, 36],
+    iconAnchor: [18, 18],
+  });
+  
+  // Add empty truck marker (will be positioned in updateRouteMap)
+  truckMarker = L.marker([55.7558, 49.0], { icon: truckIcon }).addTo(routeLeafletMap);
+}
+
 function updateRouteMap() {
   if (!selected) return;
   const total = selected.distanceTotal || 0;
@@ -1135,57 +1413,139 @@ function updateRouteMap() {
   const progress = total ? clamp((done / total) * 100, 0, 100) : 0;
   setText("routeProgressLabel", `Пройдено ${progress.toFixed(1)}%`);
   
-  // Обновляем точки A и B с полной информацией
+  // Update route info
   const origin = selected.origin || "Точка отправления";
   const destination = selected.destination || "Точка назначения";
   setText("routeFrom", origin);
   setText("routeTo", destination);
-  
-  // Добавляем подсказки для точек на карте
-  const pointA = document.getElementById("pointA");
-  const pointB = document.getElementById("pointB");
-  if (pointA) {
-    pointA.setAttribute("title", `Пункт А: ${origin}`);
-  }
-  if (pointB) {
-    pointB.setAttribute("title", `Пункт B: ${destination}`);
-  }
-  
   setText("routeDistance", `${done.toFixed(0)} / ${total.toFixed(0)} км`);
   setText("routeSpeed", `Ср. скорость ${selected.avgSpeed || 68} км/ч`);
   setText("routeStartTime", `Старт ${selected.depart || "—"}`);
   setText("routeEta", `ETA ${selected.eta || "—"}`);
   
-  // Дополнительная информация о маршруте
+  // Route code
   const routeCode = selected.route || "Маршрут не указан";
-  const routeInfoEl = document.getElementById("routeCode");
-  if (routeInfoEl) {
-    routeInfoEl.textContent = routeCode;
-  }
+  setText("routeCode", routeCode);
   
-  // Время в пути
+  // Time calculations
   const timeElapsed = total && selected.avgSpeed ? (done / selected.avgSpeed).toFixed(1) : "—";
   const timeRemaining = total && selected.avgSpeed ? ((total - done) / selected.avgSpeed).toFixed(1) : "—";
-  const timeElapsedEl = document.getElementById("routeTimeElapsed");
-  const timeRemainingEl = document.getElementById("routeTimeRemaining");
-  if (timeElapsedEl) timeElapsedEl.textContent = `${timeElapsed} ч`;
-  if (timeRemainingEl) timeRemainingEl.textContent = `${timeRemaining} ч`;
+  setText("routeTimeElapsed", `${timeElapsed} ч в пути`);
+  setText("routeTimeRemaining", `${timeRemaining} ч осталось`);
   
   const remaining = Math.max(total - done, 0);
   setText("heroDistance", `${remaining.toFixed(0)} км осталось`);
   setText("heroEta", selected.eta || "—");
   
-  const truckDot = document.getElementById("truckDot");
-  if (truckDot) {
-    const cx = 6 + ((94 - 6) * progress) / 100;
-    truckDot.setAttribute("cx", cx.toFixed(1));
-    truckDot.setAttribute("title", `Пройдено: ${progress.toFixed(1)}%`);
+  // Progress bar
+  const progressBar = document.getElementById("routeProgressBar");
+  if (progressBar) {
+    progressBar.style.width = `${progress}%`;
   }
-  const doneLine = document.getElementById("routeDoneLine");
-  if (doneLine) {
-    const x2 = 6 + ((94 - 6) * progress) / 100;
-    doneLine.setAttribute("x2", x2.toFixed(1));
+  
+  // Update Leaflet map if available
+  if (routeLeafletMap && typeof L !== 'undefined') {
+    updateLeafletRoute(origin, destination, progress);
   }
+}
+
+function updateLeafletRoute(origin, destination, progress) {
+  if (!routeLeafletMap) return;
+  
+  // Clear previous markers and line
+  routeMarkers.forEach(m => routeLeafletMap.removeLayer(m));
+  routeMarkers = [];
+  if (routeLine) {
+    routeLeafletMap.removeLayer(routeLine);
+    routeLine = null;
+  }
+  
+  // Get coordinates for origin and destination
+  const originCoords = cityCoords[origin] || [55.7558, 37.6173]; // Default Moscow
+  const destCoords = cityCoords[destination] || [53.9006, 27.5590]; // Default Minsk
+  
+  // Create markers
+  const startIcon = L.divIcon({
+    html: '<div class="route-marker start-marker"><i class="fa-solid fa-circle text-emerald-500"></i></div>',
+    className: 'route-marker-wrapper',
+    iconSize: [24, 24],
+    iconAnchor: [12, 12],
+  });
+  
+  const endIcon = L.divIcon({
+    html: '<div class="route-marker end-marker"><i class="fa-solid fa-flag-checkered text-orange-500"></i></div>',
+    className: 'route-marker-wrapper',
+    iconSize: [24, 24],
+    iconAnchor: [12, 12],
+  });
+  
+  const startMarker = L.marker(originCoords, { icon: startIcon })
+    .bindPopup(`<b>Пункт А:</b> ${origin}`)
+    .addTo(routeLeafletMap);
+  
+  const endMarker = L.marker(destCoords, { icon: endIcon })
+    .bindPopup(`<b>Пункт B:</b> ${destination}`)
+    .addTo(routeLeafletMap);
+  
+  routeMarkers.push(startMarker, endMarker);
+  
+  // Draw route line (curved for visual appeal)
+  const midLat = (originCoords[0] + destCoords[0]) / 2;
+  const midLng = (originCoords[1] + destCoords[1]) / 2;
+  const offset = Math.abs(originCoords[1] - destCoords[1]) * 0.1;
+  
+  // Create curved path points
+  const curvePoints = [
+    originCoords,
+    [midLat + offset, (originCoords[1] + midLng) / 2],
+    [midLat, midLng],
+    [midLat - offset, (destCoords[1] + midLng) / 2],
+    destCoords,
+  ];
+  
+  // Draw full route (gray)
+  const fullRoute = L.polyline(curvePoints, {
+    color: '#475569',
+    weight: 4,
+    opacity: 0.6,
+    dashArray: '10, 10',
+  }).addTo(routeLeafletMap);
+  
+  // Draw completed portion (green gradient effect)
+  const progressIndex = Math.floor((progress / 100) * (curvePoints.length - 1));
+  const completedPoints = curvePoints.slice(0, progressIndex + 1);
+  
+  // Interpolate current position
+  const segmentProgress = (progress / 100) * (curvePoints.length - 1) - progressIndex;
+  if (progressIndex < curvePoints.length - 1) {
+    const currentLat = curvePoints[progressIndex][0] + 
+      (curvePoints[progressIndex + 1][0] - curvePoints[progressIndex][0]) * segmentProgress;
+    const currentLng = curvePoints[progressIndex][1] + 
+      (curvePoints[progressIndex + 1][1] - curvePoints[progressIndex][1]) * segmentProgress;
+    completedPoints.push([currentLat, currentLng]);
+    
+    // Update truck marker position
+    if (truckMarker) {
+      truckMarker.setLatLng([currentLat, currentLng]);
+    }
+  }
+  
+  // Draw completed route (green)
+  if (completedPoints.length > 1) {
+    const completedRoute = L.polyline(completedPoints, {
+      color: '#22c55e',
+      weight: 5,
+      opacity: 0.9,
+    }).addTo(routeLeafletMap);
+    routeMarkers.push(completedRoute);
+  }
+  
+  routeMarkers.push(fullRoute);
+  routeLine = fullRoute;
+  
+  // Fit map to show full route
+  const bounds = L.latLngBounds([originCoords, destCoords]);
+  routeLeafletMap.fitBounds(bounds, { padding: [40, 40] });
 }
 
 function renderTrips() {
@@ -1420,6 +1780,22 @@ function setCameraView(viewKey) {
   if (cameraLabelEl) cameraLabelEl.textContent = view.label;
   if (cameraZoomEl) cameraZoomEl.textContent = view.zoom || "x2.4";
   cameraTabs.forEach((btn) => btn.classList.toggle("camera-tab-active", btn.dataset.view === viewKey));
+  
+  // Update vehicle ID in camera section
+  if (selected) {
+    setText('cameraVehicleId', selected.plate ? selected.plate.split(' ')[0] : 'TR-001');
+  }
+}
+
+// Camera timestamp updater
+let cameraTimestampInterval = null;
+
+function updateCameraTimestamp() {
+  const el = document.getElementById('cameraTimestamp');
+  if (el) {
+    const now = new Date();
+    el.textContent = now.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  }
 }
 
 function initCamera() {
@@ -1432,8 +1808,13 @@ function initCamera() {
   const refreshBtn = document.getElementById("cameraRefresh");
   if (!cameraImageEl || !cameraTabs.length) return;
   cameraTabs.forEach((btn) => btn.addEventListener("click", () => setCameraView(btn.dataset.view)));
-  if (refreshBtn) refreshBtn.onclick = () => setCameraView(currentCamera || "inside");
-  setCameraView(currentCamera || cameraTabs[0].dataset.view || "inside");
+  if (refreshBtn) refreshBtn.onclick = () => setCameraView(currentCamera || "cargo");
+  setCameraView(currentCamera || cameraTabs[0].dataset.view || "cargo");
+  
+  // Start timestamp updater
+  if (cameraTimestampInterval) clearInterval(cameraTimestampInterval);
+  updateCameraTimestamp();
+  cameraTimestampInterval = setInterval(updateCameraTimestamp, 1000);
 }
 
 function renderNotifications() {
@@ -1536,6 +1917,19 @@ async function loadData() {
         tag: v.tag || "",
         image: v.image_url || undefined,
         driverId: v.driver_profile_id || undefined,
+        // Map driver data from API relationship
+        driver: v.driver ? {
+          id: v.driver.id,
+          name: v.driver.name,
+          phone: v.driver.phone || "",
+          home: v.driver.home_base || "",
+          license: v.driver.license_class || "CE",
+          status: `На линии · рейтинг ${v.driver.rating || "95%"}`,
+          rating: v.driver.rating || "95%",
+          experience: v.driver.experience || "5 лет",
+          shift: v.driver.shift || "3ч 00м",
+          rest: v.driver.rest || "через 2ч",
+        } : undefined,
         // Map route data
         origin: v.origin || "",
         destination: v.destination || "",
@@ -1576,7 +1970,8 @@ async function loadData() {
   const storedDrivers = readStoredDrivers();
   const baseDrivers = dedupeDrivers([...drivers, ...driverPool.map(enrichDriver)]);
   drivers = mergeStoredDrivers(baseDrivers, (storedDrivers || []).map(enrichDriver));
-  vehicles = dedupeVehicles([...(stored.length ? stored : []), ...vehicles]).map((v, idx) => {
+  // API data first to preserve driver info, then stored user modifications
+  vehicles = dedupeVehicles([...vehicles, ...(stored.length ? stored : [])]).map((v, idx) => {
     if (!v.driverId && v.driver?.name) {
       const match = drivers.find((d) => d.name === v.driver.name);
       v.driverId = match?.id || undefined;
@@ -1946,6 +2341,22 @@ function bindUI() {
   });
 
   updateNotifBadge();
+  
+  // Initialize cargo constructor
+  initCargoConstructor();
+  
+  // Initialize Leaflet map for route display
+  if (typeof L !== 'undefined') {
+    setTimeout(() => {
+      initRouteLeafletMap();
+      // Update map with selected vehicle data after init
+      if (selected) {
+        updateRouteMap();
+      }
+    }, 200);
+  } else {
+    console.warn('Leaflet (L) not loaded - map features disabled');
+  }
 
   // expose public api for debugging
   window.fleetApp = {
@@ -1955,6 +2366,915 @@ function bindUI() {
     toggleTheme: applyTheme,
   };
 }
+
+// ============================================
+// CARGO CONSTRUCTOR - Liquid Glass Style with Cell Merging
+// ============================================
+
+const CARGO_GRID_ROWS = 3;
+const CARGO_GRID_COLS = 8;
+const CARGO_TOTAL_CELLS = CARGO_GRID_ROWS * CARGO_GRID_COLS;
+
+// Truck trailer configurations - coordinates in SVG viewBox (900x280)
+// Trailer area: where cargo grid should be positioned inside the trailer
+const truckTrailerConfigs = {
+  'volvo-fh16': { 
+    image: '/assets/images/trucks/volvo-fh16.svg',
+    brand: 'VOLVO', color: '#0ea5e9',
+    // Trailer inner area (after rear door, before connection)
+    trailer: { x: 85, y: 72, width: 530, height: 138 }
+  },
+  'man-tgx': { 
+    image: '/assets/images/trucks/man-tgx.svg',
+    brand: 'MAN', color: '#fbbf24',
+    trailer: { x: 85, y: 72, width: 530, height: 138 }
+  },
+  'scania-r500': { 
+    image: '/assets/images/trucks/scania-r500.svg',
+    brand: 'SCANIA', color: '#dc2626',
+    trailer: { x: 85, y: 72, width: 530, height: 138 }
+  },
+  'mercedes-actros': { 
+    image: '/assets/images/trucks/mercedes-actros.svg',
+    brand: 'MERCEDES', color: '#6b7280',
+    trailer: { x: 85, y: 72, width: 530, height: 138 }
+  },
+  'daf-xf': { 
+    image: '/assets/images/trucks/daf-xf.svg',
+    brand: 'DAF', color: '#1d4ed8',
+    trailer: { x: 85, y: 72, width: 530, height: 138 }
+  },
+  'iveco-stralis': { 
+    image: '/assets/images/trucks/iveco-stralis.svg',
+    brand: 'IVECO', color: '#16a34a',
+    trailer: { x: 85, y: 72, width: 530, height: 138 }
+  },
+  'renault-t': { 
+    image: '/assets/images/trucks/renault-t.svg',
+    brand: 'RENAULT', color: '#a855f7',
+    trailer: { x: 85, y: 72, width: 530, height: 138 }
+  },
+  'kamaz-5490': { 
+    image: '/assets/images/trucks/kamaz-5490.svg',
+    brand: 'КАМАЗ', color: '#14b8a6',
+    trailer: { x: 85, y: 72, width: 530, height: 138 }
+  },
+  'default': { 
+    image: null, // Use inline SVG
+    brand: 'RoutoX', color: '#0ea5e9',
+    trailer: { x: 85, y: 72, width: 530, height: 138 }
+  }
+};
+
+// Get truck config from vehicle name
+function getTruckConfig(vehicleName = '') {
+  const name = (vehicleName || '').toLowerCase();
+  if (name.includes('volvo')) return truckTrailerConfigs['volvo-fh16'];
+  if (name.includes('man')) return truckTrailerConfigs['man-tgx'];
+  if (name.includes('scania')) return truckTrailerConfigs['scania-r500'];
+  if (name.includes('mercedes') || name.includes('actros')) return truckTrailerConfigs['mercedes-actros'];
+  if (name.includes('daf')) return truckTrailerConfigs['daf-xf'];
+  if (name.includes('iveco')) return truckTrailerConfigs['iveco-stralis'];
+  if (name.includes('renault')) return truckTrailerConfigs['renault-t'];
+  if (name.includes('камаз') || name.includes('kamaz')) return truckTrailerConfigs['kamaz-5490'];
+  return truckTrailerConfigs['default'];
+}
+
+// Calculate cargo grid overlay position from truck config
+function getCargoGridStyle(config) {
+  const svgWidth = 900;
+  const svgHeight = 280;
+  const t = config.trailer;
+  
+  const left = (t.x / svgWidth * 100).toFixed(2);
+  const top = (t.y / svgHeight * 100).toFixed(2);
+  const width = (t.width / svgWidth * 100).toFixed(2);
+  const height = (t.height / svgHeight * 100).toFixed(2);
+  
+  return `top: ${top}%; left: ${left}%; width: ${width}%; height: ${height}%;`;
+}
+
+const cargoTypes = {
+  cold: { name: 'Холодильный', color: '#38bdf8', icon: 'snowflake', bgClass: 'bg-sky-500/40', borderClass: 'border-sky-500/60', temp: '2-6°C', weight: 0.8, tempZone: 'cold' },
+  hot: { name: 'Горячий', color: '#ef4444', icon: 'fire', bgClass: 'bg-red-500/40', borderClass: 'border-red-500/60', temp: '60-80°C', weight: 0.7, tempZone: 'hot' },
+  dry: { name: 'Сухой', color: '#f97316', icon: 'box', bgClass: 'bg-orange-500/40', borderClass: 'border-orange-500/60', temp: '18-22°C', weight: 0.6, tempZone: 'neutral' },
+  fragile: { name: 'Хрупкое', color: '#a855f7', icon: 'wine-glass', bgClass: 'bg-purple-500/40', borderClass: 'border-purple-500/60', temp: '15-20°C', weight: 0.4, tempZone: 'neutral' },
+  hazmat: { name: 'Опасный (ADR)', color: '#ef4444', icon: 'radiation', bgClass: 'bg-red-500/40', borderClass: 'border-red-500/60', temp: 'Контроль', weight: 1.0, tempZone: 'neutral' },
+  general: { name: 'Общий груз', color: '#6b7280', icon: 'cubes', bgClass: 'bg-slate-500/40', borderClass: 'border-slate-500/60', temp: 'Любая', weight: 0.5, tempZone: 'neutral' }
+};
+
+// Temperature conflict check
+function checkTemperatureConflict() {
+  let hasCold = false;
+  let hasHot = false;
+  
+  cargoGrid.forEach(cellData => {
+    if (cellData) {
+      const type = typeof cellData === 'string' ? cellData : cellData.type;
+      if (type === 'cold') hasCold = true;
+      if (type === 'hot') hasHot = true;
+    }
+  });
+  
+  const warningEl = document.getElementById('tempConflictWarning');
+  if (hasCold && hasHot) {
+    if (warningEl) {
+      warningEl.classList.remove('hidden');
+    } else {
+      showToast('⚠️ ВНИМАНИЕ: Холодный и горячий груз нельзя перевозить вместе!', 'danger');
+    }
+    return true;
+  } else {
+    if (warningEl) {
+      warningEl.classList.add('hidden');
+    }
+    return false;
+  }
+}
+
+// cargoGrid stores: null for empty, { type: string, mergeId?: string } for filled
+// mergedCells stores merge groups: { id: { cells: [indices], type: string, size: number } }
+let cargoGrid = Array(CARGO_TOTAL_CELLS).fill(null);
+let mergedCells = {};
+let selectedCargoType = 'cold';
+let isDraggingCargo = false;
+let mergeStartCell = null; // For cell merging feature
+
+function initCargoConstructor() {
+  const gridContainer = document.getElementById('cargoGrid');
+  if (!gridContainer) return;
+  
+  // Generate grid cells
+  generateCargoGrid();
+  
+  // Bind palette buttons
+  bindCargoPalette();
+  
+  // Bind clear button
+  const clearBtn = document.getElementById('clearCargoBtn');
+  if (clearBtn) {
+    clearBtn.addEventListener('click', clearCargoGrid);
+  }
+  
+  // Load saved cargo from localStorage
+  loadCargoFromStorage();
+  
+  // Update stats
+  updateCargoStats();
+}
+
+function generateCargoGrid() {
+  const gridContainer = document.getElementById('cargoGrid');
+  if (!gridContainer) return;
+  
+  gridContainer.innerHTML = '';
+  
+  for (let i = 0; i < CARGO_TOTAL_CELLS; i++) {
+    const cell = document.createElement('div');
+    const col = i % CARGO_GRID_COLS;
+    const row = Math.floor(i / CARGO_GRID_COLS);
+    
+    // Add zone border every 2 columns
+    const isZoneBorder = col > 0 && col % 2 === 0;
+    const borderLeft = isZoneBorder ? '2px solid rgba(148, 163, 184, 0.4)' : '1px dashed rgba(255,255,255,0.2)';
+    
+    cell.className = 'cargo-cell-item relative rounded-sm transition-all duration-150 cursor-pointer flex items-center justify-center';
+    cell.style.cssText = `
+      background: rgba(255,255,255,0.05);
+      border: 1px dashed rgba(255,255,255,0.2);
+      border-left: ${borderLeft};
+      min-height: 100%;
+      aspect-ratio: 1.2;
+    `;
+    cell.dataset.index = i;
+    cell.dataset.row = row;
+    cell.dataset.col = col;
+    cell.dataset.zone = ['А', 'Б', 'В', 'Г'][Math.floor(col / 2)]; // Zone A, B, C, D
+    
+    // Click handler with modifier keys
+    cell.addEventListener('click', (e) => handleCellClick(i, e));
+    
+    // Drag & Drop
+    cell.addEventListener('dragover', (e) => handleDragOver(e, i));
+    cell.addEventListener('dragleave', (e) => handleDragLeave(e, i));
+    cell.addEventListener('drop', (e) => handleDrop(e, i));
+    
+    gridContainer.appendChild(cell);
+  }
+}
+
+function bindCargoPalette() {
+  const palette = document.getElementById('cargoPalette');
+  if (!palette) return;
+  
+  const buttons = palette.querySelectorAll('.cargo-type-btn');
+  buttons.forEach(btn => {
+    const type = btn.dataset.type;
+    
+    // Click to select
+    btn.addEventListener('click', () => {
+      selectedCargoType = type;
+      buttons.forEach(b => b.classList.remove('ring-2', 'ring-white/50'));
+      btn.classList.add('ring-2', 'ring-white/50');
+    });
+    
+    // Drag start
+    btn.addEventListener('dragstart', (e) => {
+      isDraggingCargo = true;
+      e.dataTransfer.setData('text/plain', type);
+      e.dataTransfer.effectAllowed = 'copy';
+      btn.style.opacity = '0.5';
+    });
+    
+    btn.addEventListener('dragend', () => {
+      isDraggingCargo = false;
+      btn.style.opacity = '1';
+    });
+  });
+  
+  // Select first type by default
+  if (buttons.length > 0) {
+    buttons[0].classList.add('ring-2', 'ring-white/50');
+  }
+}
+
+function handleCellClick(index, event) {
+  const isShift = event && event.shiftKey;
+  const isCtrl = event && (event.ctrlKey || event.metaKey);
+  
+  // Ctrl+Click: Split merged cells
+  if (isCtrl) {
+    const cellData = cargoGrid[index];
+    if (cellData && cellData.mergeId) {
+      splitMergedCells(cellData.mergeId);
+      return;
+    }
+  }
+  
+  // Shift+Click: Start/complete merge
+  if (isShift) {
+    if (mergeStartCell === null) {
+      // Start merge selection
+      if (cargoGrid[index] || getMergeIdForCell(index)) {
+        showToast('Выберите пустую ячейку для начала объединения');
+        return;
+      }
+      mergeStartCell = index;
+      highlightMergeStart(index);
+      showToast('Теперь Shift+клик на конечную ячейку');
+      return;
+    } else {
+      // Complete merge
+      if (index === mergeStartCell) {
+        cancelMergeSelection();
+        return;
+      }
+      performMerge(mergeStartCell, index);
+      mergeStartCell = null;
+      return;
+    }
+  }
+  
+  // Cancel any pending merge on normal click
+  if (mergeStartCell !== null) {
+    cancelMergeSelection();
+  }
+  
+  // Normal click
+  const cellData = cargoGrid[index];
+  if (cellData) {
+    // Show cargo details modal (for both simple and merged cells)
+    const type = typeof cellData === 'string' ? cellData : cellData.type;
+    showCargoDetailModal(index, type);
+  } else {
+    // Place cargo in empty cell
+    cargoGrid[index] = selectedCargoType;
+    renderCargoGrid();
+    updateCargoStats();
+    saveCargoToStorage();
+  }
+}
+
+function getMergeIdForCell(index) {
+  const cellData = cargoGrid[index];
+  if (cellData && typeof cellData === 'object' && cellData.mergeId) {
+    return cellData.mergeId;
+  }
+  return null;
+}
+
+function highlightMergeStart(index) {
+  const gridContainer = document.getElementById('cargoGrid');
+  if (!gridContainer) return;
+  const cells = gridContainer.querySelectorAll('.cargo-cell-item');
+  if (cells[index]) {
+    cells[index].style.border = '2px solid #22c55e';
+    cells[index].style.boxShadow = '0 0 10px rgba(34, 197, 94, 0.5)';
+  }
+}
+
+function cancelMergeSelection() {
+  mergeStartCell = null;
+  renderCargoGrid();
+  showToast('Объединение отменено');
+}
+
+function performMerge(startIdx, endIdx) {
+  // Validate indices are within grid bounds
+  if (startIdx < 0 || startIdx >= CARGO_TOTAL_CELLS || endIdx < 0 || endIdx >= CARGO_TOTAL_CELLS) {
+    showToast('Ошибка: выход за границы сетки');
+    renderCargoGrid();
+    return;
+  }
+  
+  // Calculate rectangle bounds
+  const startRow = Math.floor(startIdx / CARGO_GRID_COLS);
+  const startCol = startIdx % CARGO_GRID_COLS;
+  const endRow = Math.floor(endIdx / CARGO_GRID_COLS);
+  const endCol = endIdx % CARGO_GRID_COLS;
+  
+  const minRow = Math.min(startRow, endRow);
+  const maxRow = Math.max(startRow, endRow);
+  const minCol = Math.min(startCol, endCol);
+  const maxCol = Math.max(startCol, endCol);
+  
+  // Ensure bounds don't exceed grid limits
+  if (maxRow >= CARGO_GRID_ROWS || maxCol >= CARGO_GRID_COLS) {
+    showToast('Ошибка: объединение выходит за границы прицепа');
+    renderCargoGrid();
+    return;
+  }
+  
+  // Check if all cells in range are empty
+  const cellsToMerge = [];
+  for (let r = minRow; r <= maxRow; r++) {
+    for (let c = minCol; c <= maxCol; c++) {
+      const idx = r * CARGO_GRID_COLS + c;
+      if (cargoGrid[idx]) {
+        showToast('Нельзя объединить: некоторые ячейки заняты');
+        renderCargoGrid();
+        return;
+      }
+      cellsToMerge.push(idx);
+    }
+  }
+  
+  if (cellsToMerge.length < 2) {
+    showToast('Выберите минимум 2 ячейки');
+    renderCargoGrid();
+    return;
+  }
+  
+  // Create merge group
+  const mergeId = `merge-${Date.now()}`;
+  const mergeData = {
+    cells: cellsToMerge,
+    type: selectedCargoType,
+    size: cellsToMerge.length,
+    bounds: { minRow, maxRow, minCol, maxCol }
+  };
+  
+  mergedCells[mergeId] = mergeData;
+  
+  // Mark all cells as part of this merge
+  cellsToMerge.forEach(idx => {
+    cargoGrid[idx] = { type: selectedCargoType, mergeId };
+  });
+  
+  renderCargoGrid();
+  updateCargoStats();
+  saveCargoToStorage();
+  showToast(`Объединено ${cellsToMerge.length} ячеек`);
+}
+
+function splitMergedCells(mergeId) {
+  if (!mergedCells[mergeId]) return;
+  
+  const { cells } = mergedCells[mergeId];
+  cells.forEach(idx => {
+    cargoGrid[idx] = null;
+  });
+  
+  delete mergedCells[mergeId];
+  
+  renderCargoGrid();
+  updateCargoStats();
+  saveCargoToStorage();
+  showToast('Ячейки разделены');
+}
+
+// Store current cargo cell index for modal actions
+let currentCargoModalIndex = null;
+
+// Demo cargo contents database
+const cargoContents = {
+  cold: [
+    { name: 'Мясо говядина', weight: '850 кг', temp: '2-4°C', expiry: '15.01.2026', sender: 'ООО «МясТорг»', receiver: 'ООО «Продмаркет»', conditions: 'Не размораживать, температурный режим' },
+    { name: 'Рыба замороженная', weight: '620 кг', temp: '-18°C', expiry: '20.03.2026', sender: 'ИП Рыбкин', receiver: 'Сеть «Океан»', conditions: 'Глубокая заморозка, хрупкое' },
+    { name: 'Молочная продукция', weight: '480 кг', temp: '2-6°C', expiry: '28.01.2026', sender: 'МолЗавод №1', receiver: 'Магазин «Свежесть»', conditions: 'Температурный режим, срочная доставка' },
+    { name: 'Мороженое', weight: '320 кг', temp: '-25°C', expiry: '01.06.2026', sender: 'Фабрика «Айс»', receiver: 'ТЦ «Мега»', conditions: 'Строгий температурный режим' },
+  ],
+  dry: [
+    { name: 'ДСП листы', weight: '1200 кг', temp: 'н/д', expiry: 'н/д', sender: 'ЛесПром', receiver: 'СтройМаркет', conditions: 'Беречь от влаги' },
+    { name: 'Мука пшеничная', weight: '950 кг', temp: '15-20°C', expiry: '15.08.2026', sender: 'МельКомбинат', receiver: 'Пекарня №3', conditions: 'Сухое хранение' },
+    { name: 'Крупы ассорти', weight: '780 кг', temp: '10-25°C', expiry: '01.12.2026', sender: 'ЗерноТрейд', receiver: 'Оптовая база', conditions: 'Сухое место, беречь от грызунов' },
+    { name: 'Текстиль', weight: '450 кг', temp: 'н/д', expiry: 'н/д', sender: 'ТканьОпт', receiver: 'Швейная фабрика', conditions: 'Беречь от влаги и солнца' },
+  ],
+  fragile: [
+    { name: 'Стеклопакеты', weight: '680 кг', temp: 'н/д', expiry: 'н/д', sender: 'СтеклоПром', receiver: 'ОконСервис', conditions: 'Не кантовать! Хрупкое!' },
+    { name: 'Электроника', weight: '280 кг', temp: '10-25°C', expiry: 'н/д', sender: 'ТехноИмпорт', receiver: 'DNS Магазин', conditions: 'Хрупкое, боится влаги, не бросать' },
+    { name: 'Керамика', weight: '520 кг', temp: 'н/д', expiry: 'н/д', sender: 'КерамАрт', receiver: 'СтройДом', conditions: 'Особо хрупкое, вертикальное хранение' },
+    { name: 'Посуда стекло', weight: '390 кг', temp: 'н/д', expiry: 'н/д', sender: 'Богемия Импорт', receiver: 'Посуда Центр', conditions: 'Хрупкое, осторожно при погрузке' },
+  ],
+  hazmat: [
+    { name: 'Химреагенты', weight: '560 кг', temp: '5-15°C', expiry: '01.01.2027', sender: 'ХимПром', receiver: 'НИИ Химии', conditions: 'ADR класс 8, кислоты, спецразрешение' },
+    { name: 'Топливо авиа', weight: '1800 кг', temp: 'н/д', expiry: 'н/д', sender: 'НефтеБаза', receiver: 'Аэропорт', conditions: 'ADR класс 3, огнеопасно' },
+    { name: 'Аккумуляторы Li-ion', weight: '420 кг', temp: '15-25°C', expiry: 'н/д', sender: 'БаттериТех', receiver: 'ЭлектроСклад', conditions: 'ADR класс 9, литий, не замыкать' },
+  ],
+  general: [
+    { name: 'Одежда сезонная', weight: '380 кг', temp: 'н/д', expiry: 'н/д', sender: 'FashionОпт', receiver: 'ТЦ «Европа»', conditions: 'Беречь от влаги' },
+    { name: 'Мебель IKEA', weight: '890 кг', temp: 'н/д', expiry: 'н/д', sender: 'IKEA Склад', receiver: 'IKEA Магазин', conditions: 'Не ставить тяжёлое сверху' },
+    { name: 'Канцтовары', weight: '240 кг', temp: 'н/д', expiry: 'н/д', sender: 'ОфисМаг', receiver: 'Школа №15', conditions: 'Стандартные условия' },
+    { name: 'Игрушки детские', weight: '310 кг', temp: 'н/д', expiry: 'н/д', sender: 'ТойсОпт', receiver: 'Детский мир', conditions: 'Сертифицировано, не мочить' },
+  ],
+};
+
+// Large cargo items for merged cells
+const largeCargo = {
+  cold: [
+    { name: 'Контейнер рефрижераторный', weight: '2400 кг', temp: '-20°C', conditions: 'Большой объём, заморозка' },
+    { name: 'Партия мороженого', weight: '1800 кг', temp: '-25°C', conditions: 'Строгий температурный контроль' },
+  ],
+  dry: [
+    { name: 'Поддон ДСП 50 листов', weight: '3200 кг', temp: 'н/д', conditions: 'Крупногабаритный груз' },
+    { name: 'Контейнер с мукой', weight: '2800 кг', temp: '15-20°C', conditions: 'Сухое хранение' },
+  ],
+  fragile: [
+    { name: 'Партия LCD мониторов', weight: '1600 кг', temp: '10-25°C', conditions: 'Особо хрупкое, не кантовать' },
+  ],
+  hazmat: [
+    { name: 'Цистерна с топливом', weight: '5000 кг', temp: 'н/д', conditions: 'ADR класс 3, огнеопасно' },
+  ],
+  general: [
+    { name: 'Мебельный гарнитур', weight: '1500 кг', temp: 'н/д', conditions: 'Крупногабарит' },
+    { name: 'Промышленное оборудование', weight: '2200 кг', temp: 'н/д', conditions: 'Тяжёлый груз' },
+  ],
+};
+
+function showCargoDetailModal(index, typeOverride) {
+  const cellData = cargoGrid[index];
+  if (!cellData) return;
+  
+  const type = typeOverride || (typeof cellData === 'string' ? cellData : cellData.type);
+  if (!type || !cargoTypes[type]) return;
+  
+  currentCargoModalIndex = index;
+  const cfg = cargoTypes[type];
+  
+  // Check if this is a merged cell
+  const mergeId = typeof cellData === 'object' ? cellData.mergeId : null;
+  const isMerged = mergeId && mergedCells[mergeId];
+  const mergeSize = isMerged ? mergedCells[mergeId].size : 1;
+  
+  // Get content based on merge size
+  let content;
+  if (isMerged && mergeSize >= 2) {
+    const largeContents = largeCargo[type] || largeCargo.general;
+    const seed = index * 7 + type.charCodeAt(0);
+    content = largeContents[seed % largeContents.length];
+    content = { ...content, expiry: 'н/д', sender: 'Оптовый склад', receiver: 'Распределительный центр' };
+  } else {
+    const contents = cargoContents[type] || cargoContents.general;
+    const seed = index * 7 + type.charCodeAt(0);
+    content = contents[seed % contents.length];
+  }
+  
+  // Calculate position
+  const row = Math.floor(index / CARGO_GRID_COLS) + 1;
+  const col = (index % CARGO_GRID_COLS) + 1;
+  
+  // Update modal content
+  const iconEl = document.getElementById('cargoDetailIcon');
+  if (iconEl) {
+    iconEl.style.background = `${cfg.color}30`;
+    iconEl.style.color = cfg.color;
+    iconEl.innerHTML = `<i class="fa-solid fa-${cfg.icon}"></i>`;
+  }
+  
+  const sizeLabel = isMerged ? ` (${mergeSize} ячеек)` : '';
+  setText('cargoDetailTitle', content.name);
+  setText('cargoDetailPosition', `Позиция: Ряд ${row}, Ячейка ${col}${sizeLabel}`);
+  setText('cargoDetailType', cfg.name);
+  setText('cargoDetailContent', content.name);
+  setText('cargoDetailWeight', content.weight);
+  setText('cargoDetailTemp', content.temp);
+  setText('cargoDetailExpiry', content.expiry || 'н/д');
+  setText('cargoDetailSender', `${content.sender || '—'} → ${content.receiver || '—'}`);
+  setText('cargoDetailConditions', content.conditions);
+  
+  toggleModal('cargoDetailModal', true);
+}
+
+function removeCargoFromModal() {
+  if (currentCargoModalIndex !== null && cargoGrid[currentCargoModalIndex]) {
+    const cellData = cargoGrid[currentCargoModalIndex];
+    
+    // Check if it's a merged cell - remove entire merged group
+    if (typeof cellData === 'object' && cellData.mergeId && mergedCells[cellData.mergeId]) {
+      const { cells } = mergedCells[cellData.mergeId];
+      cells.forEach(idx => {
+        cargoGrid[idx] = null;
+      });
+      delete mergedCells[cellData.mergeId];
+      showToast('Объединённый груз выгружен');
+    } else {
+      cargoGrid[currentCargoModalIndex] = null;
+      showToast('Груз выгружен из ячейки');
+    }
+    
+    renderCargoGrid();
+    updateCargoStats();
+    saveCargoToStorage();
+  }
+  toggleModal('cargoDetailModal', false);
+  currentCargoModalIndex = null;
+}
+
+// Make function global for onclick
+window.removeCargoFromModal = removeCargoFromModal;
+
+function handleDragOver(e, index) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'copy';
+  
+  const cell = e.currentTarget;
+  cell.style.background = 'rgba(16, 185, 129, 0.25)';
+  cell.style.borderColor = '#10b981';
+  cell.style.borderStyle = 'solid';
+  cell.style.transform = 'scale(1.05)';
+}
+
+function handleDragLeave(e, index) {
+  const cell = e.currentTarget;
+  restoreCellStyle(cell, index);
+}
+
+function handleDrop(e, index) {
+  e.preventDefault();
+  const type = e.dataTransfer.getData('text/plain');
+  
+  if (type && cargoTypes[type]) {
+    cargoGrid[index] = type;
+    renderCargoGrid();
+    updateCargoStats();
+    saveCargoToStorage();
+  }
+  
+  const cell = e.currentTarget;
+  restoreCellStyle(cell, index);
+}
+
+function restoreCellStyle(cell, index) {
+  const type = cargoGrid[index];
+  if (type && cargoTypes[type]) {
+    const cfg = cargoTypes[type];
+    cell.style.background = `linear-gradient(135deg, ${cfg.color}80, ${cfg.color}40)`;
+    cell.style.borderColor = `${cfg.color}99`;
+    cell.style.borderStyle = 'solid';
+  } else {
+    cell.style.background = 'rgba(255,255,255,0.05)';
+    cell.style.borderColor = 'rgba(255,255,255,0.2)';
+    cell.style.borderStyle = 'dashed';
+  }
+  cell.style.transform = 'scale(1)';
+  cell.style.boxShadow = 'none';
+}
+
+function renderCargoGrid() {
+  const gridContainer = document.getElementById('cargoGrid');
+  if (!gridContainer) return;
+  
+  // Полностью перегенерируем grid для корректного позиционирования
+  gridContainer.innerHTML = '';
+  
+  // Track which cells are part of merged groups
+  const cellMergeInfo = {};
+  Object.entries(mergedCells).forEach(([mergeId, data]) => {
+    if (data.cells && data.cells.length > 0) {
+      data.cells.forEach((idx, i) => {
+        cellMergeInfo[idx] = { mergeId, data, isPrimary: i === 0 };
+      });
+    }
+  });
+  
+  // Generate cell ID like BX-01, BX-02 etc.
+  const getCellId = (index) => {
+    const num = (index + 1).toString().padStart(2, '0');
+    return `BX-${num}`;
+  };
+  
+  // Get weight for cell based on its type
+  const getCellWeight = (type, size = 1) => {
+    const baseWeights = {
+      cold: 400, dry: 350, fragile: 300, hot: 350, hazmat: 500, general: 400
+    };
+    const base = baseWeights[type] || 400;
+    return `${base * size} kg`;
+  };
+  
+  // Create all cells - including placeholder cells for merged areas
+  for (let i = 0; i < CARGO_TOTAL_CELLS; i++) {
+    const mergeInfo = cellMergeInfo[i];
+    const col = i % CARGO_GRID_COLS;
+    const row = Math.floor(i / CARGO_GRID_COLS);
+    
+    // Skip non-primary cells in merged groups - they are covered by the primary cell span
+    if (mergeInfo && !mergeInfo.isPrimary) {
+      continue;
+    }
+    
+    const cell = document.createElement('div');
+    cell.className = 'cargo-cell-item relative transition-all duration-150 cursor-pointer flex flex-col items-center justify-center';
+    cell.dataset.index = i;
+    
+    const cellId = getCellId(i);
+    
+    if (mergeInfo && mergeInfo.isPrimary) {
+      // Merged cell - visually spans multiple grid cells (like removing walls between cells)
+      const { bounds, type, size } = mergeInfo.data;
+      const cfg = cargoTypes[type] || cargoTypes['general'];
+      const colSpan = bounds.maxCol - bounds.minCol + 1;
+      const rowSpan = bounds.maxRow - bounds.minRow + 1;
+      
+      // Ensure merged cells stay within grid bounds
+      const safeColSpan = Math.min(colSpan, CARGO_GRID_COLS - bounds.minCol);
+      const safeRowSpan = Math.min(rowSpan, CARGO_GRID_ROWS - bounds.minRow);
+      
+      const weight = getCellWeight(type, size);
+      
+      cell.style.cssText = `
+        grid-column: ${bounds.minCol + 1} / span ${safeColSpan};
+        grid-row: ${bounds.minRow + 1} / span ${safeRowSpan};
+        background: linear-gradient(135deg, ${cfg.color}90, ${cfg.color}60);
+        border: 2px solid ${cfg.color};
+        border-radius: 6px;
+        color: #fff;
+        box-shadow: inset 0 2px 0 rgba(255,255,255,0.25), 0 4px 12px ${cfg.color}40;
+        padding: 4px;
+      `;
+      
+      cell.innerHTML = `
+        <span class="text-[7px] font-semibold opacity-70 absolute top-1 left-1">${cellId}</span>
+        <div class="flex flex-col items-center justify-center gap-0.5 text-center">
+          <div class="w-6 h-6 rounded-full border border-white/30 flex items-center justify-center" style="background: rgba(255,255,255,0.15);">
+            <i class="fa-solid fa-eye text-[10px] opacity-80"></i>
+          </div>
+          <span class="text-[8px] font-bold mt-1">${weight}</span>
+        </div>
+      `;
+      cell.title = `${cellId}: ${cfg.name} (${size} ячеек, ${weight}) | Ctrl+клик для разделения`;
+      cell.dataset.mergeId = mergeInfo.mergeId;
+    } else {
+      // Regular single cell
+      const cellData = cargoGrid[i];
+      const isZoneBorder = col > 0 && col % 2 === 0;
+      const weight = getCellWeight(cellData ? (typeof cellData === 'string' ? cellData : cellData.type) : 'general');
+      
+      if (cellData && typeof cellData !== 'object') {
+        // Single filled cell (not part of merge)
+        const type = typeof cellData === 'string' ? cellData : cellData.type;
+        const cfg = cargoTypes[type];
+        if (cfg) {
+          cell.style.cssText = `
+            grid-column: ${col + 1};
+            grid-row: ${row + 1};
+            background: linear-gradient(135deg, ${cfg.color}90, ${cfg.color}60);
+            border: 2px solid ${cfg.color};
+            border-radius: 6px;
+            color: #fff;
+            box-shadow: inset 0 2px 0 rgba(255,255,255,0.2), 0 2px 8px ${cfg.color}30;
+            padding: 2px;
+          `;
+          cell.innerHTML = `
+            <span class="text-[6px] font-semibold opacity-70 absolute top-0.5 left-1">${cellId}</span>
+            <div class="flex flex-col items-center justify-center gap-0 text-center">
+              <div class="w-5 h-5 rounded-full border border-white/30 flex items-center justify-center" style="background: rgba(255,255,255,0.15);">
+                <i class="fa-solid fa-eye text-[8px] opacity-80"></i>
+              </div>
+              <span class="text-[7px] font-bold">${weight}</span>
+            </div>
+          `;
+          cell.title = `${cellId}: ${cfg.name} | ${cfg.temp} | ${weight}`;
+        }
+      } else if (!cellData) {
+        // Empty cell - show cell ID and "+" for adding cargo
+        cell.style.cssText = `
+          grid-column: ${col + 1};
+          grid-row: ${row + 1};
+          background: rgba(255,255,255,0.03);
+          border: 1px dashed rgba(255,255,255,0.2);
+          border-radius: 4px;
+          ${isZoneBorder ? 'border-left: 2px solid rgba(148, 163, 184, 0.35);' : ''}
+          padding: 2px;
+        `;
+        cell.innerHTML = `
+          <span class="text-[6px] font-semibold text-slate-500 absolute top-0.5 left-1">${cellId}</span>
+          <div class="flex flex-col items-center justify-center gap-0 text-center">
+            <div class="w-5 h-5 rounded-full border border-slate-600/50 flex items-center justify-center text-slate-500">
+              <i class="fa-solid fa-plus text-[8px]"></i>
+            </div>
+            <span class="text-[7px] text-slate-500">400 kg</span>
+          </div>
+        `;
+        cell.title = `${cellId}: Пустая ячейка | Клик для добавления груза`;
+      }
+    }
+    
+    // Event handlers
+    cell.addEventListener('click', (e) => handleCellClick(parseInt(cell.dataset.index), e));
+    cell.addEventListener('dragover', (e) => handleDragOver(e, parseInt(cell.dataset.index)));
+    cell.addEventListener('dragleave', (e) => handleDragLeave(e, parseInt(cell.dataset.index)));
+    cell.addEventListener('drop', (e) => handleDrop(e, parseInt(cell.dataset.index)));
+    
+    gridContainer.appendChild(cell);
+  }
+}
+
+function updateCargoStats() {
+  const counts = { cold: 0, hot: 0, dry: 0, fragile: 0, hazmat: 0, general: 0 };
+  let totalWeight = 0;
+  let totalCells = 0;
+  
+  cargoGrid.forEach(cellData => {
+    if (cellData) {
+      const type = typeof cellData === 'string' ? cellData : cellData.type;
+      if (type && cargoTypes[type]) {
+        counts[type] = (counts[type] || 0) + 1;
+        totalWeight += cargoTypes[type].weight;
+        totalCells++;
+      }
+    }
+  });
+  
+  const loadPercent = Math.round((totalCells / CARGO_TOTAL_CELLS) * 100);
+  
+  // Check for temperature conflict
+  checkTemperatureConflict();
+  
+  // Update hero badges
+  setText('heroCargoLoad', `${loadPercent}%`);
+  setText('heroPalletCount', totalCells);
+  setText('heroCargoWeight', totalWeight.toFixed(1));
+  setText('cargoLoadPercent', `${loadPercent}%`);
+  
+  // Update progress bar
+  const progressBar = document.getElementById('cargoProgressBar');
+  const progressLabel = document.getElementById('cargoProgressLabel');
+  if (progressBar) {
+    progressBar.style.width = `${loadPercent}%`;
+    // Color based on load
+    if (loadPercent > 90) {
+      progressBar.style.background = 'linear-gradient(90deg, #ef4444, #f97316)';
+    } else if (loadPercent > 70) {
+      progressBar.style.background = 'linear-gradient(90deg, #f59e0b, #eab308)';
+    } else {
+      progressBar.style.background = 'linear-gradient(90deg, #10b981, #06b6d4)';
+    }
+  }
+  if (progressLabel) {
+    progressLabel.textContent = `${totalCells} / ${CARGO_TOTAL_CELLS} ячеек`;
+  }
+  
+  // Update type counters
+  setText('statColdCount', counts.cold);
+  setText('statHotCount', counts.hot || 0);
+  setText('statDryCount', counts.dry);
+  setText('statFragileCount', counts.fragile);
+  setText('statHazmatCount', counts.hazmat);
+  setText('statGeneralCount', counts.general);
+  
+  // Update temperature based on cargo mix
+  if (counts.hot > 0) {
+    setText('heroCargoTemp', `${60 + Math.round(Math.random() * 15)}°C`);
+    setText('cargoCoreTemp', `${(65 + Math.random() * 10).toFixed(1)}°C`);
+  } else if (counts.cold > 0) {
+    setText('heroCargoTemp', `${2 + Math.round(Math.random() * 3)}°C`);
+    setText('cargoCoreTemp', `${(2 + Math.random() * 2).toFixed(1)}°C`);
+  } else if (counts.hazmat > 0) {
+    setText('heroCargoTemp', '15°C');
+    setText('cargoCoreTemp', '15.0°C');
+  } else {
+    setText('heroCargoTemp', '18°C');
+    setText('cargoCoreTemp', '18.0°C');
+  }
+}
+
+function clearCargoGrid() {
+  cargoGrid = Array(CARGO_TOTAL_CELLS).fill(null);
+  mergedCells = {};
+  renderCargoGrid();
+  updateCargoStats();
+  saveCargoToStorage();
+  showToast('Груз очищен');
+}
+
+function saveCargoToStorage() {
+  try {
+    localStorage.setItem('routox_cargo_grid', JSON.stringify(cargoGrid));
+    localStorage.setItem('routox_merged_cells', JSON.stringify(mergedCells));
+  } catch (e) {
+    console.warn('Failed to save cargo grid:', e);
+  }
+}
+
+function loadCargoFromStorage() {
+  try {
+    const saved = localStorage.getItem('routox_cargo_grid');
+    const savedMerged = localStorage.getItem('routox_merged_cells');
+    
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed) && parsed.length === CARGO_TOTAL_CELLS) {
+        cargoGrid = parsed;
+      }
+    }
+    
+    if (savedMerged) {
+      const parsedMerged = JSON.parse(savedMerged);
+      if (parsedMerged && typeof parsedMerged === 'object') {
+        mergedCells = parsedMerged;
+      }
+    }
+    
+    renderCargoGrid();
+  } catch (e) {
+    console.warn('Failed to load cargo grid:', e);
+  }
+}
+
+// Load demo cargo for selected vehicle
+function loadDemoCargoForVehicle(vehicle) {
+  if (!vehicle) return;
+  
+  // Generate deterministic cargo based on vehicle id/name
+  const seed = (vehicle.name || 'demo').split('').reduce((a, c) => a + c.charCodeAt(0), 0);
+  const random = (i) => ((seed * (i + 1) * 9301 + 49297) % 233280) / 233280;
+  
+  const load = vehicle.load || 60;
+  const cellsToFill = Math.round((load / 100) * CARGO_TOTAL_CELLS);
+  
+  // Clear and fill
+  cargoGrid = Array(CARGO_TOTAL_CELLS).fill(null);
+  mergedCells = {};
+  const types = ['cold', 'dry', 'fragile', 'general'];
+  
+  // Create some merged cells for demo
+  if (cellsToFill > 6 && random(999) > 0.3) {
+    // Add a merged cargo block
+    const mergeId = `merge-demo-${seed}`;
+    const startRow = random(500) > 0.5 ? 0 : 1;
+    const startCol = Math.floor(random(501) * 4);
+    const width = 2;
+    const height = random(502) > 0.5 ? 2 : 1;
+    
+    const mergeCells = [];
+    for (let r = startRow; r < startRow + height && r < CARGO_GRID_ROWS; r++) {
+      for (let c = startCol; c < startCol + width && c < CARGO_GRID_COLS; c++) {
+        const idx = r * CARGO_GRID_COLS + c;
+        mergeCells.push(idx);
+      }
+    }
+    
+    if (mergeCells.length >= 2) {
+      const mergeType = types[Math.floor(random(503) * types.length)];
+      mergedCells[mergeId] = {
+        cells: mergeCells,
+        type: mergeType,
+        size: mergeCells.length,
+        bounds: { minRow: startRow, maxRow: startRow + height - 1, minCol: startCol, maxCol: startCol + width - 1 }
+      };
+      mergeCells.forEach(idx => {
+        cargoGrid[idx] = { type: mergeType, mergeId };
+      });
+    }
+  }
+  
+  // Fill remaining cells
+  for (let i = 0; i < cellsToFill; i++) {
+    const cellIndex = Math.floor(random(i) * CARGO_TOTAL_CELLS);
+    if (!cargoGrid[cellIndex]) {
+      const typeIndex = Math.floor(random(i + 100) * types.length);
+      cargoGrid[cellIndex] = types[typeIndex];
+    }
+  }
+  
+  renderCargoGrid();
+  updateCargoStats();
+}
+
+// ============================================
+// END CARGO CONSTRUCTOR
+// ============================================
 
 function startJitter() {
   randomizeFaults();
@@ -2000,10 +3320,6 @@ async function init() {
         const me = await apiRequest("/auth/me");
         if (me?.role === "driver") {
           window.location.href = "./driver.html";
-          return;
-        }
-        if (me?.role === "owner") {
-          window.location.href = "./owner.html";
           return;
         }
       }

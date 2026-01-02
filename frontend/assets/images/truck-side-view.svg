@@ -1,0 +1,237 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 300" fill="none">
+  <defs>
+    <!-- Gradients -->
+    <linearGradient id="trailerBodyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#475569"/>
+      <stop offset="50%" stop-color="#334155"/>
+      <stop offset="100%" stop-color="#1e293b"/>
+    </linearGradient>
+    
+    <linearGradient id="trailerTopGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#64748b"/>
+      <stop offset="100%" stop-color="#475569"/>
+    </linearGradient>
+    
+    <linearGradient id="cabinGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e40af"/>
+      <stop offset="50%" stop-color="#1d4ed8"/>
+      <stop offset="100%" stop-color="#1e3a8a"/>
+    </linearGradient>
+    
+    <linearGradient id="cabinAccent" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#3b82f6"/>
+      <stop offset="100%" stop-color="#1d4ed8"/>
+    </linearGradient>
+    
+    <linearGradient id="windowGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0ea5e9"/>
+      <stop offset="30%" stop-color="#38bdf8"/>
+      <stop offset="100%" stop-color="#0284c7"/>
+    </linearGradient>
+    
+    <linearGradient id="wheelGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#374151"/>
+      <stop offset="50%" stop-color="#1f2937"/>
+      <stop offset="100%" stop-color="#111827"/>
+    </linearGradient>
+    
+    <linearGradient id="rimGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#9ca3af"/>
+      <stop offset="50%" stop-color="#6b7280"/>
+      <stop offset="100%" stop-color="#4b5563"/>
+    </linearGradient>
+    
+    <linearGradient id="chassisGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#374151"/>
+      <stop offset="100%" stop-color="#1f2937"/>
+    </linearGradient>
+    
+    <linearGradient id="cargoAreaGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="rgba(255,255,255,0.08)"/>
+      <stop offset="100%" stop-color="rgba(255,255,255,0.02)"/>
+    </linearGradient>
+    
+    <!-- Filters -->
+    <filter id="dropShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000" flood-opacity="0.4"/>
+    </filter>
+    
+    <filter id="innerGlow">
+      <feGaussianBlur stdDeviation="2" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+    
+    <!-- Patterns -->
+    <pattern id="cargoGrid" patternUnits="userSpaceOnUse" width="50" height="40">
+      <rect width="50" height="40" fill="none"/>
+      <rect x="1" y="1" width="48" height="38" rx="4" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1" stroke-dasharray="4 2"/>
+    </pattern>
+  </defs>
+  
+  <!-- Main truck group with shadow -->
+  <g filter="url(#dropShadow)">
+    
+    <!-- ==================== TRAILER ==================== -->
+    <g id="trailer">
+      <!-- Trailer chassis/frame -->
+      <rect x="40" y="220" width="530" height="12" rx="2" fill="url(#chassisGrad)"/>
+      
+      <!-- Trailer main body -->
+      <rect x="45" y="75" width="520" height="145" rx="6" fill="url(#trailerBodyGrad)"/>
+      
+      <!-- Trailer top edge highlight -->
+      <rect x="45" y="75" width="520" height="8" rx="3" fill="url(#trailerTopGrad)" opacity="0.6"/>
+      
+      <!-- Trailer side panels/ribs -->
+      <g opacity="0.15">
+        <rect x="60" y="85" width="3" height="125" rx="1" fill="#fff"/>
+        <rect x="120" y="85" width="3" height="125" rx="1" fill="#fff"/>
+        <rect x="180" y="85" width="3" height="125" rx="1" fill="#fff"/>
+        <rect x="240" y="85" width="3" height="125" rx="1" fill="#fff"/>
+        <rect x="300" y="85" width="3" height="125" rx="1" fill="#fff"/>
+        <rect x="360" y="85" width="3" height="125" rx="1" fill="#fff"/>
+        <rect x="420" y="85" width="3" height="125" rx="1" fill="#fff"/>
+        <rect x="480" y="85" width="3" height="125" rx="1" fill="#fff"/>
+        <rect x="540" y="85" width="3" height="125" rx="1" fill="#fff"/>
+      </g>
+      
+      <!-- Cargo area (visible through side) - this is where cargo grid will overlay -->
+      <rect id="cargoArea" x="50" y="80" width="510" height="135" rx="4" fill="url(#cargoAreaGrad)" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+      
+      <!-- Cargo grid pattern hint -->
+      <rect x="50" y="80" width="510" height="135" rx="4" fill="url(#cargoGrid)" opacity="0.5"/>
+      
+      <!-- Rear doors -->
+      <g id="rearDoors">
+        <rect x="45" y="75" width="25" height="145" rx="2" fill="#334155" stroke="#475569" stroke-width="1"/>
+        <circle cx="62" cy="147" r="3" fill="#6b7280"/>
+        <rect x="50" y="90" width="2" height="115" rx="1" fill="rgba(255,255,255,0.1)"/>
+      </g>
+      
+      <!-- Temperature control unit on front -->
+      <rect x="545" y="90" width="18" height="100" rx="4" fill="#374151" stroke="#475569" stroke-width="1"/>
+      <rect x="548" y="95" width="12" height="30" rx="2" fill="#1f2937"/>
+      <circle cx="554" cy="160" r="6" fill="#22c55e" opacity="0.8"/>
+      
+      <!-- Trailer wheels -->
+      <g id="trailerWheels">
+        <!-- Front axle -->
+        <circle cx="150" cy="235" r="32" fill="url(#wheelGrad)"/>
+        <circle cx="150" cy="235" r="18" fill="url(#rimGrad)"/>
+        <circle cx="150" cy="235" r="8" fill="#4b5563"/>
+        
+        <!-- Rear axle 1 -->
+        <circle cx="280" cy="235" r="32" fill="url(#wheelGrad)"/>
+        <circle cx="280" cy="235" r="18" fill="url(#rimGrad)"/>
+        <circle cx="280" cy="235" r="8" fill="#4b5563"/>
+        
+        <!-- Rear axle 2 -->
+        <circle cx="350" cy="235" r="32" fill="url(#wheelGrad)"/>
+        <circle cx="350" cy="235" r="18" fill="url(#rimGrad)"/>
+        <circle cx="350" cy="235" r="8" fill="#4b5563"/>
+      </g>
+      
+      <!-- Mud flaps -->
+      <path d="M118 235 L125 265 L175 265 L182 235" fill="#1f2937" opacity="0.8"/>
+      <path d="M248 235 L255 265 L305 265 L312 235" fill="#1f2937" opacity="0.8"/>
+      <path d="M318 235 L325 265 L375 265 L382 235" fill="#1f2937" opacity="0.8"/>
+      
+      <!-- Company branding on trailer -->
+      <g id="branding" opacity="0.9">
+        <text x="285" y="150" text-anchor="middle" font-family="Arial, sans-serif" font-size="28" font-weight="bold" fill="#e2e8f0">RoutoX</text>
+        <text x="285" y="175" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#94a3b8" letter-spacing="0.15em">LOGISTICS</text>
+      </g>
+      
+      <!-- Reflectors and safety markers -->
+      <rect x="48" y="210" width="15" height="6" rx="1" fill="#fbbf24"/>
+      <rect x="547" y="210" width="15" height="6" rx="1" fill="#ef4444"/>
+    </g>
+    
+    <!-- ==================== CABIN ==================== -->
+    <g id="cabin">
+      <!-- Cabin main body -->
+      <path d="M570 85 L570 220 L700 220 L700 130 Q700 85 670 75 L600 75 Q570 75 570 85 Z" fill="url(#cabinGrad)"/>
+      
+      <!-- Cabin roof curve -->
+      <path d="M575 75 Q600 55 660 55 Q690 55 700 85 L700 130 L680 130 L680 95 Q680 75 660 70 L600 70 Q580 70 575 85 Z" fill="url(#cabinAccent)"/>
+      
+      <!-- Windshield -->
+      <path d="M580 80 L640 65 Q665 60 680 80 L680 125 L580 125 Z" fill="url(#windowGrad)" opacity="0.9"/>
+      
+      <!-- Windshield frame -->
+      <path d="M580 80 L640 65 Q665 60 680 80 L680 125 L580 125 Z" fill="none" stroke="#1e3a8a" stroke-width="3"/>
+      
+      <!-- Side window -->
+      <rect x="685" y="85" width="10" height="35" rx="2" fill="url(#windowGrad)" opacity="0.8"/>
+      
+      <!-- Door -->
+      <rect x="685" y="130" width="12" height="85" rx="2" fill="#1d4ed8" stroke="#1e3a8a" stroke-width="1"/>
+      <circle cx="693" cy="175" r="3" fill="#6b7280"/>
+      
+      <!-- Step -->
+      <rect x="695" y="215" width="15" height="8" rx="2" fill="#374151"/>
+      
+      <!-- Mirrors -->
+      <rect x="564" y="90" width="6" height="20" rx="2" fill="#374151"/>
+      <rect x="700" y="90" width="6" height="20" rx="2" fill="#374151"/>
+      
+      <!-- Headlights -->
+      <ellipse cx="695" cy="210" rx="6" ry="8" fill="#fef3c7"/>
+      <ellipse cx="695" cy="210" rx="4" ry="5" fill="#fef9c3"/>
+      
+      <!-- Turn signal -->
+      <rect x="688" y="195" width="8" height="4" rx="1" fill="#fbbf24"/>
+      
+      <!-- Air intake/grille -->
+      <rect x="698" y="150" width="4" height="40" rx="1" fill="#1f2937"/>
+      <g opacity="0.3">
+        <rect x="699" y="155" width="2" height="3" fill="#fff"/>
+        <rect x="699" y="163" width="2" height="3" fill="#fff"/>
+        <rect x="699" y="171" width="2" height="3" fill="#fff"/>
+        <rect x="699" y="179" width="2" height="3" fill="#fff"/>
+      </g>
+      
+      <!-- Exhaust stack -->
+      <rect x="560" y="60" width="8" height="50" rx="2" fill="#4b5563"/>
+      <ellipse cx="564" cy="60" rx="4" ry="2" fill="#374151"/>
+      
+      <!-- Cabin wheels -->
+      <g id="cabinWheels">
+        <!-- Front wheel -->
+        <circle cx="640" cy="235" r="32" fill="url(#wheelGrad)"/>
+        <circle cx="640" cy="235" r="18" fill="url(#rimGrad)"/>
+        <circle cx="640" cy="235" r="8" fill="#4b5563"/>
+        
+        <!-- Rear wheel (under cabin) -->
+        <circle cx="575" cy="235" r="32" fill="url(#wheelGrad)"/>
+        <circle cx="575" cy="235" r="18" fill="url(#rimGrad)"/>
+        <circle cx="575" cy="235" r="8" fill="#4b5563"/>
+      </g>
+      
+      <!-- Cabin chassis -->
+      <rect x="555" y="220" width="160" height="12" rx="2" fill="url(#chassisGrad)"/>
+      
+      <!-- Fifth wheel connection -->
+      <ellipse cx="565" cy="195" rx="15" ry="8" fill="#374151"/>
+      <ellipse cx="565" cy="195" rx="10" ry="5" fill="#4b5563"/>
+    </g>
+    
+  </g>
+  
+  <!-- Ground shadow -->
+  <ellipse cx="400" cy="275" rx="380" ry="15" fill="rgba(0,0,0,0.15)"/>
+  
+  <!-- Status indicators (can be toggled) -->
+  <g id="statusIndicators" opacity="0.9">
+    <!-- GPS active -->
+    <circle cx="590" cy="65" r="4" fill="#22c55e">
+      <animate attributeName="opacity" values="1;0.5;1" dur="2s" repeatCount="indefinite"/>
+    </circle>
+    
+    <!-- Refrigeration unit status -->
+    <circle cx="554" cy="100" r="3" fill="#3b82f6">
+      <animate attributeName="opacity" values="1;0.3;1" dur="1.5s" repeatCount="indefinite"/>
+    </circle>
+  </g>
+  
+</svg>

@@ -1,4 +1,5 @@
-const API_BASE_URL = "http://localhost:8000/api/v1";
+// Use relative URL when running through nginx on port 8080
+const API_BASE_URL = window.location.port === "8080" ? "/api/v1" : "http://localhost:8000/api/v1";
 
 const SETTINGS_KEY = "routox-settings";
 const prefs = { tz: "UTC+3", fuel: "l", temp: "c", alert: "push" };

@@ -3,101 +3,545 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Вход - RoutoX</title>
+  <title>Вход — RoutoX</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://kit.fontawesome.com/a2e0e9e5a9.js" crossorigin="anonymous"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
+    * { font-family: 'Inter', sans-serif; }
+    
     body {
-      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      min-height: 100vh;
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+      overflow: hidden;
+    }
+
+    /* Animated background particles */
+    .particles {
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+      pointer-events: none;
+    }
+
+    .particle {
+      position: absolute;
+      width: 4px;
+      height: 4px;
+      background: rgba(59, 130, 246, 0.5);
+      border-radius: 50%;
+      animation: floatParticle 15s linear infinite;
+    }
+
+    @keyframes floatParticle {
+      0% { transform: translateY(100vh) translateX(0) scale(0); opacity: 0; }
+      10% { opacity: 1; }
+      90% { opacity: 1; }
+      100% { transform: translateY(-100vh) translateX(100px) scale(1); opacity: 0; }
+    }
+
+    /* 3D Truck Container */
+    .truck-3d-scene {
+      perspective: 1000px;
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+
+    .truck-3d {
+      position: absolute;
+      width: 300px;
+      height: 200px;
+      transform-style: preserve-3d;
+      animation: truckFloat 8s ease-in-out infinite;
+    }
+
+    .truck-3d.left {
+      left: 5%;
+      top: 20%;
+      animation-delay: -2s;
+    }
+
+    .truck-3d.right {
+      right: 5%;
+      bottom: 20%;
+      animation-delay: -4s;
+    }
+
+    @keyframes truckFloat {
+      0%, 100% { 
+        transform: translateY(0) rotateX(10deg) rotateY(-15deg) rotateZ(0deg);
+      }
+      25% {
+        transform: translateY(-20px) rotateX(5deg) rotateY(-10deg) rotateZ(2deg);
+      }
+      50% { 
+        transform: translateY(-30px) rotateX(0deg) rotateY(5deg) rotateZ(-2deg);
+      }
+      75% {
+        transform: translateY(-15px) rotateX(5deg) rotateY(0deg) rotateZ(1deg);
+      }
+    }
+
+    /* Glowing orbs */
+    .glow-orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(60px);
+      opacity: 0.4;
+      animation: orbPulse 6s ease-in-out infinite;
+    }
+
+    .glow-orb.blue {
+      width: 400px;
+      height: 400px;
+      background: radial-gradient(circle, #3b82f6 0%, transparent 70%);
+      top: -10%;
+      left: -10%;
+    }
+
+    .glow-orb.green {
+      width: 300px;
+      height: 300px;
+      background: radial-gradient(circle, #10b981 0%, transparent 70%);
+      bottom: -5%;
+      right: -5%;
+      animation-delay: -3s;
+    }
+
+    .glow-orb.purple {
+      width: 250px;
+      height: 250px;
+      background: radial-gradient(circle, #8b5cf6 0%, transparent 70%);
+      top: 50%;
+      right: 20%;
+      animation-delay: -1.5s;
+    }
+
+    @keyframes orbPulse {
+      0%, 100% { transform: scale(1); opacity: 0.3; }
+      50% { transform: scale(1.2); opacity: 0.5; }
+    }
+
+    /* Login card */
+    .login-card {
+      background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255,255,255,0.15);
+      box-shadow: 
+        0 25px 50px -12px rgba(0,0,0,0.5),
+        inset 0 1px 0 rgba(255,255,255,0.1);
+    }
+
+    /* Animated border */
+    .login-card::before {
+      content: '';
+      position: absolute;
+      inset: -2px;
+      background: linear-gradient(45deg, #3b82f6, #10b981, #8b5cf6, #3b82f6);
+      border-radius: 26px;
+      z-index: -1;
+      opacity: 0;
+      transition: opacity 0.5s ease;
+      animation: borderRotate 4s linear infinite;
+      background-size: 300% 300%;
+    }
+
+    .login-card:hover::before {
+      opacity: 1;
+    }
+
+    @keyframes borderRotate {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    /* Brand logo 3D */
+    .brand-3d {
+      perspective: 500px;
+    }
+
+    .brand-3d-inner {
+      transform-style: preserve-3d;
+      animation: logoFloat 4s ease-in-out infinite;
+    }
+
+    @keyframes logoFloat {
+      0%, 100% { transform: rotateX(0deg) rotateY(0deg); }
+      25% { transform: rotateX(5deg) rotateY(-5deg); }
+      75% { transform: rotateX(-5deg) rotateY(5deg); }
+    }
+
+    .brand-icon {
+      width: 80px;
+      height: 80px;
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 50%, #1d4ed8 100%);
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 36px;
+      font-weight: 800;
+      color: white;
+      box-shadow: 
+        0 10px 30px rgba(59, 130, 246, 0.4),
+        inset 0 2px 0 rgba(255,255,255,0.2);
+      transform: rotateX(5deg);
+    }
+
+    /* Input styling */
+    .input-3d {
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(255,255,255,0.1);
+      transition: all 0.3s ease;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+    }
+
+    .input-3d:focus {
+      border-color: #3b82f6;
+      box-shadow: 
+        0 0 0 3px rgba(59, 130, 246, 0.2),
+        inset 0 2px 4px rgba(0,0,0,0.3);
+      transform: translateY(-1px);
+    }
+
+    /* Button 3D */
+    .btn-3d {
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 50%, #1d4ed8 100%);
+      box-shadow: 
+        0 4px 0 #1e40af,
+        0 8px 20px rgba(59, 130, 246, 0.4);
+      transition: all 0.2s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn-3d::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to bottom, rgba(255,255,255,0.15), transparent);
+      pointer-events: none;
+    }
+
+    .btn-3d:hover {
+      transform: translateY(-2px);
+      box-shadow: 
+        0 6px 0 #1e40af,
+        0 12px 30px rgba(59, 130, 246, 0.5);
+    }
+
+    .btn-3d:active {
+      transform: translateY(2px);
+      box-shadow: 
+        0 2px 0 #1e40af,
+        0 4px 10px rgba(59, 130, 246, 0.3);
+    }
+
+    /* Demo accounts card */
+    .demo-card {
+      background: linear-gradient(135deg, rgba(15, 23, 42, 0.9), rgba(30, 41, 59, 0.8));
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .demo-btn {
+      background: linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
+      border: 1px solid rgba(255,255,255,0.1);
+      transition: all 0.3s ease;
+    }
+
+    .demo-btn:hover {
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(59, 130, 246, 0.1));
+      border-color: rgba(59, 130, 246, 0.4);
+      transform: translateX(4px);
+    }
+
+    /* Role icons */
+    .role-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+    }
+
+    .role-owner {
+      background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+      box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+    }
+
+    .role-admin {
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    }
+
+    .role-driver {
+      background: linear-gradient(135deg, #10b981, #059669);
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    }
+
+    /* Road animation */
+    .road {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 60px;
+      background: linear-gradient(to top, #1e293b, transparent);
+      overflow: hidden;
+    }
+
+    .road-line {
+      position: absolute;
+      bottom: 20px;
+      height: 4px;
+      width: 60px;
+      background: #f59e0b;
+      border-radius: 2px;
+      animation: roadMove 2s linear infinite;
+    }
+
+    @keyframes roadMove {
+      0% { transform: translateX(100vw); }
+      100% { transform: translateX(-100px); }
     }
   </style>
 </head>
-<body class="min-h-screen flex items-center justify-center p-4">
-  <div class="bg-slate-800/50 backdrop-blur-lg rounded-2xl shadow-2xl p-8 w-full max-w-md border border-slate-700">
-    <div class="text-center mb-8">
-      <div class="text-3xl font-bold text-white mb-2">RoutoX</div>
-      <div class="text-slate-400">Управление флотом</div>
+<body class="flex items-center justify-center p-4">
+  <!-- Background effects -->
+  <div class="glow-orb blue"></div>
+  <div class="glow-orb green"></div>
+  <div class="glow-orb purple"></div>
+
+  <!-- Particles -->
+  <div class="particles" id="particles"></div>
+
+  <!-- 3D Trucks -->
+  <div class="truck-3d-scene">
+    <!-- Left truck -->
+    <div class="truck-3d left hidden lg:block">
+      <svg viewBox="0 0 300 150" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="truckGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#3b82f6"/>
+            <stop offset="100%" style="stop-color:#1d4ed8"/>
+          </linearGradient>
+          <linearGradient id="cabinGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" style="stop-color:#60a5fa"/>
+            <stop offset="100%" style="stop-color:#2563eb"/>
+          </linearGradient>
+          <linearGradient id="windowGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" style="stop-color:#0ea5e9"/>
+            <stop offset="100%" style="stop-color:#0369a1"/>
+          </linearGradient>
+        </defs>
+        <!-- Trailer -->
+        <rect x="80" y="30" width="200" height="80" rx="8" fill="url(#truckGradient)" style="filter: drop-shadow(0 20px 40px rgba(59, 130, 246, 0.3));"/>
+        <!-- Cabin -->
+        <rect x="20" y="50" width="70" height="60" rx="6" fill="url(#cabinGradient)"/>
+        <!-- Window -->
+        <rect x="30" y="55" width="50" height="30" rx="4" fill="url(#windowGradient)"/>
+        <!-- Wheels -->
+        <circle cx="60" cy="115" r="15" fill="#1e293b" stroke="#374151" stroke-width="2"/>
+        <circle cx="130" cy="115" r="15" fill="#1e293b" stroke="#374151" stroke-width="2"/>
+        <circle cx="230" cy="115" r="15" fill="#1e293b" stroke="#374151" stroke-width="2"/>
+        <!-- Details -->
+        <rect x="25" y="95" width="20" height="8" rx="2" fill="#f59e0b"/>
+        <text x="160" y="80" font-size="20" font-weight="bold" fill="white" text-anchor="middle">RoutoX</text>
+      </svg>
     </div>
-    
-    <form id="loginForm" class="space-y-6">
+
+    <!-- Right truck (mirrored) -->
+    <div class="truck-3d right hidden lg:block" style="transform: scaleX(-1);">
+      <svg viewBox="0 0 300 150" xmlns="http://www.w3.org/2000/svg">
+        <!-- Trailer -->
+        <rect x="80" y="30" width="200" height="80" rx="8" fill="url(#truckGradient2)" style="fill: linear-gradient(135deg, #10b981, #059669); filter: drop-shadow(0 20px 40px rgba(16, 185, 129, 0.3));"/>
+        <rect x="80" y="30" width="200" height="80" rx="8" fill="#10b981" style="filter: drop-shadow(0 20px 40px rgba(16, 185, 129, 0.3));"/>
+        <!-- Cabin -->
+        <rect x="20" y="50" width="70" height="60" rx="6" fill="#059669"/>
+        <!-- Window -->
+        <rect x="30" y="55" width="50" height="30" rx="4" fill="#34d399"/>
+        <!-- Wheels -->
+        <circle cx="60" cy="115" r="15" fill="#1e293b" stroke="#374151" stroke-width="2"/>
+        <circle cx="130" cy="115" r="15" fill="#1e293b" stroke="#374151" stroke-width="2"/>
+        <circle cx="230" cy="115" r="15" fill="#1e293b" stroke="#374151" stroke-width="2"/>
+      </svg>
+    </div>
+  </div>
+
+  <!-- Road animation -->
+  <div class="road">
+    <div class="road-line" style="animation-delay: 0s;"></div>
+    <div class="road-line" style="animation-delay: 0.5s;"></div>
+    <div class="road-line" style="animation-delay: 1s;"></div>
+    <div class="road-line" style="animation-delay: 1.5s;"></div>
+  </div>
+
+  <!-- Login Card -->
+  <div class="login-card relative rounded-3xl p-8 w-full max-w-md z-10">
+    <!-- Brand -->
+    <div class="text-center mb-8">
+      <div class="brand-3d inline-block mb-4">
+        <div class="brand-3d-inner">
+          <div class="brand-icon mx-auto">R</div>
+        </div>
+      </div>
+      <h1 class="text-3xl font-bold text-white mb-2">RoutoX</h1>
+      <p class="text-slate-400">Интеллектуальное управление флотом</p>
+    </div>
+
+    <!-- Login Form -->
+    <form id="loginForm" class="space-y-5">
       <div>
-        <label class="block text-sm font-medium text-slate-300 mb-2">Email</label>
+        <label class="block text-sm font-medium text-slate-300 mb-2">
+          <i class="fa-solid fa-envelope mr-2 text-blue-400"></i>Email
+        </label>
         <input 
           type="email" 
           id="email" 
           required
-          value=""
-          class="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          placeholder="admin+...@example.com"
+          class="input-3d w-full px-4 py-3 rounded-xl text-white placeholder-slate-500 focus:outline-none"
+          placeholder="your@email.com"
         />
       </div>
       
       <div>
-        <label class="block text-sm font-medium text-slate-300 mb-2">Пароль</label>
+        <label class="block text-sm font-medium text-slate-300 mb-2">
+          <i class="fa-solid fa-lock mr-2 text-blue-400"></i>Пароль
+        </label>
         <input 
           type="password" 
           id="password" 
           required
-          value=""
-          class="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          class="input-3d w-full px-4 py-3 rounded-xl text-white placeholder-slate-500 focus:outline-none"
           placeholder="••••••••"
         />
       </div>
       
-      <button 
-        type="submit"
-        class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors"
-      >
-        Войти
+      <button type="submit" class="btn-3d w-full text-white font-semibold py-4 px-6 rounded-xl text-lg">
+        <i class="fa-solid fa-right-to-bracket mr-2"></i>Войти в систему
       </button>
     </form>
     
-    <div id="error" class="mt-4 text-red-400 text-sm text-center hidden"></div>
+    <div id="error" class="mt-4 p-3 rounded-xl bg-red-500/20 border border-red-500/30 text-red-400 text-sm text-center hidden">
+      <i class="fa-solid fa-circle-exclamation mr-2"></i>
+      <span id="errorText"></span>
+    </div>
 
-    <div class="mt-6 rounded-xl border border-slate-700 bg-slate-900/30 p-4">
-      <div class="text-sm font-semibold text-white">Тестовые аккаунты</div>
-      <div class="text-xs text-slate-400 mt-1">Если аккаунтов нет — запустите backend/scripts/seed_demo.sh</div>
-
-      <div class="mt-4 grid gap-3 text-sm">
-        <div class="flex items-center justify-between gap-3">
-          <div class="min-w-0">
-            <div class="text-slate-200 font-semibold">owner</div>
-            <div class="text-xs text-slate-400 truncate">owner@example.com · owner123</div>
-          </div>
-          <button type="button" class="px-3 py-2 rounded-lg border border-slate-700 text-slate-200 hover:border-emerald-400/60 transition" data-fill-email="owner@example.com" data-fill-pass="owner123">Заполнить</button>
+    <!-- Demo Accounts -->
+    <div class="demo-card mt-6 rounded-2xl p-5">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+          <i class="fa-solid fa-users text-white text-sm"></i>
         </div>
-
-        <div class="flex items-center justify-between gap-3">
-          <div class="min-w-0">
-            <div class="text-slate-200 font-semibold">admin</div>
-            <div class="text-xs text-slate-400 truncate">admin@example.com · admin123</div>
-          </div>
-          <button type="button" class="px-3 py-2 rounded-lg border border-slate-700 text-slate-200 hover:border-emerald-400/60 transition" data-fill-email="admin@example.com" data-fill-pass="admin123">Заполнить</button>
-        </div>
-
-        <div class="flex items-center justify-between gap-3">
-          <div class="min-w-0">
-            <div class="text-slate-200 font-semibold">driver</div>
-            <div class="text-xs text-slate-400 truncate">driver@example.com · driver123</div>
-          </div>
-          <button type="button" class="px-3 py-2 rounded-lg border border-slate-700 text-slate-200 hover:border-emerald-400/60 transition" data-fill-email="driver@example.com" data-fill-pass="driver123">Заполнить</button>
+        <div>
+          <div class="text-sm font-semibold text-white">Демо-аккаунты</div>
+          <div class="text-xs text-slate-500">Выберите роль для входа</div>
         </div>
       </div>
+
+      <div class="space-y-3">
+        <!-- Owner -->
+        <button type="button" class="demo-btn w-full flex items-center gap-4 p-3 rounded-xl" data-fill-email="owner@example.com" data-fill-pass="owner123">
+          <div class="role-icon role-owner">
+            <i class="fa-solid fa-crown text-white"></i>
+          </div>
+          <div class="flex-1 text-left">
+            <div class="text-white font-medium">Владелец</div>
+            <div class="text-xs text-slate-400">owner@example.com</div>
+          </div>
+          <i class="fa-solid fa-arrow-right text-slate-500"></i>
+        </button>
+
+        <!-- Admin -->
+        <button type="button" class="demo-btn w-full flex items-center gap-4 p-3 rounded-xl" data-fill-email="admin@example.com" data-fill-pass="admin123">
+          <div class="role-icon role-admin">
+            <i class="fa-solid fa-user-gear text-white"></i>
+          </div>
+          <div class="flex-1 text-left">
+            <div class="text-white font-medium">Администратор</div>
+            <div class="text-xs text-slate-400">admin@example.com</div>
+          </div>
+          <i class="fa-solid fa-arrow-right text-slate-500"></i>
+        </button>
+
+        <!-- Driver -->
+        <button type="button" class="demo-btn w-full flex items-center gap-4 p-3 rounded-xl" data-fill-email="driver@example.com" data-fill-pass="driver123">
+          <div class="role-icon role-driver">
+            <i class="fa-solid fa-truck text-white"></i>
+          </div>
+          <div class="flex-1 text-left">
+            <div class="text-white font-medium">Водитель</div>
+            <div class="text-xs text-slate-400">driver@example.com</div>
+          </div>
+          <i class="fa-solid fa-arrow-right text-slate-500"></i>
+        </button>
+      </div>
     </div>
-    
-    <div class="mt-6 text-center text-sm text-slate-400">
-      <p>Демо-логины создаёт скрипт backend/scripts/seed_demo.sh</p>
-      <p class="mt-2">Креды выше — стабильные и должны совпадать со seed.</p>
+
+    <!-- Footer -->
+    <div class="mt-6 text-center">
+      <a href="./landing.html" class="text-sm text-blue-400 hover:text-blue-300 transition">
+        <i class="fa-solid fa-arrow-left mr-1"></i>Вернуться на главную
+      </a>
     </div>
   </div>
 
   <script>
-    const API_BASE_URL = "http://localhost:8000/api/v1";
+    // Generate particles
+    const particlesContainer = document.getElementById('particles');
+    for (let i = 0; i < 30; i++) {
+      const particle = document.createElement('div');
+      particle.className = 'particle';
+      particle.style.left = Math.random() * 100 + '%';
+      particle.style.animationDelay = Math.random() * 15 + 's';
+      particle.style.animationDuration = (10 + Math.random() * 10) + 's';
+      particlesContainer.appendChild(particle);
+    }
+
+    // API Configuration
+    const API_BASE_URL = window.location.port === "8080" ? "/api/v1" : "http://localhost:8000/api/v1";
+
+    // Demo accounts for offline/local mode
+    const DEMO_ACCOUNTS = {
+      "owner@example.com": { password: "owner123", role: "owner", name: "Владелец" },
+      "admin@example.com": { password: "admin123", role: "admin", name: "Администратор" },
+      "driver@example.com": { password: "driver123", role: "driver", name: "Водитель" }
+    };
+
+    function generateDemoToken(email, role) {
+      const payload = { email, role, exp: Date.now() + 86400000 };
+      return "demo_" + btoa(JSON.stringify(payload));
+    }
+
+    function localLogin(email, password) {
+      const account = DEMO_ACCOUNTS[email];
+      if (!account) return null;
+      if (account.password !== password) return null;
+      return {
+        access_token: generateDemoToken(email, account.role),
+        role: account.role,
+        name: account.name
+      };
+    }
 
     async function fetchMe(token) {
+      if (token && token.startsWith("demo_")) {
+        try {
+          const payload = JSON.parse(atob(token.replace("demo_", "")));
+          return { email: payload.email, role: payload.role };
+        } catch {
+          throw new Error("Invalid demo token");
+        }
+      }
       const res = await fetch(`${API_BASE_URL}/auth/me`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (!res.ok) throw new Error("Не удалось получить профиль пользователя");
+      if (!res.ok) throw new Error("Не удалось получить профиль");
       return await res.json();
     }
     
@@ -107,53 +551,71 @@
       const email = document.getElementById("email").value;
       const password = document.getElementById("password").value;
       const errorDiv = document.getElementById("error");
+      const errorText = document.getElementById("errorText");
       
       try {
-        const response = await fetch(`${API_BASE_URL}/auth/login`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ email, password }),
-        });
-        
-        if (!response.ok) {
-          const error = await response.json().catch(() => ({ detail: "Ошибка входа" }));
-          throw new Error(error.detail || "Неверный email или пароль");
+        let data = null;
+        let role = null;
+
+        // Try backend API first
+        try {
+          const response = await fetch(`${API_BASE_URL}/auth/login`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, password }),
+          });
+          
+          if (response.ok) {
+            data = await response.json();
+            localStorage.setItem("auth_token", data.access_token);
+            
+            try {
+              const me = await fetchMe(data.access_token);
+              role = me.role;
+            } catch {
+              role = "admin";
+            }
+          } else {
+            const error = await response.json().catch(() => ({ detail: "Ошибка входа" }));
+            throw new Error(error.detail || "Неверный email или пароль");
+          }
+        } catch (apiError) {
+          // Backend not available, try local demo login
+          console.log("Backend unavailable, trying local demo login...");
+          const localData = localLogin(email, password);
+          if (localData) {
+            data = localData;
+            role = localData.role;
+            localStorage.setItem("auth_token", data.access_token);
+            localStorage.setItem("demo_mode", "true");
+            localStorage.setItem("user_role", role);
+            localStorage.setItem("user_email", email);
+          } else {
+            throw new Error("Неверный email или пароль");
+          }
         }
-        
-        const data = await response.json();
-        localStorage.setItem("auth_token", data.access_token);
 
         // Role-based redirect
-        try {
-          const me = await fetchMe(data.access_token);
-          if (me.role === "driver") window.location.href = "./driver.html";
-          else if (me.role === "owner") window.location.href = "./owner.html";
-          else window.location.href = "./index.html";
-        } catch {
-          // Fallback if API is temporarily unavailable
-          window.location.href = "./index.html";
-        }
+        if (role === "driver") window.location.href = "./driver.html";
+        else if (role === "owner") window.location.href = "./owner.html";
+        else window.location.href = "./index.html";
+        
       } catch (error) {
-        errorDiv.textContent = error.message;
+        errorText.textContent = error.message;
         errorDiv.classList.remove("hidden");
       }
     });
 
+    // Fill demo credentials
     document.querySelectorAll("button[data-fill-email]").forEach((btn) => {
       btn.addEventListener("click", () => {
         const email = btn.getAttribute("data-fill-email") || "";
         const pass = btn.getAttribute("data-fill-pass") || "";
-        const emailEl = document.getElementById("email");
-        const passEl = document.getElementById("password");
-        const errorDiv = document.getElementById("error");
-        if (emailEl) emailEl.value = email;
-        if (passEl) passEl.value = pass;
-        errorDiv?.classList.add("hidden");
+        document.getElementById("email").value = email;
+        document.getElementById("password").value = pass;
+        document.getElementById("error").classList.add("hidden");
       });
     });
   </script>
 </body>
 </html>
-

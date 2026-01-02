@@ -1,0 +1,1948 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RoutoX — Интеллектуальная система управления автопарком</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://kit.fontawesome.com/a2e0e9e5a9.js" crossorigin="anonymous"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #3b82f6;
+      --primary-dark: #2563eb;
+      --accent: #10b981;
+      --bg-dark: #0a0f1c;
+      --bg-card: #111827;
+    }
+    
+    * { font-family: 'Inter', sans-serif; }
+    
+    body {
+      background: var(--bg-dark);
+      color: #e5e7eb;
+      overflow-x: hidden;
+    }
+
+    /* Animated gradient background */
+    .hero-bg {
+      background: 
+        radial-gradient(ellipse at 20% 0%, rgba(59, 130, 246, 0.15) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 100%, rgba(16, 185, 129, 0.1) 0%, transparent 50%),
+        linear-gradient(180deg, #0a0f1c 0%, #111827 100%);
+      position: relative;
+    }
+
+    .hero-bg::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.02'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+      pointer-events: none;
+    }
+
+    /* 3D Truck Animation */
+    .truck-3d-container {
+      perspective: 1200px;
+      transform-style: preserve-3d;
+    }
+
+    .truck-3d {
+      animation: float3d 6s ease-in-out infinite;
+      transform-style: preserve-3d;
+    }
+
+    @keyframes float3d {
+      0%, 100% { 
+        transform: translateY(0) rotateX(5deg) rotateY(-5deg); 
+      }
+      50% { 
+        transform: translateY(-20px) rotateX(0deg) rotateY(5deg); 
+      }
+    }
+
+    /* Glassmorphism cards */
+    .glass-card {
+      background: linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 24px;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .glass-card:hover {
+      transform: translateY(-8px);
+      border-color: rgba(59, 130, 246, 0.3);
+      box-shadow: 0 25px 50px -12px rgba(59, 130, 246, 0.15);
+    }
+
+    /* Animated stats counter */
+    .stat-number {
+      background: linear-gradient(135deg, #3b82f6, #10b981);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* Glowing button */
+    .btn-glow {
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      box-shadow: 0 0 30px rgba(59, 130, 246, 0.4);
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn-glow::before {
+      content: '';
+      position: absolute;
+      inset: -2px;
+      background: linear-gradient(135deg, #3b82f6, #10b981, #3b82f6);
+      border-radius: inherit;
+      z-index: -1;
+      animation: borderGlow 3s linear infinite;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .btn-glow:hover::before {
+      opacity: 1;
+    }
+
+    .btn-glow:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 0 50px rgba(59, 130, 246, 0.6);
+    }
+
+    @keyframes borderGlow {
+      0% { filter: hue-rotate(0deg); }
+      100% { filter: hue-rotate(360deg); }
+    }
+
+    /* Floating elements */
+    .float-element {
+      animation: floatGentle 4s ease-in-out infinite;
+    }
+
+    .float-element:nth-child(2) { animation-delay: -1s; }
+    .float-element:nth-child(3) { animation-delay: -2s; }
+
+    @keyframes floatGentle {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-15px); }
+    }
+
+    /* Particle effect */
+    .particle {
+      position: absolute;
+      width: 4px;
+      height: 4px;
+      background: rgba(59, 130, 246, 0.6);
+      border-radius: 50%;
+      animation: particleFloat 8s ease-in-out infinite;
+    }
+
+    @keyframes particleFloat {
+      0%, 100% { 
+        transform: translateY(0) translateX(0);
+        opacity: 0;
+      }
+      10% { opacity: 1; }
+      90% { opacity: 1; }
+      100% { 
+        transform: translateY(-100vh) translateX(50px);
+        opacity: 0;
+      }
+    }
+
+    /* 3D Cube Loader */
+    .cube-loader {
+      width: 60px;
+      height: 60px;
+      transform-style: preserve-3d;
+      animation: rotateCube 4s infinite ease-in-out;
+    }
+
+    .cube-face {
+      position: absolute;
+      width: 60px;
+      height: 60px;
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.3), rgba(16, 185, 129, 0.3));
+      border: 2px solid rgba(59, 130, 246, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+    }
+
+    @keyframes rotateCube {
+      0% { transform: rotateX(0deg) rotateY(0deg); }
+      25% { transform: rotateX(90deg) rotateY(0deg); }
+      50% { transform: rotateX(90deg) rotateY(90deg); }
+      75% { transform: rotateX(180deg) rotateY(90deg); }
+      100% { transform: rotateX(180deg) rotateY(180deg); }
+    }
+
+    /* Map visualization */
+    .map-glow {
+      background: 
+        radial-gradient(circle at 30% 40%, rgba(59, 130, 246, 0.3) 0%, transparent 30%),
+        radial-gradient(circle at 70% 60%, rgba(16, 185, 129, 0.3) 0%, transparent 30%),
+        radial-gradient(circle at 50% 80%, rgba(139, 92, 246, 0.2) 0%, transparent 30%);
+      animation: mapPulse 4s ease-in-out infinite;
+    }
+
+    @keyframes mapPulse {
+      0%, 100% { opacity: 0.6; }
+      50% { opacity: 1; }
+    }
+
+    /* Route animation */
+    .route-line {
+      stroke-dasharray: 1000;
+      stroke-dashoffset: 1000;
+      animation: drawRoute 3s ease-in-out infinite;
+    }
+
+    @keyframes drawRoute {
+      0% { stroke-dashoffset: 1000; }
+      50% { stroke-dashoffset: 0; }
+      100% { stroke-dashoffset: -1000; }
+    }
+
+    /* Scrolling ticker */
+    .ticker {
+      animation: tickerScroll 30s linear infinite;
+    }
+
+    @keyframes tickerScroll {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+
+    /* Nav glassmorphism */
+    .nav-glass {
+      background: rgba(10, 15, 28, 0.8);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+
+    /* Section reveal animation */
+    .reveal {
+      opacity: 0;
+      transform: translateY(50px);
+      transition: all 0.8s ease-out;
+    }
+
+    .reveal.active {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Legal footer */
+    .legal-link {
+      position: relative;
+    }
+
+    .legal-link::after {
+      content: '';
+      position: absolute;
+      bottom: -2px;
+      left: 0;
+      width: 0;
+      height: 1px;
+      background: var(--primary);
+      transition: width 0.3s ease;
+    }
+
+    .legal-link:hover::after {
+      width: 100%;
+    }
+
+    /* Truck SVG 3D */
+    .truck-body {
+      filter: drop-shadow(0 20px 40px rgba(0,0,0,0.4));
+    }
+
+    /* Feature icon container */
+    .feature-icon {
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(16, 185, 129, 0.1));
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      border-radius: 16px;
+      width: 64px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      transition: all 0.3s ease;
+    }
+
+    .glass-card:hover .feature-icon {
+      transform: scale(1.1) rotate(5deg);
+      box-shadow: 0 0 30px rgba(59, 130, 246, 0.3);
+    }
+
+    /* Pricing card highlight */
+    .pricing-popular {
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(16, 185, 129, 0.05));
+      border: 2px solid rgba(59, 130, 246, 0.5);
+      position: relative;
+    }
+
+    .pricing-popular::before {
+      content: 'Популярный';
+      position: absolute;
+      top: -12px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      padding: 4px 16px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    /* Testimonial card */
+    .testimonial-card {
+      background: linear-gradient(135deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+    }
+
+    /* Cookie banner */
+    .cookie-banner {
+      background: rgba(17, 24, 39, 0.95);
+      backdrop-filter: blur(10px);
+      border-top: 1px solid rgba(255,255,255,0.1);
+    }
+
+    /* 3D Floating Spheres */
+    .sphere-3d {
+      position: absolute;
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, rgba(59, 130, 246, 0.4), rgba(59, 130, 246, 0.1) 50%, transparent 70%);
+      box-shadow: 
+        inset 0 0 50px rgba(59, 130, 246, 0.3),
+        0 0 50px rgba(59, 130, 246, 0.2);
+      animation: floatSphere 8s ease-in-out infinite;
+    }
+
+    .sphere-3d.sphere-emerald {
+      width: 80px;
+      height: 80px;
+      background: radial-gradient(circle at 30% 30%, rgba(16, 185, 129, 0.4), rgba(16, 185, 129, 0.1) 50%, transparent 70%);
+      box-shadow: 
+        inset 0 0 40px rgba(16, 185, 129, 0.3),
+        0 0 40px rgba(16, 185, 129, 0.2);
+      animation-delay: -3s;
+      animation-duration: 10s;
+    }
+
+    .sphere-3d.sphere-purple {
+      width: 60px;
+      height: 60px;
+      background: radial-gradient(circle at 30% 30%, rgba(168, 85, 247, 0.4), rgba(168, 85, 247, 0.1) 50%, transparent 70%);
+      box-shadow: 
+        inset 0 0 30px rgba(168, 85, 247, 0.3),
+        0 0 30px rgba(168, 85, 247, 0.2);
+      animation-delay: -5s;
+      animation-duration: 12s;
+    }
+
+    @keyframes floatSphere {
+      0%, 100% { transform: translateY(0) rotate(0deg); }
+      25% { transform: translateY(-20px) rotate(5deg); }
+      50% { transform: translateY(0) rotate(0deg); }
+      75% { transform: translateY(20px) rotate(-5deg); }
+    }
+
+    /* Integration Card 3D Effect */
+    .integration-card-3d {
+      perspective: 1000px;
+    }
+
+    .integration-card-3d .glass-card {
+      transform-style: preserve-3d;
+      backface-visibility: hidden;
+    }
+
+    .integration-card-3d:hover .integration-icon {
+      animation: iconPop 0.6s ease-out;
+    }
+
+    @keyframes iconPop {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.2) rotateY(180deg); }
+      100% { transform: scale(1) rotateY(360deg); }
+    }
+
+    /* 3D Cube for Tech Cards */
+    .cube-3d {
+      width: 60px;
+      height: 60px;
+      position: relative;
+      transform-style: preserve-3d;
+      animation: rotateCube3d 10s linear infinite;
+    }
+
+    .cube-face {
+      position: absolute;
+      width: 60px;
+      height: 60px;
+      border: 2px solid rgba(59, 130, 246, 0.5);
+      background: rgba(59, 130, 246, 0.1);
+    }
+
+    .cube-front { transform: translateZ(30px); }
+    .cube-back { transform: translateZ(-30px) rotateY(180deg); }
+    .cube-left { transform: translateX(-30px) rotateY(-90deg); }
+    .cube-right { transform: translateX(30px) rotateY(90deg); }
+    .cube-top { transform: translateY(-30px) rotateX(90deg); }
+    .cube-bottom { transform: translateY(30px) rotateX(-90deg); }
+
+    @keyframes rotateCube3d {
+      0% { transform: rotateX(0deg) rotateY(0deg); }
+      100% { transform: rotateX(360deg) rotateY(360deg); }
+    }
+
+    /* Network 3D Animation */
+    .network-3d {
+      animation: pulseNetwork 2s ease-in-out infinite;
+    }
+
+    .network-line {
+      stroke-dasharray: 50;
+      animation: drawNetworkLine 2s ease-in-out infinite;
+    }
+
+    @keyframes pulseNetwork {
+      0%, 100% { opacity: 0.4; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.1); }
+    }
+
+    @keyframes drawNetworkLine {
+      0% { stroke-dashoffset: 50; }
+      50% { stroke-dashoffset: 0; }
+      100% { stroke-dashoffset: -50; }
+    }
+
+    /* 3D Chain Animation */
+    .chain-3d {
+      display: flex;
+      gap: 8px;
+      animation: chainMove 3s ease-in-out infinite;
+    }
+
+    .chain-link {
+      width: 24px;
+      height: 24px;
+      border: 3px solid rgba(251, 191, 36, 0.6);
+      border-radius: 6px;
+      animation: chainRotate 2s ease-in-out infinite;
+    }
+
+    .chain-link:nth-child(2) { animation-delay: 0.2s; }
+    .chain-link:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes chainMove {
+      0%, 100% { transform: translateX(0); }
+      50% { transform: translateX(10px); }
+    }
+
+    @keyframes chainRotate {
+      0%, 100% { transform: rotateY(0deg); }
+      50% { transform: rotateY(180deg); }
+    }
+
+    /* Tech Card 3D */
+    .tech-card-3d {
+      perspective: 1000px;
+    }
+
+    .tech-card-3d > div {
+      transition: transform 0.5s ease, box-shadow 0.5s ease;
+    }
+
+    .tech-card-3d:hover > div {
+      transform: translateY(-10px) rotateX(2deg);
+      box-shadow: 0 30px 60px -20px rgba(0, 0, 0, 0.5);
+    }
+
+    /* Partner Logo Hover */
+    .partner-logo {
+      transition: all 0.3s ease;
+    }
+
+    .partner-logo:hover {
+      z-index: 10;
+    }
+
+    /* 3D Text Shadow */
+    .text-3d {
+      text-shadow: 
+        0 1px 0 #ccc,
+        0 2px 0 #c9c9c9,
+        0 3px 0 #bbb,
+        0 4px 0 #b9b9b9,
+        0 5px 0 #aaa,
+        0 6px 1px rgba(0,0,0,.1),
+        0 0 5px rgba(0,0,0,.1),
+        0 1px 3px rgba(0,0,0,.3),
+        0 3px 5px rgba(0,0,0,.2),
+        0 5px 10px rgba(0,0,0,.25),
+        0 10px 10px rgba(0,0,0,.2),
+        0 20px 20px rgba(0,0,0,.15);
+    }
+
+    /* Holographic Effect */
+    .holographic {
+      background: linear-gradient(
+        135deg,
+        rgba(59, 130, 246, 0.3) 0%,
+        rgba(16, 185, 129, 0.3) 25%,
+        rgba(168, 85, 247, 0.3) 50%,
+        rgba(251, 191, 36, 0.3) 75%,
+        rgba(59, 130, 246, 0.3) 100%
+      );
+      background-size: 400% 400%;
+      animation: holographicShift 8s ease-in-out infinite;
+    }
+
+    @keyframes holographicShift {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
+
+    /* Glowing Border Animation */
+    .glow-border {
+      position: relative;
+    }
+
+    .glow-border::before {
+      content: '';
+      position: absolute;
+      inset: -2px;
+      background: linear-gradient(90deg, #3b82f6, #10b981, #a855f7, #3b82f6);
+      background-size: 300% 100%;
+      border-radius: inherit;
+      z-index: -1;
+      animation: glowMove 3s linear infinite;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .glow-border:hover::before {
+      opacity: 1;
+    }
+
+    @keyframes glowMove {
+      0% { background-position: 0% 50%; }
+      100% { background-position: 300% 50%; }
+    }
+
+    /* Floating 3D Cubes in Hero */
+    .floating-cube {
+      width: 40px;
+      height: 40px;
+      position: absolute;
+      transform-style: preserve-3d;
+      animation: floatCube 15s ease-in-out infinite;
+      border: 2px solid rgba(59, 130, 246, 0.3);
+      background: rgba(59, 130, 246, 0.1);
+    }
+
+    .floating-cube.cube-emerald {
+      width: 30px;
+      height: 30px;
+      border-color: rgba(16, 185, 129, 0.3);
+      background: rgba(16, 185, 129, 0.1);
+      animation-delay: -5s;
+    }
+
+    .floating-cube.cube-purple {
+      width: 25px;
+      height: 25px;
+      border-color: rgba(168, 85, 247, 0.3);
+      background: rgba(168, 85, 247, 0.1);
+      animation-delay: -8s;
+    }
+
+    @keyframes floatCube {
+      0%, 100% { 
+        transform: translateY(0) rotateX(0deg) rotateY(0deg); 
+      }
+      25% { 
+        transform: translateY(-30px) rotateX(90deg) rotateY(45deg); 
+      }
+      50% { 
+        transform: translateY(-10px) rotateX(180deg) rotateY(90deg); 
+      }
+      75% { 
+        transform: translateY(-40px) rotateX(270deg) rotateY(135deg); 
+      }
+    }
+
+    /* Glowing Orbs */
+    .glow-orb {
+      position: absolute;
+      width: 150px;
+      height: 150px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(59, 130, 246, 0.15) 0%, transparent 70%);
+      filter: blur(40px);
+      animation: pulseOrb 4s ease-in-out infinite;
+    }
+
+    .glow-orb.orb-emerald {
+      width: 120px;
+      height: 120px;
+      background: radial-gradient(circle, rgba(16, 185, 129, 0.15) 0%, transparent 70%);
+      animation-delay: -2s;
+    }
+
+    @keyframes pulseOrb {
+      0%, 100% { 
+        opacity: 0.5; 
+        transform: scale(1); 
+      }
+      50% { 
+        opacity: 1; 
+        transform: scale(1.2); 
+      }
+    }
+
+    /* 3D Grid Floor Effect */
+    .grid-floor {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 300px;
+      background: 
+        linear-gradient(to top, rgba(10, 15, 28, 1) 0%, transparent 100%),
+        repeating-linear-gradient(
+          90deg,
+          transparent,
+          transparent 59px,
+          rgba(59, 130, 246, 0.1) 59px,
+          rgba(59, 130, 246, 0.1) 60px
+        ),
+        repeating-linear-gradient(
+          0deg,
+          transparent,
+          transparent 59px,
+          rgba(59, 130, 246, 0.1) 59px,
+          rgba(59, 130, 246, 0.1) 60px
+        );
+      transform: perspective(500px) rotateX(60deg);
+      transform-origin: bottom center;
+      opacity: 0.3;
+    }
+
+    /* Animated Gradient Text */
+    .animate-gradient {
+      background-size: 200% auto;
+      animation: gradientShift 3s ease-in-out infinite;
+    }
+
+    @keyframes gradientShift {
+      0%, 100% { background-position: 0% center; }
+      50% { background-position: 100% center; }
+    }
+
+    /* Testimonial 3D */
+    .testimonial-3d {
+      perspective: 1000px;
+    }
+
+    /* Stats Card Hover */
+    .stats-card {
+      transition: all 0.3s ease;
+    }
+
+    .stats-card:hover {
+      transform: translateY(-5px);
+    }
+  </style>
+</head>
+<body>
+  <!-- Particles -->
+  <div class="fixed inset-0 pointer-events-none overflow-hidden">
+    <div class="particle" style="left: 10%; animation-delay: 0s;"></div>
+    <div class="particle" style="left: 20%; animation-delay: 1s;"></div>
+    <div class="particle" style="left: 30%; animation-delay: 2s;"></div>
+    <div class="particle" style="left: 50%; animation-delay: 3s;"></div>
+    <div class="particle" style="left: 70%; animation-delay: 4s;"></div>
+    <div class="particle" style="left: 80%; animation-delay: 5s;"></div>
+    <div class="particle" style="left: 90%; animation-delay: 6s;"></div>
+  </div>
+
+  <!-- Navigation -->
+  <nav class="nav-glass fixed top-0 left-0 right-0 z-50 px-6 py-4">
+    <div class="max-w-7xl mx-auto flex items-center justify-between">
+      <a href="#" class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-emerald-500 flex items-center justify-center text-white font-bold text-xl">R</div>
+        <div>
+          <div class="font-bold text-lg">RoutoX</div>
+          <div class="text-xs text-slate-400">Fleet Management</div>
+        </div>
+      </a>
+      
+      <div class="hidden md:flex items-center gap-8">
+        <a href="#features" class="text-sm text-slate-300 hover:text-white transition">Возможности</a>
+        <a href="#how-it-works" class="text-sm text-slate-300 hover:text-white transition">Как это работает</a>
+        <a href="#pricing" class="text-sm text-slate-300 hover:text-white transition">Тарифы</a>
+        <a href="#contact" class="text-sm text-slate-300 hover:text-white transition">Контакты</a>
+      </div>
+      
+      <div class="flex items-center gap-4">
+        <a href="./login.html" class="text-sm text-slate-300 hover:text-white transition">Войти</a>
+        <a href="./login.html" class="btn-glow px-6 py-2.5 rounded-xl text-white font-semibold text-sm">
+          Попробовать бесплатно
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <section class="hero-bg min-h-screen pt-32 pb-20 px-6 relative overflow-hidden">
+    <!-- Additional 3D Elements -->
+    <div class="absolute inset-0 pointer-events-none">
+      <!-- Floating 3D Cubes -->
+      <div class="floating-cube" style="top: 15%; left: 8%;"></div>
+      <div class="floating-cube cube-emerald" style="top: 70%; right: 15%;"></div>
+      <div class="floating-cube cube-purple" style="top: 40%; right: 5%;"></div>
+      
+      <!-- Glowing Orbs -->
+      <div class="glow-orb" style="top: 20%; right: 30%;"></div>
+      <div class="glow-orb orb-emerald" style="bottom: 30%; left: 20%;"></div>
+      
+      <!-- 3D Grid Floor Effect -->
+      <div class="grid-floor"></div>
+    </div>
+    
+    <div class="max-w-7xl mx-auto grid lg:grid-cols-2 gap-12 items-center relative z-10">
+      <div class="space-y-8">
+        <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-sm">
+          <span class="w-2 h-2 rounded-full bg-blue-400 animate-pulse"></span>
+          Новое: AI-оптимизация маршрутов
+        </div>
+        
+        <h1 class="text-5xl lg:text-6xl font-bold leading-tight">
+          Управляйте<br>
+          <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-cyan-400 to-emerald-400 animate-gradient">автопарком</span><br>
+          в 3 раза эффективнее
+        </h1>
+        
+        <p class="text-xl text-slate-400 leading-relaxed max-w-xl">
+          Интеллектуальная TMS-платформа для контроля грузоперевозок в реальном времени. 
+          Снизьте простои, пустой пробег и увеличьте маржинальность.
+        </p>
+        
+        <div class="flex flex-wrap gap-4">
+          <a href="./login.html" class="btn-glow px-8 py-4 rounded-xl text-white font-semibold flex items-center gap-2 group">
+            <span>Начать бесплатно</span>
+            <i class="fa-solid fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
+          </a>
+          <a href="#demo" class="px-8 py-4 rounded-xl border border-slate-700 text-white font-semibold hover:border-blue-500/50 hover:bg-blue-500/5 transition flex items-center gap-2 group">
+            <i class="fa-solid fa-play group-hover:scale-110 transition-transform"></i>
+            <span>Смотреть демо</span>
+          </a>
+        </div>
+        
+        <!-- Trust Badges -->
+        <div class="flex flex-wrap items-center gap-6 pt-8 border-t border-slate-800">
+          <div class="flex items-center gap-2 text-sm text-slate-400">
+            <i class="fa-solid fa-shield-check text-emerald-400"></i>
+            <span>Сертификат ФСБ</span>
+          </div>
+          <div class="flex items-center gap-2 text-sm text-slate-400">
+            <i class="fa-solid fa-database text-blue-400"></i>
+            <span>Реестр РПО</span>
+          </div>
+          <div class="flex items-center gap-2 text-sm text-slate-400">
+            <i class="fa-solid fa-lock text-purple-400"></i>
+            <span>ФЗ-152 / GDPR</span>
+          </div>
+        </div>
+        
+        <div class="flex items-center gap-8 pt-4">
+          <div>
+            <div class="stat-number text-3xl font-bold">500+</div>
+            <div class="text-sm text-slate-400">Компаний</div>
+          </div>
+          <div>
+            <div class="stat-number text-3xl font-bold">50K+</div>
+            <div class="text-sm text-slate-400">Транспортных средств</div>
+          </div>
+          <div>
+            <div class="stat-number text-3xl font-bold">99.9%</div>
+            <div class="text-sm text-slate-400">Uptime</div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 3D Truck Visualization -->
+      <div class="truck-3d-container">
+        <div class="truck-3d relative">
+          <!-- SVG Truck with 3D effect -->
+          <svg viewBox="0 0 500 300" class="w-full truck-body">
+            <!-- Truck trailer -->
+            <defs>
+              <linearGradient id="trailerGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:0.3" />
+                <stop offset="100%" style="stop-color:#1e40af;stop-opacity:0.5" />
+              </linearGradient>
+              <linearGradient id="cabGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" style="stop-color:#10b981;stop-opacity:0.4" />
+                <stop offset="100%" style="stop-color:#047857;stop-opacity:0.6" />
+              </linearGradient>
+              <filter id="glow">
+                <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                <feMerge>
+                  <feMergeNode in="coloredBlur"/>
+                  <feMergeNode in="SourceGraphic"/>
+                </feMerge>
+              </filter>
+            </defs>
+            
+            <!-- Trailer body -->
+            <rect x="80" y="80" width="320" height="140" rx="8" fill="url(#trailerGrad)" stroke="#3b82f6" stroke-width="2"/>
+            
+            <!-- Cargo sections -->
+            <rect x="90" y="90" width="70" height="55" rx="4" fill="rgba(59,130,246,0.4)" stroke="#60a5fa" stroke-width="1"/>
+            <rect x="165" y="90" width="70" height="55" rx="4" fill="rgba(59,130,246,0.6)" stroke="#60a5fa" stroke-width="1"/>
+            <rect x="240" y="90" width="70" height="55" rx="4" fill="rgba(59,130,246,0.4)" stroke="#60a5fa" stroke-width="1"/>
+            <rect x="315" y="90" width="75" height="55" rx="4" fill="rgba(59,130,246,0.5)" stroke="#60a5fa" stroke-width="1"/>
+            
+            <rect x="90" y="155" width="145" height="55" rx="4" fill="rgba(59,130,246,0.7)" stroke="#60a5fa" stroke-width="1"/>
+            <rect x="240" y="155" width="150" height="55" rx="4" fill="rgba(59,130,246,0.5)" stroke="#60a5fa" stroke-width="1"/>
+            
+            <!-- Cargo weight labels -->
+            <text x="125" y="125" fill="#93c5fd" font-size="10" text-anchor="middle">400 кг</text>
+            <text x="200" y="125" fill="#93c5fd" font-size="10" text-anchor="middle">850 кг</text>
+            <text x="275" y="125" fill="#93c5fd" font-size="10" text-anchor="middle">400 кг</text>
+            <text x="352" y="125" fill="#93c5fd" font-size="10" text-anchor="middle">700 кг</text>
+            <text x="162" y="190" fill="#93c5fd" font-size="10" text-anchor="middle">1200 кг</text>
+            <text x="315" y="190" fill="#93c5fd" font-size="10" text-anchor="middle">600 кг</text>
+            
+            <!-- Cab -->
+            <path d="M400 100 L480 100 L480 220 L400 220 Z" fill="url(#cabGrad)" stroke="#10b981" stroke-width="2"/>
+            <rect x="420" y="115" width="45" height="40" rx="4" fill="rgba(16,185,129,0.3)" stroke="#34d399" stroke-width="1"/>
+            
+            <!-- Wheels -->
+            <circle cx="130" cy="240" r="22" fill="#1f2937" stroke="#374151" stroke-width="3"/>
+            <circle cx="130" cy="240" r="10" fill="#374151"/>
+            <circle cx="200" cy="240" r="22" fill="#1f2937" stroke="#374151" stroke-width="3"/>
+            <circle cx="200" cy="240" r="10" fill="#374151"/>
+            <circle cx="350" cy="240" r="22" fill="#1f2937" stroke="#374151" stroke-width="3"/>
+            <circle cx="350" cy="240" r="10" fill="#374151"/>
+            <circle cx="440" cy="240" r="22" fill="#1f2937" stroke="#374151" stroke-width="3"/>
+            <circle cx="440" cy="240" r="10" fill="#374151"/>
+            
+            <!-- GPS antenna glow -->
+            <circle cx="420" cy="90" r="8" fill="#10b981" filter="url(#glow)" class="animate-pulse"/>
+            <circle cx="420" cy="90" r="4" fill="#34d399"/>
+            
+            <!-- Route line -->
+            <path d="M 50 250 Q 150 200 250 220 T 450 180" stroke="#3b82f6" stroke-width="3" fill="none" stroke-linecap="round" class="route-line" filter="url(#glow)"/>
+          </svg>
+          
+          <!-- Floating info cards -->
+          <div class="absolute top-4 right-4 glass-card px-4 py-3 float-element">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-lg bg-emerald-500/20 flex items-center justify-center">
+                <i class="fa-solid fa-location-dot text-emerald-400"></i>
+              </div>
+              <div>
+                <div class="text-xs text-slate-400">Местоположение</div>
+                <div class="font-semibold text-sm">Москва → Казань</div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="absolute bottom-20 left-4 glass-card px-4 py-3 float-element" style="animation-delay: -2s">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
+                <i class="fa-solid fa-gauge-high text-blue-400"></i>
+              </div>
+              <div>
+                <div class="text-xs text-slate-400">Загрузка</div>
+                <div class="font-semibold text-sm">4,150 кг / 87%</div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="absolute top-1/2 left-0 glass-card px-4 py-3 float-element" style="animation-delay: -1s">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center">
+                <i class="fa-solid fa-clock text-purple-400"></i>
+              </div>
+              <div>
+                <div class="text-xs text-slate-400">ETA</div>
+                <div class="font-semibold text-sm">17:45 (в пути)</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Partners Section with Logos -->
+    <div class="mt-24 py-16 bg-slate-900/50 border-y border-slate-800">
+      <div class="max-w-7xl mx-auto px-6">
+        <div class="text-center mb-12">
+          <div class="text-sm text-slate-500 uppercase tracking-widest mb-4">Нам доверяют лидеры рынка</div>
+          <h3 class="text-2xl font-bold">Более 500 компаний используют RoutoX</h3>
+        </div>
+        
+        <!-- Partner Logos Grid -->
+        <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-8 items-center">
+          <!-- Partner 1: Деловые Линии -->
+          <div class="partner-logo group cursor-pointer">
+            <div class="w-full aspect-[3/2] rounded-xl bg-slate-800/50 border border-slate-700/50 flex items-center justify-center p-4 transition-all duration-300 group-hover:bg-blue-500/10 group-hover:border-blue-500/30 group-hover:scale-105">
+              <svg viewBox="0 0 100 60" class="w-full h-8 opacity-50 group-hover:opacity-100 transition-opacity">
+                <rect x="10" y="20" width="80" height="6" rx="3" fill="#3b82f6"/>
+                <rect x="10" y="30" width="60" height="6" rx="3" fill="#60a5fa"/>
+                <rect x="10" y="40" width="40" height="6" rx="3" fill="#93c5fd"/>
+                <text x="50" y="55" fill="#94a3b8" font-size="8" text-anchor="middle" font-weight="bold">ДЛ</text>
+              </svg>
+            </div>
+            <div class="text-center mt-2 text-xs text-slate-500 group-hover:text-slate-300 transition">Деловые Линии</div>
+          </div>
+          
+          <!-- Partner 2: ПЭК -->
+          <div class="partner-logo group cursor-pointer">
+            <div class="w-full aspect-[3/2] rounded-xl bg-slate-800/50 border border-slate-700/50 flex items-center justify-center p-4 transition-all duration-300 group-hover:bg-emerald-500/10 group-hover:border-emerald-500/30 group-hover:scale-105">
+              <svg viewBox="0 0 100 60" class="w-full h-8 opacity-50 group-hover:opacity-100 transition-opacity">
+                <rect x="15" y="15" width="70" height="35" rx="6" fill="none" stroke="#10b981" stroke-width="3"/>
+                <text x="50" y="40" fill="#10b981" font-size="16" text-anchor="middle" font-weight="bold">ПЭК</text>
+              </svg>
+            </div>
+            <div class="text-center mt-2 text-xs text-slate-500 group-hover:text-slate-300 transition">ПЭК</div>
+          </div>
+          
+          <!-- Partner 3: СДЭК -->
+          <div class="partner-logo group cursor-pointer">
+            <div class="w-full aspect-[3/2] rounded-xl bg-slate-800/50 border border-slate-700/50 flex items-center justify-center p-4 transition-all duration-300 group-hover:bg-green-500/10 group-hover:border-green-500/30 group-hover:scale-105">
+              <svg viewBox="0 0 100 60" class="w-full h-8 opacity-50 group-hover:opacity-100 transition-opacity">
+                <circle cx="25" cy="30" r="12" fill="#22c55e"/>
+                <path d="M35 30 L95 30" stroke="#22c55e" stroke-width="6" stroke-linecap="round"/>
+                <text x="65" y="50" fill="#94a3b8" font-size="10" text-anchor="middle" font-weight="bold">СДЭК</text>
+              </svg>
+            </div>
+            <div class="text-center mt-2 text-xs text-slate-500 group-hover:text-slate-300 transition">СДЭК</div>
+          </div>
+          
+          <!-- Partner 4: DPD -->
+          <div class="partner-logo group cursor-pointer">
+            <div class="w-full aspect-[3/2] rounded-xl bg-slate-800/50 border border-slate-700/50 flex items-center justify-center p-4 transition-all duration-300 group-hover:bg-red-500/10 group-hover:border-red-500/30 group-hover:scale-105">
+              <svg viewBox="0 0 100 60" class="w-full h-8 opacity-50 group-hover:opacity-100 transition-opacity">
+                <rect x="10" y="15" width="80" height="30" rx="15" fill="#dc2626"/>
+                <text x="50" y="36" fill="white" font-size="14" text-anchor="middle" font-weight="bold">DPD</text>
+              </svg>
+            </div>
+            <div class="text-center mt-2 text-xs text-slate-500 group-hover:text-slate-300 transition">DPD</div>
+          </div>
+          
+          <!-- Partner 5: OZON -->
+          <div class="partner-logo group cursor-pointer">
+            <div class="w-full aspect-[3/2] rounded-xl bg-slate-800/50 border border-slate-700/50 flex items-center justify-center p-4 transition-all duration-300 group-hover:bg-blue-600/10 group-hover:border-blue-600/30 group-hover:scale-105">
+              <svg viewBox="0 0 100 60" class="w-full h-8 opacity-50 group-hover:opacity-100 transition-opacity">
+                <ellipse cx="50" cy="30" rx="40" ry="20" fill="none" stroke="#2563eb" stroke-width="4"/>
+                <text x="50" y="35" fill="#2563eb" font-size="12" text-anchor="middle" font-weight="bold">OZON</text>
+              </svg>
+            </div>
+            <div class="text-center mt-2 text-xs text-slate-500 group-hover:text-slate-300 transition">OZON Logistics</div>
+          </div>
+          
+          <!-- Partner 6: Wildberries -->
+          <div class="partner-logo group cursor-pointer">
+            <div class="w-full aspect-[3/2] rounded-xl bg-slate-800/50 border border-slate-700/50 flex items-center justify-center p-4 transition-all duration-300 group-hover:bg-purple-500/10 group-hover:border-purple-500/30 group-hover:scale-105">
+              <svg viewBox="0 0 100 60" class="w-full h-8 opacity-50 group-hover:opacity-100 transition-opacity">
+                <path d="M10 40 L25 15 L40 40 L55 15 L70 40 L85 15 L100 40" fill="none" stroke="#a855f7" stroke-width="4" stroke-linecap="round"/>
+                <text x="50" y="55" fill="#94a3b8" font-size="8" text-anchor="middle">WB</text>
+              </svg>
+            </div>
+            <div class="text-center mt-2 text-xs text-slate-500 group-hover:text-slate-300 transition">Wildberries</div>
+          </div>
+          
+          <!-- Partner 7: Boxberry -->
+          <div class="partner-logo group cursor-pointer">
+            <div class="w-full aspect-[3/2] rounded-xl bg-slate-800/50 border border-slate-700/50 flex items-center justify-center p-4 transition-all duration-300 group-hover:bg-amber-500/10 group-hover:border-amber-500/30 group-hover:scale-105">
+              <svg viewBox="0 0 100 60" class="w-full h-8 opacity-50 group-hover:opacity-100 transition-opacity">
+                <rect x="25" y="15" width="50" height="35" rx="4" fill="none" stroke="#f59e0b" stroke-width="3"/>
+                <path d="M25 25 L75 25" stroke="#f59e0b" stroke-width="2"/>
+                <circle cx="50" cy="40" r="8" fill="#f59e0b"/>
+                <text x="50" y="55" fill="#94a3b8" font-size="6" text-anchor="middle">BOXBERRY</text>
+              </svg>
+            </div>
+            <div class="text-center mt-2 text-xs text-slate-500 group-hover:text-slate-300 transition">Boxberry</div>
+          </div>
+          
+          <!-- Partner 8: Байкал Сервис -->
+          <div class="partner-logo group cursor-pointer">
+            <div class="w-full aspect-[3/2] rounded-xl bg-slate-800/50 border border-slate-700/50 flex items-center justify-center p-4 transition-all duration-300 group-hover:bg-cyan-500/10 group-hover:border-cyan-500/30 group-hover:scale-105">
+              <svg viewBox="0 0 100 60" class="w-full h-8 opacity-50 group-hover:opacity-100 transition-opacity">
+                <path d="M10 50 Q30 10 50 30 T90 20" fill="none" stroke="#06b6d4" stroke-width="4"/>
+                <circle cx="90" cy="20" r="6" fill="#06b6d4"/>
+                <text x="50" y="55" fill="#94a3b8" font-size="7" text-anchor="middle">БАЙКАЛ</text>
+              </svg>
+            </div>
+            <div class="text-center mt-2 text-xs text-slate-500 group-hover:text-slate-300 transition">Байкал Сервис</div>
+          </div>
+        </div>
+        
+        <!-- Second Row of Partners -->
+        <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-8 items-center mt-8 max-w-4xl mx-auto">
+          <!-- Partner 9: Яндекс Доставка -->
+          <div class="partner-logo group cursor-pointer">
+            <div class="w-full aspect-[3/2] rounded-xl bg-slate-800/50 border border-slate-700/50 flex items-center justify-center p-4 transition-all duration-300 group-hover:bg-yellow-500/10 group-hover:border-yellow-500/30 group-hover:scale-105">
+              <svg viewBox="0 0 100 60" class="w-full h-8 opacity-50 group-hover:opacity-100 transition-opacity">
+                <text x="50" y="35" fill="#facc15" font-size="20" text-anchor="middle" font-weight="bold">Я</text>
+                <text x="50" y="50" fill="#94a3b8" font-size="8" text-anchor="middle">ДОСТАВКА</text>
+              </svg>
+            </div>
+          </div>
+          
+          <!-- Partner 10: X5 Group -->
+          <div class="partner-logo group cursor-pointer">
+            <div class="w-full aspect-[3/2] rounded-xl bg-slate-800/50 border border-slate-700/50 flex items-center justify-center p-4 transition-all duration-300 group-hover:bg-orange-500/10 group-hover:border-orange-500/30 group-hover:scale-105">
+              <svg viewBox="0 0 100 60" class="w-full h-8 opacity-50 group-hover:opacity-100 transition-opacity">
+                <text x="50" y="40" fill="#f97316" font-size="24" text-anchor="middle" font-weight="bold">X5</text>
+              </svg>
+            </div>
+          </div>
+          
+          <!-- Partner 11: Магнит -->
+          <div class="partner-logo group cursor-pointer">
+            <div class="w-full aspect-[3/2] rounded-xl bg-slate-800/50 border border-slate-700/50 flex items-center justify-center p-4 transition-all duration-300 group-hover:bg-red-600/10 group-hover:border-red-600/30 group-hover:scale-105">
+              <svg viewBox="0 0 100 60" class="w-full h-8 opacity-50 group-hover:opacity-100 transition-opacity">
+                <path d="M20 45 L30 15 L50 35 L70 15 L80 45" fill="none" stroke="#dc2626" stroke-width="4"/>
+                <text x="50" y="55" fill="#94a3b8" font-size="7" text-anchor="middle">МАГНИТ</text>
+              </svg>
+            </div>
+          </div>
+          
+          <!-- Partner 12: Почта России -->
+          <div class="partner-logo group cursor-pointer">
+            <div class="w-full aspect-[3/2] rounded-xl bg-slate-800/50 border border-slate-700/50 flex items-center justify-center p-4 transition-all duration-300 group-hover:bg-blue-700/10 group-hover:border-blue-700/30 group-hover:scale-105">
+              <svg viewBox="0 0 100 60" class="w-full h-8 opacity-50 group-hover:opacity-100 transition-opacity">
+                <rect x="20" y="20" width="60" height="30" rx="2" fill="none" stroke="#1d4ed8" stroke-width="3"/>
+                <path d="M20 20 L50 40 L80 20" fill="none" stroke="#1d4ed8" stroke-width="2"/>
+                <text x="50" y="55" fill="#94a3b8" font-size="6" text-anchor="middle">ПОЧТА РФ</text>
+              </svg>
+            </div>
+          </div>
+          
+          <!-- Partner 13: Лента -->
+          <div class="partner-logo group cursor-pointer">
+            <div class="w-full aspect-[3/2] rounded-xl bg-slate-800/50 border border-slate-700/50 flex items-center justify-center p-4 transition-all duration-300 group-hover:bg-blue-500/10 group-hover:border-blue-500/30 group-hover:scale-105">
+              <svg viewBox="0 0 100 60" class="w-full h-8 opacity-50 group-hover:opacity-100 transition-opacity">
+                <path d="M15 30 Q50 10 85 30 Q50 50 15 30" fill="none" stroke="#3b82f6" stroke-width="3"/>
+                <text x="50" y="35" fill="#3b82f6" font-size="10" text-anchor="middle" font-weight="bold">ЛЕНТА</text>
+              </svg>
+            </div>
+          </div>
+          
+          <!-- Partner 14: СберЛогистика -->
+          <div class="partner-logo group cursor-pointer">
+            <div class="w-full aspect-[3/2] rounded-xl bg-slate-800/50 border border-slate-700/50 flex items-center justify-center p-4 transition-all duration-300 group-hover:bg-green-600/10 group-hover:border-green-600/30 group-hover:scale-105">
+              <svg viewBox="0 0 100 60" class="w-full h-8 opacity-50 group-hover:opacity-100 transition-opacity">
+                <circle cx="50" cy="30" r="20" fill="none" stroke="#16a34a" stroke-width="4"/>
+                <path d="M40 30 L60 30 M50 20 L50 40" stroke="#16a34a" stroke-width="3"/>
+                <text x="50" y="55" fill="#94a3b8" font-size="6" text-anchor="middle">СБЕР</text>
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features Section -->
+  <section id="features" class="py-24 px-6 bg-gradient-to-b from-slate-900 to-slate-950">
+    <div class="max-w-7xl mx-auto">
+      <div class="text-center mb-16">
+        <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm mb-6">
+          <i class="fa-solid fa-star"></i>
+          Возможности платформы
+        </div>
+        <h2 class="text-4xl lg:text-5xl font-bold mb-6">Всё для управления<br>грузоперевозками</h2>
+        <p class="text-xl text-slate-400 max-w-2xl mx-auto">
+          Полный набор инструментов для контроля автопарка, оптимизации маршрутов и аналитики
+        </p>
+      </div>
+      
+      <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- Feature 1 -->
+        <div class="glass-card p-8">
+          <div class="feature-icon mb-6">
+            <i class="fa-solid fa-satellite-dish text-blue-400"></i>
+          </div>
+          <h3 class="text-xl font-semibold mb-3">GPS/ГЛОНАСС мониторинг</h3>
+          <p class="text-slate-400">
+            Отслеживание местоположения в реальном времени с точностью до 2 метров. 
+            Интеграция с любыми трекерами.
+          </p>
+        </div>
+        
+        <!-- Feature 2 -->
+        <div class="glass-card p-8">
+          <div class="feature-icon mb-6">
+            <i class="fa-solid fa-route text-emerald-400"></i>
+          </div>
+          <h3 class="text-xl font-semibold mb-3">Оптимизация маршрутов</h3>
+          <p class="text-slate-400">
+            AI-алгоритмы построения маршрутов с учётом пробок, весовых ограничений 
+            и разрешённых дорог для грузовиков.
+          </p>
+        </div>
+        
+        <!-- Feature 3 -->
+        <div class="glass-card p-8">
+          <div class="feature-icon mb-6">
+            <i class="fa-solid fa-chart-line text-purple-400"></i>
+          </div>
+          <h3 class="text-xl font-semibold mb-3">Аналитика и KPI</h3>
+          <p class="text-slate-400">
+            Детальные отчёты по эффективности флота, расходу топлива, 
+            времени простоев и выполнению SLA.
+          </p>
+        </div>
+        
+        <!-- Feature 4 -->
+        <div class="glass-card p-8">
+          <div class="feature-icon mb-6">
+            <i class="fa-solid fa-bell text-amber-400"></i>
+          </div>
+          <h3 class="text-xl font-semibold mb-3">Умные уведомления</h3>
+          <p class="text-slate-400">
+            Мгновенные алерты о нарушениях, задержках, входе/выходе из геозон. 
+            Push, Email, SMS, Telegram.
+          </p>
+        </div>
+        
+        <!-- Feature 5 -->
+        <div class="glass-card p-8">
+          <div class="feature-icon mb-6">
+            <i class="fa-solid fa-temperature-half text-red-400"></i>
+          </div>
+          <h3 class="text-xl font-semibold mb-3">Телеметрия датчиков</h3>
+          <p class="text-slate-400">
+            Мониторинг температуры, влажности, открытия дверей, 
+            уровня топлива и других параметров.
+          </p>
+        </div>
+        
+        <!-- Feature 6 -->
+        <div class="glass-card p-8">
+          <div class="feature-icon mb-6">
+            <i class="fa-solid fa-file-contract text-cyan-400"></i>
+          </div>
+          <h3 class="text-xl font-semibold mb-3">Документооборот</h3>
+          <p class="text-slate-400">
+            Электронные ТТН, акты, путевые листы. 
+            Интеграция с 1С, SAP и другими учётными системами.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- How It Works -->
+  <section id="how-it-works" class="py-24 px-6">
+    <div class="max-w-7xl mx-auto">
+      <div class="text-center mb-16">
+        <h2 class="text-4xl lg:text-5xl font-bold mb-6">Как это работает</h2>
+        <p class="text-xl text-slate-400 max-w-2xl mx-auto">
+          Подключение за 1 день без остановки бизнес-процессов
+        </p>
+      </div>
+      
+      <div class="grid md:grid-cols-4 gap-8">
+        <div class="text-center">
+          <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white text-2xl font-bold mx-auto mb-6">1</div>
+          <h3 class="text-lg font-semibold mb-2">Анализ процессов</h3>
+          <p class="text-slate-400 text-sm">Изучим ваши маршруты, флот и текущие системы</p>
+        </div>
+        
+        <div class="text-center">
+          <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center text-white text-2xl font-bold mx-auto mb-6">2</div>
+          <h3 class="text-lg font-semibold mb-2">Интеграция</h3>
+          <p class="text-slate-400 text-sm">Подключим GPS-трекеры и настроим обмен данными</p>
+        </div>
+        
+        <div class="text-center">
+          <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center text-white text-2xl font-bold mx-auto mb-6">3</div>
+          <h3 class="text-lg font-semibold mb-2">Обучение</h3>
+          <p class="text-slate-400 text-sm">Проведём обучение логистов и водителей</p>
+        </div>
+        
+        <div class="text-center">
+          <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center text-white text-2xl font-bold mx-auto mb-6">4</div>
+          <h3 class="text-lg font-semibold mb-2">Запуск</h3>
+          <p class="text-slate-400 text-sm">14 дней тестового периода с полной поддержкой</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Stats Section -->
+  <section class="py-24 px-6 bg-gradient-to-r from-blue-900/20 to-emerald-900/20 relative overflow-hidden">
+    <!-- 3D Background Elements -->
+    <div class="absolute inset-0 pointer-events-none">
+      <div class="sphere-3d" style="top: 20%; left: 80%; width: 100px; height: 100px;"></div>
+      <div class="sphere-3d sphere-emerald" style="top: 70%; left: 10%;"></div>
+    </div>
+    
+    <div class="max-w-7xl mx-auto relative z-10">
+      <div class="grid md:grid-cols-4 gap-8 text-center">
+        <div class="stats-card group">
+          <div class="stat-number text-5xl font-bold mb-2 group-hover:scale-110 transition-transform">-15%</div>
+          <div class="text-slate-400">Пустой пробег</div>
+        </div>
+        <div class="stats-card group">
+          <div class="stat-number text-5xl font-bold mb-2 group-hover:scale-110 transition-transform">2x</div>
+          <div class="text-slate-400">Больше рейсов на логиста</div>
+        </div>
+        <div class="stats-card group">
+          <div class="stat-number text-5xl font-bold mb-2 group-hover:scale-110 transition-transform">-30%</div>
+          <div class="text-slate-400">Время на документы</div>
+        </div>
+        <div class="stats-card group">
+          <div class="stat-number text-5xl font-bold mb-2 group-hover:scale-110 transition-transform">+25%</div>
+          <div class="text-slate-400">Маржинальность</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Testimonials Section -->
+  <section class="py-24 px-6">
+    <div class="max-w-7xl mx-auto">
+      <div class="text-center mb-16">
+        <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-sm mb-6">
+          <i class="fa-solid fa-quote-left"></i>
+          Отзывы клиентов
+        </div>
+        <h2 class="text-4xl lg:text-5xl font-bold mb-6">Что говорят наши клиенты</h2>
+      </div>
+      
+      <div class="grid md:grid-cols-3 gap-8">
+        <!-- Testimonial 1 -->
+        <div class="testimonial-3d group">
+          <div class="glass-card p-8 h-full transition-all duration-500 group-hover:-translate-y-2 group-hover:shadow-2xl group-hover:shadow-blue-500/10">
+            <div class="flex items-center gap-1 mb-4">
+              <i class="fa-solid fa-star text-amber-400"></i>
+              <i class="fa-solid fa-star text-amber-400"></i>
+              <i class="fa-solid fa-star text-amber-400"></i>
+              <i class="fa-solid fa-star text-amber-400"></i>
+              <i class="fa-solid fa-star text-amber-400"></i>
+            </div>
+            <p class="text-slate-300 mb-6 leading-relaxed">
+              «RoutoX помог нам сократить пустой пробег на 18% за первые 3 месяца. 
+              Особенно впечатлила интеграция с 1С — всё работает автоматически, 
+              документы формируются сами.»
+            </p>
+            <div class="flex items-center gap-4 mt-auto">
+              <div class="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold">
+                АП
+              </div>
+              <div>
+                <div class="font-semibold">Алексей Петров</div>
+                <div class="text-sm text-slate-400">Директор по логистике, ТК «Магистраль»</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Testimonial 2 -->
+        <div class="testimonial-3d group">
+          <div class="glass-card p-8 h-full transition-all duration-500 group-hover:-translate-y-2 group-hover:shadow-2xl group-hover:shadow-emerald-500/10">
+            <div class="flex items-center gap-1 mb-4">
+              <i class="fa-solid fa-star text-amber-400"></i>
+              <i class="fa-solid fa-star text-amber-400"></i>
+              <i class="fa-solid fa-star text-amber-400"></i>
+              <i class="fa-solid fa-star text-amber-400"></i>
+              <i class="fa-solid fa-star text-amber-400"></i>
+            </div>
+            <p class="text-slate-300 mb-6 leading-relaxed">
+              «Раньше на планирование маршрутов уходило по 2 часа в день. 
+              С AI-оптимизацией RoutoX — 15 минут. Водители довольны, 
+              клиенты получают груз вовремя.»
+            </p>
+            <div class="flex items-center gap-4 mt-auto">
+              <div class="w-12 h-12 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center text-white font-bold">
+                МС
+              </div>
+              <div>
+                <div class="font-semibold">Мария Соколова</div>
+                <div class="text-sm text-slate-400">Руководитель автопарка, ООО «СтройТранс»</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Testimonial 3 -->
+        <div class="testimonial-3d group">
+          <div class="glass-card p-8 h-full transition-all duration-500 group-hover:-translate-y-2 group-hover:shadow-2xl group-hover:shadow-purple-500/10">
+            <div class="flex items-center gap-1 mb-4">
+              <i class="fa-solid fa-star text-amber-400"></i>
+              <i class="fa-solid fa-star text-amber-400"></i>
+              <i class="fa-solid fa-star text-amber-400"></i>
+              <i class="fa-solid fa-star text-amber-400"></i>
+              <i class="fa-solid fa-star-half-alt text-amber-400"></i>
+            </div>
+            <p class="text-slate-300 mb-6 leading-relaxed">
+              «Контроль температурного режима и алерты — это то, что нам нужно 
+              для перевозки фарм-продукции. Теперь мы уверены в сохранности груза 
+              на всём маршруте.»
+            </p>
+            <div class="flex items-center gap-4 mt-auto">
+              <div class="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center text-white font-bold">
+                ИК
+              </div>
+              <div>
+                <div class="font-semibold">Игорь Козлов</div>
+                <div class="text-sm text-slate-400">Владелец, «ФармЛогистик»</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Pricing Section -->
+  <section id="pricing" class="py-24 px-6">
+    <div class="max-w-7xl mx-auto">
+      <div class="text-center mb-16">
+        <h2 class="text-4xl lg:text-5xl font-bold mb-6">Прозрачные тарифы</h2>
+        <p class="text-xl text-slate-400 max-w-2xl mx-auto">
+          Выберите план, подходящий для вашего бизнеса
+        </p>
+      </div>
+      
+      <div class="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+        <!-- Starter -->
+        <div class="glass-card p-8">
+          <div class="text-lg font-semibold mb-2">Стартовый</div>
+          <div class="text-slate-400 text-sm mb-6">Для малого бизнеса</div>
+          <div class="text-4xl font-bold mb-6">
+            ₽990 <span class="text-lg font-normal text-slate-400">/ТС/мес</span>
+          </div>
+          <ul class="space-y-3 mb-8">
+            <li class="flex items-center gap-2 text-sm">
+              <i class="fa-solid fa-check text-emerald-400"></i>
+              <span>До 20 транспортных средств</span>
+            </li>
+            <li class="flex items-center gap-2 text-sm">
+              <i class="fa-solid fa-check text-emerald-400"></i>
+              <span>GPS-мониторинг</span>
+            </li>
+            <li class="flex items-center gap-2 text-sm">
+              <i class="fa-solid fa-check text-emerald-400"></i>
+              <span>Базовая аналитика</span>
+            </li>
+            <li class="flex items-center gap-2 text-sm">
+              <i class="fa-solid fa-check text-emerald-400"></i>
+              <span>Email-поддержка</span>
+            </li>
+          </ul>
+          <a href="./login.html" class="block text-center px-6 py-3 rounded-xl border border-slate-700 hover:border-blue-500 transition font-semibold">
+            Начать
+          </a>
+        </div>
+        
+        <!-- Professional -->
+        <div class="glass-card p-8 pricing-popular">
+          <div class="text-lg font-semibold mb-2">Профессиональный</div>
+          <div class="text-slate-400 text-sm mb-6">Для растущих компаний</div>
+          <div class="text-4xl font-bold mb-6">
+            ₽1,490 <span class="text-lg font-normal text-slate-400">/ТС/мес</span>
+          </div>
+          <ul class="space-y-3 mb-8">
+            <li class="flex items-center gap-2 text-sm">
+              <i class="fa-solid fa-check text-emerald-400"></i>
+              <span>До 100 транспортных средств</span>
+            </li>
+            <li class="flex items-center gap-2 text-sm">
+              <i class="fa-solid fa-check text-emerald-400"></i>
+              <span>Всё из Стартового</span>
+            </li>
+            <li class="flex items-center gap-2 text-sm">
+              <i class="fa-solid fa-check text-emerald-400"></i>
+              <span>AI-оптимизация маршрутов</span>
+            </li>
+            <li class="flex items-center gap-2 text-sm">
+              <i class="fa-solid fa-check text-emerald-400"></i>
+              <span>Телеметрия датчиков</span>
+            </li>
+            <li class="flex items-center gap-2 text-sm">
+              <i class="fa-solid fa-check text-emerald-400"></i>
+              <span>Интеграция с 1С</span>
+            </li>
+            <li class="flex items-center gap-2 text-sm">
+              <i class="fa-solid fa-check text-emerald-400"></i>
+              <span>Приоритетная поддержка</span>
+            </li>
+          </ul>
+          <a href="./login.html" class="btn-glow block text-center px-6 py-3 rounded-xl text-white font-semibold">
+            Попробовать
+          </a>
+        </div>
+        
+        <!-- Enterprise -->
+        <div class="glass-card p-8">
+          <div class="text-lg font-semibold mb-2">Корпоративный</div>
+          <div class="text-slate-400 text-sm mb-6">Для крупного бизнеса</div>
+          <div class="text-4xl font-bold mb-6">
+            По запросу
+          </div>
+          <ul class="space-y-3 mb-8">
+            <li class="flex items-center gap-2 text-sm">
+              <i class="fa-solid fa-check text-emerald-400"></i>
+              <span>Неограниченно ТС</span>
+            </li>
+            <li class="flex items-center gap-2 text-sm">
+              <i class="fa-solid fa-check text-emerald-400"></i>
+              <span>Всё из Профессионального</span>
+            </li>
+            <li class="flex items-center gap-2 text-sm">
+              <i class="fa-solid fa-check text-emerald-400"></i>
+              <span>On-premise развёртывание</span>
+            </li>
+            <li class="flex items-center gap-2 text-sm">
+              <i class="fa-solid fa-check text-emerald-400"></i>
+              <span>Кастомные интеграции</span>
+            </li>
+            <li class="flex items-center gap-2 text-sm">
+              <i class="fa-solid fa-check text-emerald-400"></i>
+              <span>SLA 99.99%</span>
+            </li>
+            <li class="flex items-center gap-2 text-sm">
+              <i class="fa-solid fa-check text-emerald-400"></i>
+              <span>Выделенный менеджер</span>
+            </li>
+          </ul>
+          <a href="#contact" class="block text-center px-6 py-3 rounded-xl border border-slate-700 hover:border-blue-500 transition font-semibold">
+            Связаться
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA Section -->
+  <section class="py-24 px-6">
+    <div class="max-w-4xl mx-auto">
+      <div class="glass-card p-12 text-center relative overflow-hidden">
+        <div class="absolute inset-0 map-glow opacity-30"></div>
+        <div class="relative z-10">
+          <h2 class="text-3xl lg:text-4xl font-bold mb-6">
+            Готовы оптимизировать логистику?
+          </h2>
+          <p class="text-xl text-slate-400 mb-8 max-w-2xl mx-auto">
+            Начните бесплатный 14-дневный тестовый период прямо сейчас. 
+            Без привязки карты.
+          </p>
+          <a href="./login.html" class="btn-glow inline-flex items-center gap-2 px-8 py-4 rounded-xl text-white font-semibold">
+            <span>Начать бесплатно</span>
+            <i class="fa-solid fa-arrow-right"></i>
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Integrations 3D Section -->
+  <section class="py-24 px-6 bg-gradient-to-b from-slate-950 to-slate-900 relative overflow-hidden">
+    <!-- 3D Background Elements -->
+    <div class="absolute inset-0 pointer-events-none">
+      <!-- Floating Spheres -->
+      <div class="sphere-3d" style="top: 10%; left: 5%;"></div>
+      <div class="sphere-3d sphere-emerald" style="top: 60%; right: 10%;"></div>
+      <div class="sphere-3d sphere-purple" style="top: 30%; right: 25%;"></div>
+      
+      <!-- Grid Lines -->
+      <svg class="absolute inset-0 w-full h-full opacity-10">
+        <defs>
+          <pattern id="grid3d" width="60" height="60" patternUnits="userSpaceOnUse">
+            <path d="M 60 0 L 0 0 0 60" fill="none" stroke="#3b82f6" stroke-width="0.5"/>
+          </pattern>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#grid3d)"/>
+      </svg>
+    </div>
+    
+    <div class="max-w-7xl mx-auto relative z-10">
+      <div class="text-center mb-16">
+        <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-400 text-sm mb-6">
+          <i class="fa-solid fa-plug"></i>
+          Интеграции
+        </div>
+        <h2 class="text-4xl lg:text-5xl font-bold mb-6">Работает с вашими<br>системами</h2>
+        <p class="text-xl text-slate-400 max-w-2xl mx-auto">
+          Готовые интеграции с популярными ERP, CRM и учётными системами
+        </p>
+      </div>
+      
+      <!-- 3D Integration Cards -->
+      <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <!-- 1C Integration -->
+        <div class="integration-card-3d group">
+          <div class="glass-card p-6 transform-gpu transition-all duration-500 group-hover:scale-105 group-hover:-translate-y-2">
+            <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-yellow-500 to-amber-600 flex items-center justify-center mb-4 shadow-lg shadow-yellow-500/20 integration-icon">
+              <span class="text-2xl font-bold text-white">1C</span>
+            </div>
+            <h3 class="text-lg font-semibold mb-2">1С:Предприятие</h3>
+            <p class="text-slate-400 text-sm mb-4">Бухгалтерия, УТ, ERP. Синхронизация документов и справочников</p>
+            <div class="flex items-center gap-2 text-emerald-400 text-sm">
+              <i class="fa-solid fa-check-circle"></i>
+              <span>Сертифицировано</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- SAP Integration -->
+        <div class="integration-card-3d group">
+          <div class="glass-card p-6 transform-gpu transition-all duration-500 group-hover:scale-105 group-hover:-translate-y-2">
+            <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center mb-4 shadow-lg shadow-blue-500/20 integration-icon">
+              <span class="text-lg font-bold text-white">SAP</span>
+            </div>
+            <h3 class="text-lg font-semibold mb-2">SAP S/4HANA</h3>
+            <p class="text-slate-400 text-sm mb-4">Полная интеграция с модулями TM, MM, SD</p>
+            <div class="flex items-center gap-2 text-emerald-400 text-sm">
+              <i class="fa-solid fa-check-circle"></i>
+              <span>Партнёр</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- GLONASS Integration -->
+        <div class="integration-card-3d group">
+          <div class="glass-card p-6 transform-gpu transition-all duration-500 group-hover:scale-105 group-hover:-translate-y-2">
+            <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center mb-4 shadow-lg shadow-emerald-500/20 integration-icon">
+              <i class="fa-solid fa-satellite text-2xl text-white"></i>
+            </div>
+            <h3 class="text-lg font-semibold mb-2">ГЛОНАСС/GPS</h3>
+            <p class="text-slate-400 text-sm mb-4">Wialon, Omnicomm, Galileosky, Teltonika и 100+ трекеров</p>
+            <div class="flex items-center gap-2 text-emerald-400 text-sm">
+              <i class="fa-solid fa-check-circle"></i>
+              <span>100+ устройств</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Platon Integration -->
+        <div class="integration-card-3d group">
+          <div class="glass-card p-6 transform-gpu transition-all duration-500 group-hover:scale-105 group-hover:-translate-y-2">
+            <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-red-500 to-orange-600 flex items-center justify-center mb-4 shadow-lg shadow-red-500/20 integration-icon">
+              <i class="fa-solid fa-road text-2xl text-white"></i>
+            </div>
+            <h3 class="text-lg font-semibold mb-2">Платон</h3>
+            <p class="text-slate-400 text-sm mb-4">Автоматический расчёт и отчётность по системе «Платон»</p>
+            <div class="flex items-center gap-2 text-emerald-400 text-sm">
+              <i class="fa-solid fa-check-circle"></i>
+              <span>Официальный API</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- ETTN Integration -->
+        <div class="integration-card-3d group">
+          <div class="glass-card p-6 transform-gpu transition-all duration-500 group-hover:scale-105 group-hover:-translate-y-2">
+            <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center mb-4 shadow-lg shadow-cyan-500/20 integration-icon">
+              <i class="fa-solid fa-file-signature text-2xl text-white"></i>
+            </div>
+            <h3 class="text-lg font-semibold mb-2">Электронные ТТН</h3>
+            <p class="text-slate-400 text-sm mb-4">СКБ Контур, Такском, СБИС. Автоматическое формирование</p>
+            <div class="flex items-center gap-2 text-emerald-400 text-sm">
+              <i class="fa-solid fa-check-circle"></i>
+              <span>ЭДО операторы</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Fuel Cards -->
+        <div class="integration-card-3d group">
+          <div class="glass-card p-6 transform-gpu transition-all duration-500 group-hover:scale-105 group-hover:-translate-y-2">
+            <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center mb-4 shadow-lg shadow-purple-500/20 integration-icon">
+              <i class="fa-solid fa-gas-pump text-2xl text-white"></i>
+            </div>
+            <h3 class="text-lg font-semibold mb-2">Топливные карты</h3>
+            <p class="text-slate-400 text-sm mb-4">Газпромнефть, Лукойл, Роснефть, Татнефть, PPR</p>
+            <div class="flex items-center gap-2 text-emerald-400 text-sm">
+              <i class="fa-solid fa-check-circle"></i>
+              <span>Все сети</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Tachograph -->
+        <div class="integration-card-3d group">
+          <div class="glass-card p-6 transform-gpu transition-all duration-500 group-hover:scale-105 group-hover:-translate-y-2">
+            <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-slate-500 to-slate-700 flex items-center justify-center mb-4 shadow-lg shadow-slate-500/20 integration-icon">
+              <i class="fa-solid fa-clock text-2xl text-white"></i>
+            </div>
+            <h3 class="text-lg font-semibold mb-2">Тахографы</h3>
+            <p class="text-slate-400 text-sm mb-4">Continental VDO, Меркурий ТА. Контроль РТО по ФЗ-196</p>
+            <div class="flex items-center gap-2 text-emerald-400 text-sm">
+              <i class="fa-solid fa-check-circle"></i>
+              <span>СКЗИ/ЕСТР</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- API -->
+        <div class="integration-card-3d group">
+          <div class="glass-card p-6 transform-gpu transition-all duration-500 group-hover:scale-105 group-hover:-translate-y-2">
+            <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center mb-4 shadow-lg shadow-indigo-500/20 integration-icon">
+              <i class="fa-solid fa-code text-2xl text-white"></i>
+            </div>
+            <h3 class="text-lg font-semibold mb-2">REST API</h3>
+            <p class="text-slate-400 text-sm mb-4">Открытый API для кастомных интеграций и мобильных приложений</p>
+            <div class="flex items-center gap-2 text-blue-400 text-sm">
+              <i class="fa-solid fa-book"></i>
+              <span>Документация</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3D Technologies Section -->
+  <section class="py-24 px-6 relative overflow-hidden">
+    <div class="max-w-7xl mx-auto">
+      <div class="text-center mb-16">
+        <h2 class="text-4xl lg:text-5xl font-bold mb-6">Технологии будущего</h2>
+        <p class="text-xl text-slate-400 max-w-2xl mx-auto">
+          Используем передовые технологии для максимальной эффективности
+        </p>
+      </div>
+      
+      <!-- 3D Tech Grid -->
+      <div class="grid md:grid-cols-3 gap-8">
+        <!-- AI Card -->
+        <div class="tech-card-3d group">
+          <div class="relative p-8 rounded-3xl bg-gradient-to-br from-slate-800/50 to-slate-900/50 border border-slate-700/50 overflow-hidden">
+            <!-- 3D Rotating Element -->
+            <div class="absolute top-4 right-4 w-24 h-24 opacity-20 group-hover:opacity-40 transition-opacity">
+              <div class="cube-3d">
+                <div class="cube-face cube-front"></div>
+                <div class="cube-face cube-back"></div>
+                <div class="cube-face cube-left"></div>
+                <div class="cube-face cube-right"></div>
+                <div class="cube-face cube-top"></div>
+                <div class="cube-face cube-bottom"></div>
+              </div>
+            </div>
+            
+            <div class="relative z-10">
+              <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center mb-6 shadow-xl">
+                <i class="fa-solid fa-brain text-2xl text-white"></i>
+              </div>
+              <h3 class="text-2xl font-bold mb-4">AI / ML</h3>
+              <p class="text-slate-400 mb-6">
+                Машинное обучение для прогнозирования маршрутов, оптимизации загрузки и предиктивного обслуживания
+              </p>
+              <ul class="space-y-2 text-sm text-slate-300">
+                <li class="flex items-center gap-2">
+                  <i class="fa-solid fa-check text-emerald-400"></i>
+                  Прогноз ETA с точностью 95%
+                </li>
+                <li class="flex items-center gap-2">
+                  <i class="fa-solid fa-check text-emerald-400"></i>
+                  Детекция аномалий в реальном времени
+                </li>
+                <li class="flex items-center gap-2">
+                  <i class="fa-solid fa-check text-emerald-400"></i>
+                  Оптимизация расхода топлива
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        
+        <!-- IoT Card -->
+        <div class="tech-card-3d group">
+          <div class="relative p-8 rounded-3xl bg-gradient-to-br from-slate-800/50 to-slate-900/50 border border-slate-700/50 overflow-hidden">
+            <!-- 3D Network Animation -->
+            <div class="absolute top-4 right-4 w-24 h-24 opacity-20 group-hover:opacity-40 transition-opacity">
+              <svg viewBox="0 0 100 100" class="w-full h-full network-3d">
+                <circle cx="50" cy="50" r="6" fill="#10b981"/>
+                <circle cx="20" cy="30" r="4" fill="#3b82f6"/>
+                <circle cx="80" cy="30" r="4" fill="#3b82f6"/>
+                <circle cx="20" cy="70" r="4" fill="#3b82f6"/>
+                <circle cx="80" cy="70" r="4" fill="#3b82f6"/>
+                <line x1="50" y1="50" x2="20" y2="30" stroke="#3b82f6" stroke-width="1" class="network-line"/>
+                <line x1="50" y1="50" x2="80" y2="30" stroke="#3b82f6" stroke-width="1" class="network-line"/>
+                <line x1="50" y1="50" x2="20" y2="70" stroke="#3b82f6" stroke-width="1" class="network-line"/>
+                <line x1="50" y1="50" x2="80" y2="70" stroke="#3b82f6" stroke-width="1" class="network-line"/>
+              </svg>
+            </div>
+            
+            <div class="relative z-10">
+              <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center mb-6 shadow-xl">
+                <i class="fa-solid fa-microchip text-2xl text-white"></i>
+              </div>
+              <h3 class="text-2xl font-bold mb-4">IoT Сенсоры</h3>
+              <p class="text-slate-400 mb-6">
+                Подключение любых датчиков: температура, влажность, удары, открытие дверей, уровень топлива
+              </p>
+              <ul class="space-y-2 text-sm text-slate-300">
+                <li class="flex items-center gap-2">
+                  <i class="fa-solid fa-check text-emerald-400"></i>
+                  Обновление каждые 10 секунд
+                </li>
+                <li class="flex items-center gap-2">
+                  <i class="fa-solid fa-check text-emerald-400"></i>
+                  Bluetooth / LoRaWAN / NB-IoT
+                </li>
+                <li class="flex items-center gap-2">
+                  <i class="fa-solid fa-check text-emerald-400"></i>
+                  Алерты при отклонениях
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Blockchain Card -->
+        <div class="tech-card-3d group">
+          <div class="relative p-8 rounded-3xl bg-gradient-to-br from-slate-800/50 to-slate-900/50 border border-slate-700/50 overflow-hidden">
+            <!-- 3D Chain Animation -->
+            <div class="absolute top-4 right-4 w-24 h-24 opacity-20 group-hover:opacity-40 transition-opacity">
+              <div class="chain-3d">
+                <div class="chain-link"></div>
+                <div class="chain-link"></div>
+                <div class="chain-link"></div>
+              </div>
+            </div>
+            
+            <div class="relative z-10">
+              <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center mb-6 shadow-xl">
+                <i class="fa-solid fa-link text-2xl text-white"></i>
+              </div>
+              <h3 class="text-2xl font-bold mb-4">Блокчейн</h3>
+              <p class="text-slate-400 mb-6">
+                Неизменяемый аудит-трейл для всех операций, документов и изменений в системе
+              </p>
+              <ul class="space-y-2 text-sm text-slate-300">
+                <li class="flex items-center gap-2">
+                  <i class="fa-solid fa-check text-emerald-400"></i>
+                  Криптографическая верификация
+                </li>
+                <li class="flex items-center gap-2">
+                  <i class="fa-solid fa-check text-emerald-400"></i>
+                  Защита от подделок
+                </li>
+                <li class="flex items-center gap-2">
+                  <i class="fa-solid fa-check text-emerald-400"></i>
+                  Соответствие ФЗ-152
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer id="contact" class="border-t border-slate-800 py-16 px-6">
+    <div class="max-w-7xl mx-auto">
+      <div class="grid md:grid-cols-4 gap-12 mb-12">
+        <div>
+          <div class="flex items-center gap-3 mb-6">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-emerald-500 flex items-center justify-center text-white font-bold text-xl">R</div>
+            <div>
+              <div class="font-bold text-lg">RoutoX</div>
+              <div class="text-xs text-slate-400">Fleet Management</div>
+            </div>
+          </div>
+          <p class="text-slate-400 text-sm mb-4">
+            Интеллектуальная платформа для управления грузоперевозками
+          </p>
+          <div class="flex items-center gap-4">
+            <a href="#" class="w-10 h-10 rounded-lg bg-slate-800 flex items-center justify-center hover:bg-slate-700 transition">
+              <i class="fa-brands fa-telegram text-slate-400"></i>
+            </a>
+            <a href="#" class="w-10 h-10 rounded-lg bg-slate-800 flex items-center justify-center hover:bg-slate-700 transition">
+              <i class="fa-brands fa-vk text-slate-400"></i>
+            </a>
+            <a href="#" class="w-10 h-10 rounded-lg bg-slate-800 flex items-center justify-center hover:bg-slate-700 transition">
+              <i class="fa-brands fa-youtube text-slate-400"></i>
+            </a>
+          </div>
+        </div>
+        
+        <div>
+          <div class="font-semibold mb-4">Продукт</div>
+          <ul class="space-y-3 text-sm text-slate-400">
+            <li><a href="#features" class="hover:text-white transition">Возможности</a></li>
+            <li><a href="#pricing" class="hover:text-white transition">Тарифы</a></li>
+            <li><a href="#" class="hover:text-white transition">Интеграции</a></li>
+            <li><a href="#" class="hover:text-white transition">API</a></li>
+            <li><a href="#" class="hover:text-white transition">База знаний</a></li>
+          </ul>
+        </div>
+        
+        <div>
+          <div class="font-semibold mb-4">Компания</div>
+          <ul class="space-y-3 text-sm text-slate-400">
+            <li><a href="#" class="hover:text-white transition">О нас</a></li>
+            <li><a href="#" class="hover:text-white transition">Вакансии</a></li>
+            <li><a href="#" class="hover:text-white transition">Партнёрам</a></li>
+            <li><a href="#" class="hover:text-white transition">Отзывы клиентов</a></li>
+            <li><a href="#" class="hover:text-white transition">Блог</a></li>
+          </ul>
+        </div>
+        
+        <div>
+          <div class="font-semibold mb-4">Контакты</div>
+          <ul class="space-y-3 text-sm text-slate-400">
+            <li class="flex items-center gap-2">
+              <i class="fa-solid fa-phone text-blue-400"></i>
+              <a href="tel:+78001234567" class="hover:text-white transition">8 (800) 123-45-67</a>
+            </li>
+            <li class="flex items-center gap-2">
+              <i class="fa-solid fa-envelope text-blue-400"></i>
+              <a href="mailto:info@routox.ru" class="hover:text-white transition">info@routox.ru</a>
+            </li>
+            <li class="flex items-center gap-2">
+              <i class="fa-solid fa-location-dot text-blue-400"></i>
+              <span>Москва, ул. Примерная, 1</span>
+            </li>
+          </ul>
+          <div class="mt-6">
+            <div class="text-xs text-slate-500 mb-2">Режим работы</div>
+            <div class="text-sm">Пн-Пт: 9:00 - 18:00 (МСК)</div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Legal Links (по российским законам) -->
+      <div class="border-t border-slate-800 pt-8">
+        <div class="flex flex-wrap items-center justify-between gap-6">
+          <div class="text-sm text-slate-500">
+            © 2024-2026 ООО «РоутоИкс». Все права защищены. ИНН: 7701234567 ОГРН: 1234567890123
+          </div>
+          <div class="flex flex-wrap items-center gap-6 text-sm">
+            <a href="#" class="legal-link text-slate-400 hover:text-white transition">Политика конфиденциальности</a>
+            <a href="#" class="legal-link text-slate-400 hover:text-white transition">Пользовательское соглашение</a>
+            <a href="#" class="legal-link text-slate-400 hover:text-white transition">Договор оферты</a>
+            <a href="#" class="legal-link text-slate-400 hover:text-white transition">Обработка персональных данных</a>
+            <a href="#" class="legal-link text-slate-400 hover:text-white transition">Реквизиты</a>
+          </div>
+        </div>
+        
+        <!-- Additional Legal Info -->
+        <div class="mt-6 text-xs text-slate-600 leading-relaxed">
+          <p>
+            Информация на сайте не является публичной офертой. Услуги предоставляются на основании договора. 
+            Программное обеспечение зарегистрировано в Реестре российского ПО (№ 12345). 
+            Соответствует требованиям Федерального закона от 27.07.2006 № 152-ФЗ «О персональных данных».
+          </p>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Cookie Banner -->
+  <div id="cookieBanner" class="cookie-banner fixed bottom-0 left-0 right-0 p-4 z-50 hidden">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
+      <div class="text-sm text-slate-300">
+        <i class="fa-solid fa-cookie-bite text-amber-400 mr-2"></i>
+        Мы используем файлы cookie для улучшения работы сайта. Продолжая использовать сайт, вы соглашаетесь с нашей 
+        <a href="#" class="text-blue-400 hover:underline">политикой конфиденциальности</a>.
+      </div>
+      <div class="flex items-center gap-3">
+        <button onclick="acceptCookies()" class="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold transition">
+          Принять
+        </button>
+        <button onclick="rejectCookies()" class="px-4 py-2 rounded-lg border border-slate-700 hover:border-slate-600 text-sm transition">
+          Отклонить
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Show cookie banner if not accepted
+    if (!localStorage.getItem('cookiesAccepted')) {
+      document.getElementById('cookieBanner').classList.remove('hidden');
+    }
+
+    function acceptCookies() {
+      localStorage.setItem('cookiesAccepted', 'true');
+      document.getElementById('cookieBanner').classList.add('hidden');
+    }
+
+    function rejectCookies() {
+      localStorage.setItem('cookiesAccepted', 'false');
+      document.getElementById('cookieBanner').classList.add('hidden');
+    }
+
+    // Smooth scroll for anchor links
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', function (e) {
+        e.preventDefault();
+        const target = document.querySelector(this.getAttribute('href'));
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      });
+    });
+
+    // Reveal animations on scroll
+    const observerOptions = {
+      threshold: 0.1,
+      rootMargin: '0px 0px -50px 0px'
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('active');
+        }
+      });
+    }, observerOptions);
+
+    document.querySelectorAll('.glass-card').forEach(card => {
+      card.classList.add('reveal');
+      observer.observe(card);
+    });
+
+    // Counter animation
+    function animateCounter(element, target, duration = 2000) {
+      let start = 0;
+      const increment = target / (duration / 16);
+      
+      function update() {
+        start += increment;
+        if (start < target) {
+          element.textContent = Math.floor(start).toLocaleString();
+          requestAnimationFrame(update);
+        } else {
+          element.textContent = target.toLocaleString();
+        }
+      }
+      update();
+    }
+
+    // Navbar background on scroll
+    window.addEventListener('scroll', () => {
+      const nav = document.querySelector('nav');
+      if (window.scrollY > 100) {
+        nav.style.background = 'rgba(10, 15, 28, 0.95)';
+      } else {
+        nav.style.background = 'rgba(10, 15, 28, 0.8)';
+      }
+    });
+  </script>
+</body>
+</html>

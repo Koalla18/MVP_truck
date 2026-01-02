@@ -1,5 +1,6 @@
 from sqlalchemy import Column, DateTime, ForeignKey, Float, Integer, String, func
 from sqlalchemy.dialects.postgresql import ARRAY
+from sqlalchemy.orm import relationship
 
 from app.db.base import Base
 
@@ -43,6 +44,9 @@ class Vehicle(Base):
     image_url = Column(String, nullable=True)
 
     driver_profile_id = Column(String, ForeignKey("driver_profiles.id", ondelete="SET NULL"), nullable=True, index=True)
+
+    # Relationships
+    driver = relationship("DriverProfile", back_populates="vehicles", lazy="joined")
 
     telemetry_updated_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)

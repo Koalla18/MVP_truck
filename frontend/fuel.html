@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RoutoX — Топливо</title>
+  <link rel="stylesheet" href="./assets/css/routox-unified.css">
+  <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+  <script src="https://kit.fontawesome.com/a2e0e9e5a9.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    .kpi-value {
+      background: linear-gradient(135deg, #3b82f6, #10b981);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .progress-ring { transform: rotate(-90deg); }
+    .progress-ring-circle { transition: stroke-dashoffset 0.5s ease; }
+    .trans-row { transition: all 0.2s ease; border-radius: 8px; }
+    .trans-row:hover { background: rgba(59, 130, 246, 0.08); }
+  </style>
+</head>
+<body class="min-h-screen">
+  <!-- Header -->
+  <header class="glass-panel mx-4 mt-4 px-6 py-4 flex items-center justify-between sticky top-4 z-30">
+    <div class="flex items-center gap-6">
+      <a href="./index.html" class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-emerald-500 flex items-center justify-center font-bold text-lg text-white">R</div>
+        <div>
+          <div class="font-semibold">RoutoX</div>
+          <div class="text-xs text-muted">Fleet Management</div>
+        </div>
+      </a>
+      <nav id="mainNav" class="flex items-center gap-1 ml-8">
+        <!-- Navigation populated by JS -->
+      </nav>
+    </div>
+    <div class="flex items-center gap-3">
+      <span class="role-badge admin" id="roleBadge">
+        <i class="fa-solid fa-user-gear"></i>
+        <span id="roleText">Администратор</span>
+      </span>
+      <div class="theme-toggle-track" onclick="toggleTheme()">
+        <div class="theme-toggle-thumb"></div>
+      </div>
+      <button class="icon-btn" title="Уведомления">
+        <i class="fa-solid fa-bell text-muted"></i>
+        <span class="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center font-bold">2</span>
+      </button>
+      <button class="icon-btn" title="Выход" onclick="logout()"><i class="fa-solid fa-right-from-bracket text-muted"></i></button>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="p-4 space-y-4">
+    <!-- Stats Row -->
+    <div class="grid grid-cols-5 gap-4">
+      <div class="glass-panel stat-card p-5">
+        <div class="flex items-center justify-between mb-3">
+          <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 flex items-center justify-center">
+            <i class="fa-solid fa-fire-flame-curved text-amber-500 text-xl"></i>
+          </div>
+          <span class="text-xs px-2 py-1 rounded-lg bg-emerald-500/15 text-emerald-500">-5.2%</span>
+        </div>
+        <div class="text-2xl font-bold kpi-value">₽ 2.4M</div>
+        <div class="text-sm text-muted">Расходы за месяц</div>
+      </div>
+
+      <div class="glass-panel stat-card p-5">
+        <div class="flex items-center justify-between mb-3">
+          <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500/20 to-cyan-500/20 flex items-center justify-center">
+            <i class="fa-solid fa-gas-pump text-blue-500 text-xl"></i>
+          </div>
+          <span class="text-xs px-2 py-1 rounded-lg bg-amber-500/15 text-amber-500">+2.1%</span>
+        </div>
+        <div class="text-2xl font-bold kpi-value">45,280 л</div>
+        <div class="text-sm text-muted">Заправлено за месяц</div>
+      </div>
+
+      <div class="glass-panel stat-card p-5">
+        <div class="flex items-center justify-between mb-3">
+          <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500/20 to-green-500/20 flex items-center justify-center">
+            <i class="fa-solid fa-gauge-high text-emerald-500 text-xl"></i>
+          </div>
+          <span class="text-xs px-2 py-1 rounded-lg bg-emerald-500/15 text-emerald-500">Норма</span>
+        </div>
+        <div class="text-2xl font-bold kpi-value">32.4 л/100км</div>
+        <div class="text-sm text-muted">Средний расход</div>
+      </div>
+
+      <div class="glass-panel stat-card p-5">
+        <div class="flex items-center justify-between mb-3">
+          <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center">
+            <i class="fa-solid fa-ruble-sign text-purple-500 text-xl"></i>
+          </div>
+          <span class="text-xs px-2 py-1 rounded-lg bg-red-500/15 text-red-500">+1.8%</span>
+        </div>
+        <div class="text-2xl font-bold kpi-value">₽ 58.90</div>
+        <div class="text-sm text-muted">Средняя цена ДТ</div>
+      </div>
+
+      <div class="glass-panel stat-card p-5">
+        <div class="flex items-center justify-between mb-3">
+          <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-slate-500/20 to-slate-600/20 flex items-center justify-center">
+            <i class="fa-solid fa-credit-card text-slate-500 text-xl"></i>
+          </div>
+        </div>
+        <div class="text-2xl font-bold kpi-value">64</div>
+        <div class="text-sm text-muted">Топливных карт</div>
+      </div>
+    </div>
+
+    <!-- Main Grid -->
+    <div class="grid grid-cols-12 gap-4">
+      <!-- Charts Section -->
+      <section class="col-span-8 space-y-4">
+        <!-- Fuel Consumption Chart -->
+        <div class="glass-panel p-5">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h3 class="font-semibold">Расход топлива</h3>
+              <p class="text-sm text-muted">Динамика за последние 30 дней</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <button class="px-3 py-1.5 rounded-lg bg-blue-500/20 text-blue-500 text-sm font-medium">Дни</button>
+              <button class="px-3 py-1.5 rounded-lg text-muted text-sm hover:bg-slate-100">Недели</button>
+              <button class="px-3 py-1.5 rounded-lg text-muted text-sm hover:bg-slate-100">Месяцы</button>
+            </div>
+          </div>
+          <canvas id="fuelChart" height="100"></canvas>
+        </div>
+
+        <!-- Cost Breakdown -->
+        <div class="grid grid-cols-2 gap-4">
+          <div class="glass-panel p-5">
+            <h3 class="font-semibold mb-4">Расход по типам ТС</h3>
+            <canvas id="vehicleTypeChart" height="150"></canvas>
+          </div>
+
+          <div class="glass-panel p-5">
+            <h3 class="font-semibold mb-4">Топ маршруты по затратам</h3>
+            <div class="space-y-3">
+              <div class="flex items-center gap-3">
+                <span class="text-sm text-muted w-24">Москва-СПб</span>
+                <div class="flex-1 h-6 rounded-lg bg-slate-100 overflow-hidden">
+                  <div class="h-full bg-gradient-to-r from-blue-500 to-blue-400" style="width: 85%"></div>
+                </div>
+                <span class="text-sm font-semibold w-20 text-right">₽ 420K</span>
+              </div>
+              <div class="flex items-center gap-3">
+                <span class="text-sm text-muted w-24">Екб-Москва</span>
+                <div class="flex-1 h-6 rounded-lg bg-slate-100 overflow-hidden">
+                  <div class="h-full bg-gradient-to-r from-emerald-500 to-emerald-400" style="width: 72%"></div>
+                </div>
+                <span class="text-sm font-semibold w-20 text-right">₽ 356K</span>
+              </div>
+              <div class="flex items-center gap-3">
+                <span class="text-sm text-muted w-24">Казань-Москва</span>
+                <div class="flex-1 h-6 rounded-lg bg-slate-100 overflow-hidden">
+                  <div class="h-full bg-gradient-to-r from-purple-500 to-purple-400" style="width: 58%"></div>
+                </div>
+                <span class="text-sm font-semibold w-20 text-right">₽ 287K</span>
+              </div>
+              <div class="flex items-center gap-3">
+                <span class="text-sm text-muted w-24">Сочи-Москва</span>
+                <div class="flex-1 h-6 rounded-lg bg-slate-100 overflow-hidden">
+                  <div class="h-full bg-gradient-to-r from-amber-500 to-amber-400" style="width: 45%"></div>
+                </div>
+                <span class="text-sm font-semibold w-20 text-right">₽ 223K</span>
+              </div>
+              <div class="flex items-center gap-3">
+                <span class="text-sm text-muted w-24">Н.Новгород</span>
+                <div class="flex-1 h-6 rounded-lg bg-slate-100 overflow-hidden">
+                  <div class="h-full bg-gradient-to-r from-cyan-500 to-cyan-400" style="width: 32%"></div>
+                </div>
+                <span class="text-sm font-semibold w-20 text-right">₽ 158K</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Transactions -->
+        <div class="glass-panel p-5">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="font-semibold">Последние заправки</h3>
+            <button class="text-sm text-blue-500 hover:underline">Все транзакции →</button>
+          </div>
+          
+          <div class="overflow-hidden rounded-xl border" style="border-color: var(--border-color);">
+            <table class="w-full">
+              <thead>
+                <tr style="background: var(--bg-card);">
+                  <th class="text-left p-3 text-xs font-medium text-muted">Дата/Время</th>
+                  <th class="text-left p-3 text-xs font-medium text-muted">ТС</th>
+                  <th class="text-left p-3 text-xs font-medium text-muted">Водитель</th>
+                  <th class="text-left p-3 text-xs font-medium text-muted">АЗС</th>
+                  <th class="text-right p-3 text-xs font-medium text-muted">Литры</th>
+                  <th class="text-right p-3 text-xs font-medium text-muted">Сумма</th>
+                </tr>
+              </thead>
+              <tbody id="transactionsTable"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- Right Panel -->
+      <aside class="col-span-4 space-y-4">
+        <!-- Fleet Fuel Status -->
+        <div class="glass-panel p-5">
+          <h3 class="font-semibold mb-4">Уровень топлива флота</h3>
+          <div class="flex justify-center mb-6">
+            <svg viewBox="0 0 200 200" width="160" height="160">
+              <defs>
+                <linearGradient id="fuelGradient" x1="0%" y1="100%" x2="0%" y2="0%">
+                  <stop offset="0%" stop-color="#f59e0b"/>
+                  <stop offset="50%" stop-color="#10b981"/>
+                  <stop offset="100%" stop-color="#3b82f6"/>
+                </linearGradient>
+              </defs>
+              <circle cx="100" cy="100" r="90" fill="none" stroke="currentColor" stroke-width="20" style="color: var(--border-color);"/>
+              <circle class="progress-ring-circle" cx="100" cy="100" r="90" fill="none" stroke="url(#fuelGradient)" stroke-width="20" stroke-linecap="round" stroke-dasharray="565.48" stroke-dashoffset="169.64" transform="rotate(-90 100 100)"/>
+              <text x="100" y="95" text-anchor="middle" fill="currentColor" font-size="32" font-weight="bold">70%</text>
+              <text x="100" y="120" text-anchor="middle" fill="currentColor" font-size="12" class="text-muted">Средний уровень</text>
+            </svg>
+          </div>
+          <div class="grid grid-cols-3 gap-3 text-center">
+            <div class="glass-card p-3">
+              <div class="text-lg font-bold text-emerald-500">42</div>
+              <div class="text-xs text-muted">Полный</div>
+            </div>
+            <div class="glass-card p-3">
+              <div class="text-lg font-bold text-amber-500">18</div>
+              <div class="text-xs text-muted">Средний</div>
+            </div>
+            <div class="glass-card p-3">
+              <div class="text-lg font-bold text-red-500">4</div>
+              <div class="text-xs text-muted">Низкий</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Alerts -->
+        <div class="glass-panel p-5">
+          <h3 class="font-semibold mb-4">Уведомления</h3>
+          <div class="space-y-3 custom-scroll max-h-64 overflow-y-auto">
+            <div class="flex items-start gap-3 p-3 rounded-xl bg-red-500/10 border border-red-500/20">
+              <div class="w-8 h-8 rounded-lg bg-red-500/20 flex items-center justify-center flex-shrink-0">
+                <i class="fa-solid fa-triangle-exclamation text-red-500 text-sm"></i>
+              </div>
+              <div>
+                <div class="text-sm font-medium">Критический уровень</div>
+                <div class="text-xs text-muted">TR-045 • MAN TGX • 8%</div>
+                <div class="text-xs text-red-500 mt-1">Требуется срочная заправка</div>
+              </div>
+            </div>
+            <div class="flex items-start gap-3 p-3 rounded-xl bg-amber-500/10 border border-amber-500/20">
+              <div class="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center flex-shrink-0">
+                <i class="fa-solid fa-gas-pump text-amber-500 text-sm"></i>
+              </div>
+              <div>
+                <div class="text-sm font-medium">Низкий уровень</div>
+                <div class="text-xs text-muted">TR-023 • SCANIA • 22%</div>
+                <div class="text-xs text-amber-500 mt-1">Рекомендуется заправка</div>
+              </div>
+            </div>
+            <div class="flex items-start gap-3 p-3 rounded-xl bg-blue-500/10 border border-blue-500/20">
+              <div class="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center flex-shrink-0">
+                <i class="fa-solid fa-chart-line text-blue-500 text-sm"></i>
+              </div>
+              <div>
+                <div class="text-sm font-medium">Повышенный расход</div>
+                <div class="text-xs text-muted">TR-012 • VOLVO FH</div>
+                <div class="text-xs text-blue-500 mt-1">+18% от нормы</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Fuel Cards -->
+        <div class="glass-panel p-5">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="font-semibold">Топливные карты</h3>
+            <button class="text-sm text-blue-500 hover:underline">Управление</button>
+          </div>
+          <div class="space-y-3">
+            <div class="glass-card p-4">
+              <div class="flex items-center justify-between mb-2">
+                <div class="flex items-center gap-2">
+                  <div class="w-8 h-5 rounded bg-gradient-to-r from-red-500 to-red-600"></div>
+                  <span class="text-sm font-medium">Лукойл</span>
+                </div>
+                <span class="text-xs text-muted">**** 7842</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-xs text-muted">Баланс</span>
+                <span class="text-sm font-semibold">₽ 145,320</span>
+              </div>
+            </div>
+            <div class="glass-card p-4">
+              <div class="flex items-center justify-between mb-2">
+                <div class="flex items-center gap-2">
+                  <div class="w-8 h-5 rounded bg-gradient-to-r from-green-500 to-green-600"></div>
+                  <span class="text-sm font-medium">ГПН</span>
+                </div>
+                <span class="text-xs text-muted">**** 3156</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-xs text-muted">Баланс</span>
+                <span class="text-sm font-semibold">₽ 89,750</span>
+              </div>
+            </div>
+            <div class="glass-card p-4">
+              <div class="flex items-center justify-between mb-2">
+                <div class="flex items-center gap-2">
+                  <div class="w-8 h-5 rounded bg-gradient-to-r from-blue-500 to-blue-600"></div>
+                  <span class="text-sm font-medium">Роснефть</span>
+                </div>
+                <span class="text-xs text-muted">**** 9023</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-xs text-muted">Баланс</span>
+                <span class="text-sm font-semibold">₽ 234,100</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <script>
+    // Theme management
+    const savedTheme = localStorage.getItem('routoxTheme') || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+
+    function toggleTheme() {
+      const current = document.documentElement.getAttribute('data-theme');
+      const next = current === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', next);
+      localStorage.setItem('routoxTheme', next);
+      updateChartColors();
+    }
+
+    function getChartColors() {
+      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+      return {
+        gridColor: isDark ? 'rgba(71, 85, 105, 0.2)' : 'rgba(226, 232, 240, 0.8)',
+        textColor: isDark ? '#94a3b8' : '#64748b'
+      };
+    }
+
+    function updateChartColors() {
+      const colors = getChartColors();
+      [fuelChart, vehicleChart].forEach(chart => {
+        if (chart.options.scales?.x) {
+          chart.options.scales.x.grid.color = colors.gridColor;
+          chart.options.scales.x.ticks.color = colors.textColor;
+        }
+        if (chart.options.scales?.y) {
+          chart.options.scales.y.grid.color = colors.gridColor;
+          chart.options.scales.y.ticks.color = colors.textColor;
+        }
+        if (chart.options.plugins?.legend?.labels) {
+          chart.options.plugins.legend.labels.color = colors.textColor;
+        }
+        chart.update();
+      });
+    }
+
+    const colors = getChartColors();
+
+    // Fuel consumption chart
+    const fuelCtx = document.getElementById('fuelChart').getContext('2d');
+    const fuelChart = new Chart(fuelCtx, {
+      type: 'line',
+      data: {
+        labels: Array.from({length: 30}, (_, i) => i + 1),
+        datasets: [{
+          label: 'Расход (л)',
+          data: [1520, 1680, 1450, 1890, 1650, 1720, 1580, 1490, 1750, 1820, 1680, 1550, 1920, 1780, 1650, 1480, 1590, 1720, 1850, 1680, 1540, 1890, 1750, 1620, 1480, 1780, 1920, 1650, 1580, 1720],
+          borderColor: '#3b82f6',
+          backgroundColor: 'rgba(59, 130, 246, 0.1)',
+          fill: true,
+          tension: 0.4,
+          pointRadius: 0,
+          pointHoverRadius: 6
+        }, {
+          label: 'Затраты (тыс. ₽)',
+          data: [89, 99, 85, 111, 97, 101, 93, 88, 103, 107, 99, 91, 113, 105, 97, 87, 94, 101, 109, 99, 91, 111, 103, 95, 87, 105, 113, 97, 93, 101],
+          borderColor: '#10b981',
+          backgroundColor: 'rgba(16, 185, 129, 0.1)',
+          fill: true,
+          tension: 0.4,
+          pointRadius: 0,
+          pointHoverRadius: 6,
+          yAxisID: 'y1'
+        }]
+      },
+      options: {
+        responsive: true,
+        interaction: { intersect: false, mode: 'index' },
+        plugins: { legend: { display: true, position: 'top', labels: { color: colors.textColor, usePointStyle: true } } },
+        scales: {
+          x: { grid: { color: colors.gridColor }, ticks: { color: colors.textColor } },
+          y: { grid: { color: colors.gridColor }, ticks: { color: colors.textColor } },
+          y1: { position: 'right', grid: { display: false }, ticks: { color: '#10b981' } }
+        }
+      }
+    });
+
+    // Vehicle type chart
+    const vehicleCtx = document.getElementById('vehicleTypeChart').getContext('2d');
+    const vehicleChart = new Chart(vehicleCtx, {
+      type: 'doughnut',
+      data: {
+        labels: ['Тягачи', 'Фургоны', 'Рефрижераторы', 'Самосвалы'],
+        datasets: [{ data: [45, 25, 20, 10], backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6'], borderWidth: 0, hoverOffset: 10 }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { position: 'right', labels: { color: colors.textColor, usePointStyle: true, padding: 15 } } },
+        cutout: '65%'
+      }
+    });
+
+    // Transactions data
+    const transactions = [
+      { date: '15.01 14:32', vehicle: 'TR-001 • MAN TGX', driver: 'Иванов П.', station: 'Лукойл, М4', liters: 420, amount: 24738 },
+      { date: '15.01 11:15', vehicle: 'TR-023 • SCANIA R', driver: 'Петров А.', station: 'ГПН, Казань', liters: 380, amount: 22382 },
+      { date: '15.01 09:45', vehicle: 'TR-007 • VOLVO FH', driver: 'Сидоров В.', station: 'Роснефть, М7', liters: 450, amount: 26505 },
+      { date: '14.01 18:20', vehicle: 'TR-012 • FREIGHTLINER', driver: 'Козлов Д.', station: 'Лукойл, СПб', liters: 395, amount: 23266 },
+      { date: '14.01 15:50', vehicle: 'TR-034 • MAN TGS', driver: 'Новиков К.', station: 'ГПН, Н.Новгород', liters: 410, amount: 24149 },
+    ];
+
+    const tbody = document.getElementById('transactionsTable');
+    tbody.innerHTML = transactions.map(t => `
+      <tr class="trans-row" style="border-bottom: 1px solid var(--border-color);">
+        <td class="p-3 text-sm">${t.date}</td>
+        <td class="p-3 text-sm">${t.vehicle}</td>
+        <td class="p-3 text-sm text-muted">${t.driver}</td>
+        <td class="p-3 text-sm text-muted">${t.station}</td>
+        <td class="p-3 text-sm text-right font-medium">${t.liters} л</td>
+        <td class="p-3 text-sm text-right font-semibold text-emerald-500">₽ ${t.amount.toLocaleString()}</td>
+      </tr>
+    `).join('');
+
+    // Role management
+    document.addEventListener('DOMContentLoaded', () => {
+      initNavigation('fuel');
+      if (typeof updateRoleBadge === 'function') updateRoleBadge();
+    });
+
+    // Initialize navigation based on role
+    function initNavigation(currentPage) {
+      const role = localStorage.getItem('user_role') || 'admin';
+      const nav = document.getElementById('mainNav');
+      
+      let navItems = [];
+      
+      if (role === 'owner') {
+        navItems.push({ href: './owner.html', icon: 'fa-crown', text: 'Обзор', page: 'owner' });
+      }
+      
+      navItems = navItems.concat([
+        { href: './index.html', icon: 'fa-truck', text: 'Флот', page: 'index' },
+        { href: './trips.html', icon: 'fa-route', text: 'Рейсы', page: 'trips' },
+        { href: './geozones.html', icon: 'fa-map-location-dot', text: 'Геозоны', page: 'geozones' },
+        { href: './analytics.html', icon: 'fa-chart-line', text: 'Аналитика', page: 'analytics' },
+        { href: './fuel.html', icon: 'fa-gas-pump', text: 'Топливо', page: 'fuel' },
+        { href: './maintenance.html', icon: 'fa-wrench', text: 'ТО', page: 'maintenance' },
+        { href: './documents.html', icon: 'fa-file-lines', text: 'Документы', page: 'documents' }
+      ]);
+      
+      nav.innerHTML = navItems.map(item => 
+        `<a href="${item.href}" class="nav-pill ${item.page === currentPage ? 'active' : ''}"><i class="fa-solid ${item.icon}"></i><span>${item.text}</span></a>`
+      ).join('');
+    }
+
+    // Logout function
+    function logout() {
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('user_role');
+      localStorage.removeItem('demo_mode');
+      window.location.href = './login.html';
+    }
+  </script>
+  <script src="./assets/js/routox-unified.js"></script>
+</body>
+</html>

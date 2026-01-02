@@ -3,6 +3,19 @@ from datetime import datetime
 from pydantic import BaseModel
 
 
+class DriverProfileEmbedded(BaseModel):
+    """Embedded driver profile info for vehicle response."""
+    id: str
+    name: str
+    phone: str | None = None
+    home_base: str | None = None
+    license_class: str | None = None
+    rating: str | None = None
+
+    class Config:
+        from_attributes = True
+
+
 class VehicleCreate(BaseModel):
     name: str
     plate: str
@@ -76,8 +89,12 @@ class VehicleOut(BaseModel):
     health_pct: float | None = None
     image_url: str | None = None
     driver_profile_id: str | None = None
+    driver: DriverProfileEmbedded | None = None
     telemetry_updated_at: datetime | None = None
     created_at: datetime | None = None
+
+    class Config:
+        from_attributes = True
 
     class Config:
         from_attributes = True

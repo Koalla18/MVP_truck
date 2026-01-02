@@ -1,0 +1,81 @@
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: routox-postgres
+    environment:
+      POSTGRES_DB: routox
+      POSTGRES_USER: routox
+      POSTGRES_PASSWORD: routox
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U routox -d routox"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: routox-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Backend API (FastAPI)
+  api:
+    build: ./backend
+    container_name: routox-api
+    environment:
+      - DATABASE_URL=postgresql+psycopg://routox:routox@postgres:5432/routox
+      - REDIS_URL=redis://redis:6379/0
+      - JWT_SECRET=your-secret-key-change-in-production-min-32-chars
+      - JWT_ALG=HS256
+      - JWT_EXPIRES_MIN=1440
+      - CORS_ORIGINS=http://localhost:8080,http://127.0.0.1:8080,http://localhost:80,http://127.0.0.1:80,http://localhost,http://frontend
+      - APP_NAME=RoutoX API
+      - ENV=dev
+      - DEBUG=true
+      - API_PREFIX=/api/v1
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    command: >
+      sh -c "
+        echo 'Waiting for database...' &&
+        sleep 3 &&
+        echo 'Running migrations...' &&
+        alembic -c /app/app/alembic.ini upgrade head &&
+        echo 'Starting API server...' &&
+        uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+      "
+    volumes:
+      - ./backend/app:/app/app
+    restart: unless-stopped
+
+  # Frontend (Nginx serving static files)
+  frontend:
+    image: nginx:alpine
+    container_name: routox-frontend
+    ports:
+      - "8080:80"
+    volumes:
+      - ./frontend:/usr/share/nginx/html:ro
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - api
+    restart: unless-stopped
+
+volumes:
+  pgdata:

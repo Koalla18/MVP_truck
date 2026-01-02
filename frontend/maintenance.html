@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RoutoX — Техническое обслуживание</title>
+  <link rel="stylesheet" href="./assets/css/routox-unified.css">
+  <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+  <script src="https://kit.fontawesome.com/a2e0e9e5a9.js" crossorigin="anonymous"></script>
+  <style>
+    .kpi-value {
+      background: linear-gradient(135deg, #3b82f6, #10b981);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .status-scheduled { background: rgba(59, 130, 246, 0.15); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.3); }
+    .status-inprogress { background: rgba(245, 158, 11, 0.15); color: #d97706; border: 1px solid rgba(245, 158, 11, 0.3); }
+    .status-completed { background: rgba(16, 185, 129, 0.15); color: #059669; border: 1px solid rgba(16, 185, 129, 0.3); }
+    .status-overdue { background: rgba(239, 68, 68, 0.15); color: #dc2626; border: 1px solid rgba(239, 68, 68, 0.3); }
+    [data-theme="dark"] .status-scheduled { color: #60a5fa; }
+    [data-theme="dark"] .status-inprogress { color: #fbbf24; }
+    [data-theme="dark"] .status-completed { color: #34d399; }
+    [data-theme="dark"] .status-overdue { color: #f87171; }
+    .calendar-day { transition: all 0.2s ease; }
+    .calendar-day:hover { background: rgba(59, 130, 246, 0.15); }
+    .calendar-day.has-event::after { content: ''; position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%); width: 6px; height: 6px; border-radius: 50%; background: #3b82f6; }
+    .calendar-day.today { background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(16, 185, 129, 0.15)); border: 1px solid rgba(59, 130, 246, 0.4); }
+    .health-bar { height: 8px; background: var(--border-color); border-radius: 4px; overflow: hidden; }
+    .health-bar-fill { height: 100%; border-radius: 4px; transition: width 0.5s ease; }
+    .health-excellent { background: linear-gradient(90deg, #10b981, #34d399); }
+    .health-good { background: linear-gradient(90deg, #3b82f6, #60a5fa); }
+    .health-warning { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+    .health-critical { background: linear-gradient(90deg, #ef4444, #f87171); }
+    .kanban-column { min-height: 400px; }
+    .kanban-dropzone { min-height: 100px; border: 2px dashed transparent; border-radius: 12px; transition: all 0.2s ease; }
+    .kanban-dropzone.drag-over { border-color: #3b82f6; background: rgba(59, 130, 246, 0.08); }
+    .task-card { cursor: grab; transition: all 0.2s ease; user-select: none; }
+    .task-card:active { cursor: grabbing; }
+    .task-card.dragging { opacity: 0.5; transform: scale(1.02); }
+    .task-card:hover { border-color: rgba(59, 130, 246, 0.5); transform: translateX(4px); }
+  </style>
+</head>
+<body class="min-h-screen">
+  <!-- Header -->
+  <header class="glass-panel mx-4 mt-4 px-6 py-4 flex items-center justify-between sticky top-4 z-30">
+    <div class="flex items-center gap-6">
+      <a href="./index.html" class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-emerald-500 flex items-center justify-center font-bold text-lg text-white">R</div>
+        <div>
+          <div class="font-semibold">RoutoX</div>
+          <div class="text-xs text-muted">Fleet Management</div>
+        </div>
+      </a>
+      <nav id="mainNav" class="flex items-center gap-1 ml-8">
+        <!-- Navigation populated by JS -->
+      </nav>
+    </div>
+    <div class="flex items-center gap-3">
+      <span class="role-badge admin" id="roleBadge">
+        <i class="fa-solid fa-user-gear"></i>
+        <span id="roleText">Администратор</span>
+      </span>
+      <div class="theme-toggle-track" onclick="toggleTheme()">
+        <div class="theme-toggle-thumb"></div>
+      </div>
+      <button class="icon-btn" title="Уведомления">
+        <i class="fa-solid fa-bell text-muted"></i>
+        <span class="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center font-bold">5</span>
+      </button>
+      <button class="icon-btn" title="Выход" onclick="logout()"><i class="fa-solid fa-right-from-bracket text-muted"></i></button>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="p-4 space-y-4">
+    <!-- Stats Row -->
+    <div class="grid grid-cols-5 gap-4">
+      <div class="glass-panel stat-card p-5">
+        <div class="flex items-center justify-between mb-3">
+          <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500/20 to-cyan-500/20 flex items-center justify-center">
+            <i class="fa-solid fa-calendar-check text-blue-500 text-xl"></i>
+          </div>
+        </div>
+        <div class="text-2xl font-bold kpi-value">12</div>
+        <div class="text-sm text-muted">Запланировано ТО</div>
+      </div>
+
+      <div class="glass-panel stat-card p-5">
+        <div class="flex items-center justify-between mb-3">
+          <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 flex items-center justify-center">
+            <i class="fa-solid fa-clock text-amber-500 text-xl"></i>
+          </div>
+        </div>
+        <div class="text-2xl font-bold kpi-value">4</div>
+        <div class="text-sm text-muted">В работе</div>
+      </div>
+
+      <div class="glass-panel stat-card p-5">
+        <div class="flex items-center justify-between mb-3">
+          <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-red-500/20 to-pink-500/20 flex items-center justify-center">
+            <i class="fa-solid fa-triangle-exclamation text-red-500 text-xl"></i>
+          </div>
+        </div>
+        <div class="text-2xl font-bold kpi-value">3</div>
+        <div class="text-sm text-muted">Просрочено</div>
+      </div>
+
+      <div class="glass-panel stat-card p-5">
+        <div class="flex items-center justify-between mb-3">
+          <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500/20 to-green-500/20 flex items-center justify-center">
+            <i class="fa-solid fa-check-circle text-emerald-500 text-xl"></i>
+          </div>
+        </div>
+        <div class="text-2xl font-bold kpi-value">89</div>
+        <div class="text-sm text-muted">Выполнено (месяц)</div>
+      </div>
+
+      <div class="glass-panel stat-card p-5">
+        <div class="flex items-center justify-between mb-3">
+          <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center">
+            <i class="fa-solid fa-ruble-sign text-purple-500 text-xl"></i>
+          </div>
+        </div>
+        <div class="text-2xl font-bold kpi-value">₽ 1.2M</div>
+        <div class="text-sm text-muted">Затраты (месяц)</div>
+      </div>
+    </div>
+
+    <!-- Main Grid -->
+    <div class="grid grid-cols-12 gap-4">
+      <!-- Left Panel - Kanban Board -->
+      <section class="col-span-9">
+        <!-- Actions -->
+        <div class="glass-panel p-4 mb-4 flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <button class="btn-primary flex items-center gap-2" onclick="showTaskModal()">
+              <i class="fa-solid fa-plus"></i>
+              Новая задача
+            </button>
+            <button class="glass-card px-4 py-2.5 flex items-center gap-2 text-sm">
+              <i class="fa-solid fa-filter text-muted"></i>
+              Фильтры
+            </button>
+          </div>
+          
+          <div class="flex items-center gap-2">
+            <button class="px-3 py-2 rounded-lg bg-blue-500/20 text-blue-500 text-sm font-medium">Канбан</button>
+            <button class="px-3 py-2 rounded-lg text-muted text-sm hover:bg-slate-100">Список</button>
+            <button class="px-3 py-2 rounded-lg text-muted text-sm hover:bg-slate-100">Календарь</button>
+          </div>
+        </div>
+
+        <!-- Kanban Board with Drag & Drop -->
+        <div class="grid grid-cols-4 gap-4">
+          <!-- Column: Scheduled -->
+          <div class="kanban-column">
+            <div class="flex items-center justify-between mb-4">
+              <div class="flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full bg-blue-500"></span>
+                <span class="font-semibold">Запланировано</span>
+                <span class="text-xs px-2 py-0.5 rounded-lg bg-blue-500/15 text-blue-500" id="countScheduled">12</span>
+              </div>
+              <button class="w-6 h-6 rounded hover:bg-blue-50 flex items-center justify-center">
+                <i class="fa-solid fa-plus text-xs text-muted"></i>
+              </button>
+            </div>
+            <div class="kanban-dropzone space-y-3 custom-scroll overflow-y-auto max-h-[500px] p-1" data-column="scheduled" id="kanbanScheduled"></div>
+          </div>
+
+          <!-- Column: In Progress -->
+          <div class="kanban-column">
+            <div class="flex items-center justify-between mb-4">
+              <div class="flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full bg-amber-500"></span>
+                <span class="font-semibold">В работе</span>
+                <span class="text-xs px-2 py-0.5 rounded-lg bg-amber-500/15 text-amber-500" id="countProgress">4</span>
+              </div>
+            </div>
+            <div class="kanban-dropzone space-y-3 custom-scroll overflow-y-auto max-h-[500px] p-1" data-column="progress" id="kanbanProgress"></div>
+          </div>
+
+          <!-- Column: Review -->
+          <div class="kanban-column">
+            <div class="flex items-center justify-between mb-4">
+              <div class="flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full bg-purple-500"></span>
+                <span class="font-semibold">Проверка</span>
+                <span class="text-xs px-2 py-0.5 rounded-lg bg-purple-500/15 text-purple-500" id="countReview">2</span>
+              </div>
+            </div>
+            <div class="kanban-dropzone space-y-3 custom-scroll overflow-y-auto max-h-[500px] p-1" data-column="review" id="kanbanReview"></div>
+          </div>
+
+          <!-- Column: Completed -->
+          <div class="kanban-column">
+            <div class="flex items-center justify-between mb-4">
+              <div class="flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full bg-emerald-500"></span>
+                <span class="font-semibold">Выполнено</span>
+                <span class="text-xs px-2 py-0.5 rounded-lg bg-emerald-500/15 text-emerald-500" id="countCompleted">89</span>
+              </div>
+            </div>
+            <div class="kanban-dropzone space-y-3 custom-scroll overflow-y-auto max-h-[500px] p-1" data-column="completed" id="kanbanCompleted"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Right Panel -->
+      <aside class="col-span-3 space-y-4">
+        <!-- Calendar -->
+        <div class="glass-panel p-5">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="font-semibold">Январь 2024</h3>
+            <div class="flex items-center gap-1">
+              <button class="w-8 h-8 rounded-lg hover:bg-blue-50 flex items-center justify-center">
+                <i class="fa-solid fa-chevron-left text-xs"></i>
+              </button>
+              <button class="w-8 h-8 rounded-lg hover:bg-blue-50 flex items-center justify-center">
+                <i class="fa-solid fa-chevron-right text-xs"></i>
+              </button>
+            </div>
+          </div>
+          
+          <div class="grid grid-cols-7 gap-1 text-center text-xs mb-2">
+            <span class="text-muted py-2">Пн</span>
+            <span class="text-muted py-2">Вт</span>
+            <span class="text-muted py-2">Ср</span>
+            <span class="text-muted py-2">Чт</span>
+            <span class="text-muted py-2">Пт</span>
+            <span class="text-muted py-2">Сб</span>
+            <span class="text-muted py-2">Вс</span>
+          </div>
+          
+          <div class="grid grid-cols-7 gap-1 text-center text-sm" id="calendarDays"></div>
+        </div>
+
+        <!-- Vehicle Health Overview -->
+        <div class="glass-panel p-5">
+          <h3 class="font-semibold mb-4">Состояние ТС</h3>
+          
+          <div class="space-y-4 custom-scroll max-h-64 overflow-y-auto">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-lg bg-emerald-500/20 flex items-center justify-center">
+                <i class="fa-solid fa-truck text-emerald-500 text-sm"></i>
+              </div>
+              <div class="flex-1">
+                <div class="flex items-center justify-between mb-1">
+                  <span class="text-sm font-medium">TR-001 • MAN TGX</span>
+                  <span class="text-xs text-emerald-500">95%</span>
+                </div>
+                <div class="health-bar">
+                  <div class="health-bar-fill health-excellent" style="width: 95%"></div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
+                <i class="fa-solid fa-truck text-blue-500 text-sm"></i>
+              </div>
+              <div class="flex-1">
+                <div class="flex items-center justify-between mb-1">
+                  <span class="text-sm font-medium">TR-007 • VOLVO FH</span>
+                  <span class="text-xs text-blue-500">82%</span>
+                </div>
+                <div class="health-bar">
+                  <div class="health-bar-fill health-good" style="width: 82%"></div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center">
+                <i class="fa-solid fa-truck text-amber-500 text-sm"></i>
+              </div>
+              <div class="flex-1">
+                <div class="flex items-center justify-between mb-1">
+                  <span class="text-sm font-medium">TR-023 • SCANIA R</span>
+                  <span class="text-xs text-amber-500">58%</span>
+                </div>
+                <div class="health-bar">
+                  <div class="health-bar-fill health-warning" style="width: 58%"></div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-lg bg-red-500/20 flex items-center justify-center">
+                <i class="fa-solid fa-truck text-red-500 text-sm"></i>
+              </div>
+              <div class="flex-1">
+                <div class="flex items-center justify-between mb-1">
+                  <span class="text-sm font-medium">TR-045 • FREIGHTLINER</span>
+                  <span class="text-xs text-red-500">31%</span>
+                </div>
+                <div class="health-bar">
+                  <div class="health-bar-fill health-critical" style="width: 31%"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Upcoming Services -->
+        <div class="glass-panel p-5">
+          <h3 class="font-semibold mb-4">Ближайшие ТО</h3>
+          
+          <div class="space-y-3">
+            <div class="flex items-center gap-3 p-3 rounded-xl bg-red-500/10 border border-red-500/20">
+              <div class="w-10 h-10 rounded-lg bg-red-500/20 flex items-center justify-center">
+                <i class="fa-solid fa-exclamation text-red-500"></i>
+              </div>
+              <div class="flex-1">
+                <div class="text-sm font-medium">TR-045 • Замена тормозов</div>
+                <div class="text-xs text-red-500">Просрочено на 3 дня</div>
+              </div>
+            </div>
+            
+            <div class="flex items-center gap-3 p-3 rounded-xl bg-amber-500/10 border border-amber-500/20">
+              <div class="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center">
+                <i class="fa-solid fa-oil-can text-amber-500"></i>
+              </div>
+              <div class="flex-1">
+                <div class="text-sm font-medium">TR-023 • Замена масла</div>
+                <div class="text-xs text-amber-500">Через 2 дня</div>
+              </div>
+            </div>
+            
+            <div class="flex items-center gap-3 p-3 rounded-xl bg-blue-500/10 border border-blue-500/20">
+              <div class="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
+                <i class="fa-solid fa-tire text-blue-500"></i>
+              </div>
+              <div class="flex-1">
+                <div class="text-sm font-medium">TR-012 • Проверка шин</div>
+                <div class="text-xs text-blue-500">Через 5 дней</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Parts Inventory -->
+        <div class="glass-panel p-5">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="font-semibold">Запчасти на складе</h3>
+            <button class="text-sm text-blue-500 hover:underline">Все →</button>
+          </div>
+          
+          <div class="space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-muted">Масляные фильтры</span>
+              <span class="text-sm font-medium">24 шт</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-muted">Тормозные колодки</span>
+              <span class="text-sm font-medium text-amber-500">8 шт</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-muted">Ремни ГРМ</span>
+              <span class="text-sm font-medium">12 шт</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-muted">Свечи зажигания</span>
+              <span class="text-sm font-medium text-red-500">3 шт</span>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <!-- Task Modal -->
+  <div id="taskModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden items-center justify-center">
+    <div class="glass-panel w-full max-w-lg mx-4 p-6">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-xl font-bold">Новая задача ТО</h2>
+        <button onclick="closeTaskModal()" class="icon-btn">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <form class="space-y-4">
+        <div>
+          <label class="text-sm text-muted mb-2 block">Транспортное средство</label>
+          <select class="input-field">
+            <option>Выберите ТС...</option>
+            <option>TR-001 • MAN TGX</option>
+            <option>TR-007 • VOLVO FH</option>
+            <option>TR-023 • SCANIA R-SERIES</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="text-sm text-muted mb-2 block">Тип работ</label>
+          <select class="input-field">
+            <option>Выберите тип...</option>
+            <option>Плановое ТО</option>
+            <option>Замена масла</option>
+            <option>Замена тормозов</option>
+            <option>Проверка шин</option>
+            <option>Диагностика двигателя</option>
+            <option>Ремонт подвески</option>
+          </select>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="text-sm text-muted mb-2 block">Дата</label>
+            <input type="date" class="input-field">
+          </div>
+          <div>
+            <label class="text-sm text-muted mb-2 block">Приоритет</label>
+            <select class="input-field">
+              <option>Низкий</option>
+              <option>Средний</option>
+              <option selected>Высокий</option>
+              <option>Критический</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="text-sm text-muted mb-2 block">Описание</label>
+          <textarea rows="3" placeholder="Дополнительная информация..." class="input-field resize-none"></textarea>
+        </div>
+
+        <div class="flex gap-3 pt-4">
+          <button type="submit" class="flex-1 btn-primary py-3">Создать задачу</button>
+          <button type="button" onclick="closeTaskModal()" class="flex-1 glass-card py-3">Отмена</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // Theme management
+    const savedTheme = localStorage.getItem('routoxTheme') || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+
+    function toggleTheme() {
+      const current = document.documentElement.getAttribute('data-theme');
+      const next = current === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', next);
+      localStorage.setItem('routoxTheme', next);
+    }
+
+    // Task data
+    const tasks = {
+      scheduled: [
+        { id: 1, vehicle: 'TR-001', title: 'Плановое ТО', date: '18.01', priority: 'medium' },
+        { id: 2, vehicle: 'TR-012', title: 'Проверка шин', date: '20.01', priority: 'low' },
+        { id: 3, vehicle: 'TR-034', title: 'Замена фильтров', date: '22.01', priority: 'medium' },
+      ],
+      progress: [
+        { id: 4, vehicle: 'TR-007', title: 'Диагностика двигателя', date: '15.01', priority: 'high' },
+        { id: 5, vehicle: 'TR-023', title: 'Замена масла', date: '14.01', priority: 'medium' },
+      ],
+      review: [
+        { id: 6, vehicle: 'TR-002', title: 'Ремонт подвески', date: '13.01', priority: 'high' },
+      ],
+      completed: [
+        { id: 7, vehicle: 'TR-005', title: 'Замена тормозов', date: '12.01', priority: 'high' },
+        { id: 8, vehicle: 'TR-018', title: 'Плановое ТО', date: '10.01', priority: 'medium' },
+      ]
+    };
+
+    const priorityColors = {
+      low: 'bg-slate-500/15 text-slate-500',
+      medium: 'bg-blue-500/15 text-blue-500',
+      high: 'bg-amber-500/15 text-amber-500',
+      critical: 'bg-red-500/15 text-red-500'
+    };
+
+    const priorityLabels = {
+      low: 'Низкий',
+      medium: 'Средний',
+      high: 'Высокий',
+      critical: 'Крит.'
+    };
+
+    let draggedTask = null;
+    let sourceColumn = null;
+
+    // Create task card HTML
+    function createTaskCard(task) {
+      const card = document.createElement('div');
+      card.className = 'task-card glass-card p-4';
+      card.setAttribute('draggable', 'true');
+      card.setAttribute('data-task-id', task.id);
+      card.innerHTML = `
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-medium text-muted">${task.vehicle}</span>
+          <span class="text-xs px-2 py-0.5 rounded-lg ${priorityColors[task.priority]}">${priorityLabels[task.priority]}</span>
+        </div>
+        <h4 class="font-medium mb-2">${task.title}</h4>
+        <div class="flex items-center justify-between">
+          <span class="text-xs text-muted">${task.date}</span>
+          <div class="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-emerald-500 flex items-center justify-center text-xs text-white">М</div>
+        </div>
+      `;
+
+      // Drag events
+      card.addEventListener('dragstart', handleDragStart);
+      card.addEventListener('dragend', handleDragEnd);
+
+      return card;
+    }
+
+    // Render kanban columns
+    function renderKanban() {
+      Object.entries(tasks).forEach(([columnName, columnTasks]) => {
+        const container = document.getElementById(`kanban${columnName.charAt(0).toUpperCase() + columnName.slice(1)}`);
+        if (!container) return;
+        
+        container.innerHTML = '';
+        columnTasks.forEach(task => {
+          container.appendChild(createTaskCard(task));
+        });
+      });
+
+      updateCounts();
+    }
+
+    // Update column counts
+    function updateCounts() {
+      document.getElementById('countScheduled').textContent = tasks.scheduled.length;
+      document.getElementById('countProgress').textContent = tasks.progress.length;
+      document.getElementById('countReview').textContent = tasks.review.length;
+      document.getElementById('countCompleted').textContent = tasks.completed.length;
+    }
+
+    // Drag and Drop handlers
+    function handleDragStart(e) {
+      draggedTask = e.target;
+      sourceColumn = e.target.closest('.kanban-dropzone').dataset.column;
+      e.target.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+    }
+
+    function handleDragEnd(e) {
+      e.target.classList.remove('dragging');
+      document.querySelectorAll('.kanban-dropzone').forEach(zone => {
+        zone.classList.remove('drag-over');
+      });
+      draggedTask = null;
+      sourceColumn = null;
+    }
+
+    function handleDragOver(e) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+    }
+
+    function handleDragEnter(e) {
+      e.preventDefault();
+      const dropzone = e.target.closest('.kanban-dropzone');
+      if (dropzone) {
+        dropzone.classList.add('drag-over');
+      }
+    }
+
+    function handleDragLeave(e) {
+      const dropzone = e.target.closest('.kanban-dropzone');
+      if (dropzone && !dropzone.contains(e.relatedTarget)) {
+        dropzone.classList.remove('drag-over');
+      }
+    }
+
+    function handleDrop(e) {
+      e.preventDefault();
+      const dropzone = e.target.closest('.kanban-dropzone');
+      if (!dropzone || !draggedTask) return;
+
+      dropzone.classList.remove('drag-over');
+      const targetColumn = dropzone.dataset.column;
+
+      if (sourceColumn === targetColumn) return;
+
+      // Move task in data
+      const taskId = parseInt(draggedTask.dataset.taskId);
+      const taskIndex = tasks[sourceColumn].findIndex(t => t.id === taskId);
+      
+      if (taskIndex > -1) {
+        const [task] = tasks[sourceColumn].splice(taskIndex, 1);
+        tasks[targetColumn].push(task);
+        
+        // Re-render
+        renderKanban();
+      }
+    }
+
+    // Setup dropzones
+    document.querySelectorAll('.kanban-dropzone').forEach(zone => {
+      zone.addEventListener('dragover', handleDragOver);
+      zone.addEventListener('dragenter', handleDragEnter);
+      zone.addEventListener('dragleave', handleDragLeave);
+      zone.addEventListener('drop', handleDrop);
+    });
+
+    // Render calendar
+    function renderCalendar() {
+      const container = document.getElementById('calendarDays');
+      const daysWithEvents = [15, 17, 18, 20, 22, 25];
+      const today = 15;
+      
+      let html = '';
+      for (let day = 1; day <= 31; day++) {
+        const hasEvent = daysWithEvents.includes(day);
+        const isToday = day === today;
+        html += `
+          <span class="calendar-day py-2 rounded-lg cursor-pointer relative ${hasEvent ? 'has-event' : ''} ${isToday ? 'today font-bold' : ''}">${day}</span>
+        `;
+      }
+      
+      container.innerHTML = html;
+    }
+
+    // Modal controls
+    function showTaskModal() {
+      document.getElementById('taskModal').classList.remove('hidden');
+      document.getElementById('taskModal').classList.add('flex');
+    }
+
+    function closeTaskModal() {
+      document.getElementById('taskModal').classList.add('hidden');
+      document.getElementById('taskModal').classList.remove('flex');
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeTaskModal();
+    });
+
+    // Initial render
+    renderKanban();
+    renderCalendar();
+
+    // Role management
+    document.addEventListener('DOMContentLoaded', () => {
+      initNavigation('maintenance');
+      if (typeof updateRoleBadge === 'function') updateRoleBadge();
+    });
+
+    // Initialize navigation based on role
+    function initNavigation(currentPage) {
+      const role = localStorage.getItem('user_role') || 'admin';
+      const nav = document.getElementById('mainNav');
+      
+      let navItems = [];
+      
+      if (role === 'owner') {
+        navItems.push({ href: './owner.html', icon: 'fa-crown', text: 'Обзор', page: 'owner' });
+      }
+      
+      navItems = navItems.concat([
+        { href: './index.html', icon: 'fa-truck', text: 'Флот', page: 'index' },
+        { href: './trips.html', icon: 'fa-route', text: 'Рейсы', page: 'trips' },
+        { href: './geozones.html', icon: 'fa-map-location-dot', text: 'Геозоны', page: 'geozones' },
+        { href: './analytics.html', icon: 'fa-chart-line', text: 'Аналитика', page: 'analytics' },
+        { href: './fuel.html', icon: 'fa-gas-pump', text: 'Топливо', page: 'fuel' },
+        { href: './maintenance.html', icon: 'fa-wrench', text: 'ТО', page: 'maintenance' },
+        { href: './documents.html', icon: 'fa-file-lines', text: 'Документы', page: 'documents' }
+      ]);
+      
+      nav.innerHTML = navItems.map(item => 
+        `<a href="${item.href}" class="nav-pill ${item.page === currentPage ? 'active' : ''}"><i class="fa-solid ${item.icon}"></i><span>${item.text}</span></a>`
+      ).join('');
+    }
+
+    // Logout function
+    function logout() {
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('user_role');
+      localStorage.removeItem('demo_mode');
+      window.location.href = './login.html';
+    }
+  </script>
+  <script src="./assets/js/routox-unified.js"></script>
+</body>
+</html>

@@ -3,170 +3,469 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Рейсы · RoutoX</title>
+  <title>RoutoX — Рейсы</title>
+  <link rel="stylesheet" href="./assets/css/routox-unified.css">
   <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
-  <link rel="stylesheet" href="./assets/css/style.css" />
-  <script defer src="./assets/js/common.js"></script>
+  <script src="https://kit.fontawesome.com/a2e0e9e5a9.js" crossorigin="anonymous"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    #tripMap { border-radius: 16px; z-index: 1; }
+    .leaflet-control-zoom { border: none !important; border-radius: 10px !important; overflow: hidden; }
+    .leaflet-control-zoom a { background: var(--bg-secondary) !important; color: var(--text-primary) !important; border: 1px solid var(--border-color) !important; }
+    .status-badge { padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+    .status-active { background: rgba(16, 185, 129, 0.15); color: #10b981; }
+    .status-planned { background: rgba(59, 130, 246, 0.15); color: #3b82f6; }
+    .status-completed { background: rgba(107, 114, 128, 0.15); color: #6b7280; }
+    .status-delayed { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
+    .trip-card { cursor: pointer; position: relative; overflow: hidden; }
+    .trip-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; border-radius: 4px 0 0 4px; }
+    .trip-card.active::before { background: linear-gradient(180deg, #10b981, #3b82f6); }
+    .trip-card.planned::before { background: #3b82f6; }
+    .trip-card.completed::before { background: #6b7280; }
+    .trip-card.delayed::before { background: #f59e0b; }
+    .trip-card.selected { border-color: rgba(59, 130, 246, 0.5); background: rgba(59, 130, 246, 0.05); }
+    .progress-ring { transform: rotate(-90deg); }
+    .progress-ring circle { transition: stroke-dashoffset 0.5s ease; }
+    .route-point { width: 12px; height: 12px; border-radius: 50%; border: 2px solid currentColor; }
+    .route-line { width: 2px; height: 24px; background: currentColor; opacity: 0.3; }
+    .live-pulse { animation: pulse 2s ease-in-out infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+    .tab-btn { padding: 8px 16px; border-radius: 10px; font-size: 13px; color: var(--text-secondary); transition: all 0.2s ease; font-weight: 500; }
+    .tab-btn:hover { color: #3b82f6; background: rgba(59, 130, 246, 0.08); }
+    .tab-btn.active { background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; }
+    .stat-value { font-size: 28px; font-weight: 700; background: linear-gradient(135deg, #3b82f6, #10b981); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  </style>
 </head>
-<body class="min-h-screen flex flex-col">
-  <header class="glass px-6 py-5 flex flex-col gap-4 sticky top-0 z-20">
-    <div class="flex flex-wrap items-center justify-between gap-4">
-      <div class="flex flex-wrap items-center gap-4">
-        <a href="./index.html" class="flex items-center gap-3 hover:opacity-90 transition">
-          <div class="brand-mark">R</div>
-          <div>
-            <div class="text-lg font-semibold">RoutoX</div>
-            <div class="text-xs text-slate-400">Управление флотом</div>
-          </div>
-        </a>
-        <nav class="flex flex-wrap gap-2 text-sm">
-          <a href="./index.html" class="nav-pill"><i class="fa-solid fa-gauge-high"></i><span>Флот</span></a>
-          <a href="./trips.html" class="nav-pill nav-pill-active"><i class="fa-solid fa-route"></i><span>Рейсы</span></a>
-          <a href="./geozones.html" class="nav-pill"><i class="fa-solid fa-map"></i><span>Геозоны</span></a>
-          <a href="./analytics.html" class="nav-pill"><i class="fa-solid fa-chart-line"></i><span>Аналитика</span></a>
-          <a href="./inventory.html" class="nav-pill"><i class="fa-solid fa-boxes-stacked"></i><span>Инвентарь</span></a>
-        </nav>
-      </div>
-      <div class="flex items-center gap-2 relative">
-        <button id="notifBtn" class="icon-button" aria-label="Уведомления">
-          <img id="notifIcon" src="./assets/images/notification.gif" alt="Уведомления" class="icon-img hidden" />
-          <span class="notif-dot hidden"></span>
-        </button>
-        <button id="settingsBtn" class="icon-button" aria-label="Настройки">
-          <img src="./assets/images/settings.png" alt="Настройки" class="icon-img" />
-        </button>
-        <div class="header-avatar" aria-label="Профиль">LD</div>
-        <div id="notifPanel" class="floating-panel hidden" role="dialog" aria-label="Активные уведомления">
-          <div class="panel-header">Активные уведомления</div>
-          <div class="panel-body" id="notifList"></div>
+<body class="min-h-screen">
+  <!-- Header -->
+  <header class="glass-panel mx-4 mt-4 px-6 py-4 flex items-center justify-between sticky top-4 z-30">
+    <div class="flex items-center gap-6">
+      <a href="./index.html" class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-emerald-500 flex items-center justify-center font-bold text-lg text-white">R</div>
+        <div>
+          <div class="font-semibold">RoutoX</div>
+          <div class="text-xs text-muted">Fleet Management</div>
         </div>
-        <div id="settingsPanel" class="floating-panel hidden" role="dialog" aria-label="Системные настройки">
-          <div class="panel-header">Системные настройки</div>
-          <div class="panel-body space-y-3 text-sm">
-            <label class="flex items-center justify-between gap-3">Часовой пояс
-              <select id="tzSelect" class="input-select">
-                <option value="UTC+3">UTC+3 Москва</option>
-                <option value="UTC+2">UTC+2 Калининград</option>
-                <option value="UTC+5">UTC+5 Екатеринбург</option>
-              </select>
-            </label>
-            <label class="flex items-center justify-between gap-3">Топливо в
-              <select id="fuelUnitSelect" class="input-select">
-                <option value="l">литрах</option>
-                <option value="gal">галлонах</option>
-              </select>
-            </label>
-            <label class="flex items-center justify-between gap-3">Температура
-              <select id="tempUnitSelect" class="input-select">
-                <option value="c">°C</option>
-                <option value="f">°F</option>
-              </select>
-            </label>
-            <label class="flex items-center justify-between gap-3">Оповещения
-              <select id="alertModeSelect" class="input-select">
-                <option value="push">Push + Email</option>
-                <option value="push-only">Только Push</option>
-                <option value="email">Только Email</option>
-              </select>
-            </label>
-          </div>
-        </div>
-        <label id="themeToggle" class="theme-toggle" aria-live="polite">
-          <input type="checkbox" id="themeToggleInput" aria-describedby="themeToggleHint" />
-          <span class="toggle-track">
-            <span class="toggle-icon sun"><i class="fa-solid fa-sun"></i></span>
-            <span class="toggle-icon moon"><i class="fa-solid fa-moon"></i></span>
-            <span class="toggle-thumb"></span>
-          </span>
-          <span id="themeToggleHint" class="sr-only">Переключатель темы</span>
-        </label>
-      </div>
+      </a>
+      <nav id="mainNav" class="flex items-center gap-1 ml-8">
+        <!-- Navigation populated by JS -->
+      </nav>
     </div>
-    <div class="flex items-center justify-between">
-      <h1 class="text-2xl font-semibold">Рейсы</h1>
-      <span class="text-sm text-slate-400">Данные из API (/orders)</span>
+    <div class="flex items-center gap-3">
+      <div class="flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-500/15 border border-emerald-500/30">
+        <span class="w-2 h-2 rounded-full bg-emerald-500 live-pulse"></span>
+        <span class="text-sm text-emerald-600 font-medium">Live</span>
+      </div>
+      <span class="role-badge admin" id="roleBadge">
+        <i class="fa-solid fa-user-gear"></i>
+        <span id="roleText">Администратор</span>
+      </span>
+      <div class="theme-toggle-track" onclick="toggleTheme()">
+        <div class="theme-toggle-thumb"></div>
+      </div>
+      <button class="icon-btn" title="Уведомления">
+        <i class="fa-solid fa-bell text-muted"></i>
+        <span class="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center font-bold">3</span>
+      </button>
+      <button class="icon-btn" title="Выход" onclick="logout()"><i class="fa-solid fa-right-from-bracket text-muted"></i></button>
     </div>
   </header>
 
-  <main class="p-6 space-y-6">
-    <div class="glass rounded-2xl p-4">
-      <div class="flex items-center justify-between mb-3">
-        <h2 class="text-lg font-semibold">Активные рейсы</h2>
-        <span class="text-xs text-slate-400" id="tripCount">0 рейсов</span>
+  <!-- Main Content -->
+  <main class="p-4 grid grid-cols-12 gap-4" style="height: calc(100vh - 100px);">
+    <!-- Left Panel - Trip List -->
+    <aside class="col-span-4 space-y-4 overflow-hidden flex flex-col">
+      <!-- Stats Row -->
+      <div class="glass-panel p-4">
+        <div class="grid grid-cols-4 gap-2">
+          <div class="stat-card glass-card"><div class="stat-value">12</div><div class="text-xs text-muted mt-1">В пути</div></div>
+          <div class="stat-card glass-card"><div class="stat-value">5</div><div class="text-xs text-muted mt-1">Плановые</div></div>
+          <div class="stat-card glass-card"><div class="stat-value">2</div><div class="text-xs text-muted mt-1">Опоздания</div></div>
+          <div class="stat-card glass-card"><div class="stat-value">47</div><div class="text-xs text-muted mt-1">За неделю</div></div>
+        </div>
       </div>
-      <div id="tripsBoard" class="grid md:grid-cols-2 xl:grid-cols-3 gap-3"></div>
-    </div>
-  </main>
 
-  <script src="https://kit.fontawesome.com/a2e0e9e5a9.js" crossorigin="anonymous"></script>
-  <script>
-    function esc(v) {
-      return String(v || "")
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;");
-    }
+      <!-- Filters & Actions -->
+      <div class="glass-panel p-4">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="relative flex-1">
+            <input type="text" placeholder="Поиск рейсов..." class="input-field w-full rounded-xl px-4 py-2.5 pl-10 text-sm">
+            <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-muted text-sm"></i>
+          </div>
+          <button class="btn-primary flex items-center gap-2 whitespace-nowrap"><i class="fa-solid fa-plus"></i>Новый рейс</button>
+        </div>
+        <div class="flex gap-2">
+          <button class="tab-btn active" data-filter="all">Все</button>
+          <button class="tab-btn" data-filter="active">В пути</button>
+          <button class="tab-btn" data-filter="planned">Плановые</button>
+          <button class="tab-btn" data-filter="completed">Завершённые</button>
+        </div>
+      </div>
 
-    function fmtTs(ts) {
-      if (!ts) return "—";
-      const d = new Date(ts);
-      if (Number.isNaN(d.getTime())) return String(ts);
-      return d.toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
-    }
+      <!-- Trip List -->
+      <div class="glass-panel p-4 flex-1 overflow-hidden flex flex-col">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="font-semibold">Рейсы</h3>
+          <span class="text-xs px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-muted" id="tripCount">12 рейсов</span>
+        </div>
+        <div class="space-y-3 overflow-y-auto custom-scroll flex-1" id="tripList">
+          <!-- Rendered by JS -->
+        </div>
+      </div>
+    </aside>
 
-    function renderOrders(orders) {
-      const board = document.getElementById("tripsBoard");
-      const count = document.getElementById("tripCount");
-      if (!board || !count) return;
-
-      const items = Array.isArray(orders) ? orders : [];
-      count.textContent = `${items.length} рейсов`;
-
-      if (!items.length) {
-        board.innerHTML = '<div class="text-sm text-slate-400">Нет рейсов</div>';
-        return;
-      }
-
-      board.innerHTML = items.slice(0, 30).map((o) => {
-        const route = [o.origin, o.destination].filter(Boolean).join(" → ") || "—";
-        const title = esc(o.title || "Заказ");
-        const status = esc(o.status || "—");
-        const vehicle = esc(o.vehicle_id || "—");
-        return `
-          <div class="glass rounded-xl p-4 border border-slate-800">
-            <div class="flex items-start justify-between gap-3">
-              <div class="min-w-0">
-                <div class="text-sm font-semibold truncate">${title}</div>
-                <div class="text-xs text-slate-500 mt-1">${esc(route)}</div>
+    <!-- Center Panel - Map -->
+    <section class="col-span-5 glass-panel p-4 relative overflow-hidden">
+      <div id="tripMap" class="absolute inset-4 rounded-2xl"></div>
+      <!-- Map Controls -->
+      <div class="absolute top-8 right-8 z-10 flex gap-2">
+        <button class="icon-btn" title="Показать все рейсы"><i class="fa-solid fa-expand text-muted"></i></button>
+        <button class="icon-btn" title="Трафик"><i class="fa-solid fa-car text-muted"></i></button>
+        <button class="icon-btn" title="Погода"><i class="fa-solid fa-cloud text-muted"></i></button>
+      </div>
+      <!-- Route Info Overlay -->
+      <div class="absolute bottom-8 left-8 right-8 z-10">
+        <div class="glass-card p-4">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-4">
+              <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500/20 to-emerald-500/20 border border-blue-500/30 flex items-center justify-center">
+                <i class="fa-solid fa-truck text-blue-500 text-xl"></i>
               </div>
-              <span class="text-xs px-2 py-1 rounded-full bg-slate-800 border border-slate-700 whitespace-nowrap">${status}</span>
+              <div>
+                <div class="font-semibold" id="selectedTripName">TR-001 • Москва → СПб</div>
+                <div class="text-sm text-muted" id="selectedTripDriver">Водитель: Иванов А.П.</div>
+              </div>
             </div>
-            <div class="text-xs text-slate-400 mt-3 flex flex-wrap gap-3">
-              <span><i class="fa-solid fa-calendar"></i> ${fmtTs(o.planned_depart_at || o.created_at)}</span>
-              <span><i class="fa-solid fa-truck"></i> vehicle: ${vehicle}</span>
-              <span><i class="fa-solid fa-user"></i> driver: ${esc(o.assigned_driver_user_id || "—")}</span>
+            <div class="flex items-center gap-6">
+              <div class="text-center">
+                <div class="text-lg font-bold text-emerald-500" id="selectedTripDistance">456 км</div>
+                <div class="text-xs text-muted">Осталось</div>
+              </div>
+              <div class="text-center">
+                <div class="text-lg font-bold text-blue-500" id="selectedTripETA">~5ч 30м</div>
+                <div class="text-xs text-muted">ETA</div>
+              </div>
+              <div class="text-center">
+                <div class="text-lg font-bold text-amber-500" id="selectedTripProgress">67%</div>
+                <div class="text-xs text-muted">Прогресс</div>
+              </div>
             </div>
           </div>
-        `;
-      }).join("");
+        </div>
+      </div>
+    </section>
+
+    <!-- Right Panel - Trip Details -->
+    <aside class="col-span-3 space-y-4 overflow-hidden flex flex-col">
+      <div class="glass-panel p-5 flex-1 overflow-y-auto custom-scroll" id="tripDetails">
+        <div class="flex items-center justify-between mb-4">
+          <span class="text-xs text-muted uppercase tracking-wider">Детали рейса</span>
+          <span class="status-badge status-active" id="tripStatusBadge">В пути</span>
+        </div>
+
+        <!-- Progress Ring -->
+        <div class="flex justify-center mb-4">
+          <div class="relative">
+            <svg class="progress-ring w-24 h-24">
+              <circle cx="48" cy="48" r="40" fill="none" stroke="currentColor" stroke-width="8" class="text-slate-200 dark:text-slate-700"/>
+              <circle cx="48" cy="48" r="40" fill="none" stroke="url(#progressGradient)" stroke-width="8" stroke-linecap="round" stroke-dasharray="251" stroke-dashoffset="83" id="progressCircle"/>
+              <defs><linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#3b82f6"/><stop offset="100%" stop-color="#10b981"/></linearGradient></defs>
+            </svg>
+            <div class="absolute inset-0 flex items-center justify-center">
+              <span class="text-2xl font-bold" id="tripProgressValue">67%</span>
+            </div>
+          </div>
+        </div>
+
+        <h3 class="text-lg font-bold text-center mb-1" id="detailTripName">Рейс TR-001</h3>
+        <p class="text-sm text-muted text-center mb-4" id="detailTripRoute">Москва → Санкт-Петербург</p>
+
+        <!-- Route Timeline -->
+        <div class="space-y-0 mb-4">
+          <div class="flex items-center gap-3">
+            <div class="flex flex-col items-center">
+              <div class="route-point text-emerald-500 bg-emerald-500"></div>
+              <div class="route-line bg-emerald-500"></div>
+            </div>
+            <div class="flex-1">
+              <div class="text-sm font-medium">Москва, Склад-1</div>
+              <div class="text-xs text-muted">Выезд: 06:00 ✓</div>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <div class="flex flex-col items-center">
+              <div class="route-point text-blue-500"></div>
+              <div class="route-line bg-blue-500"></div>
+            </div>
+            <div class="flex-1">
+              <div class="text-sm font-medium">Тверь (транзит)</div>
+              <div class="text-xs text-blue-500">Сейчас здесь</div>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <div class="flex flex-col items-center">
+              <div class="route-point text-slate-400"></div>
+            </div>
+            <div class="flex-1">
+              <div class="text-sm font-medium text-muted">СПб, Клиент "Нева"</div>
+              <div class="text-xs text-muted">ETA: 14:30</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Trip Info Grid -->
+        <div class="grid grid-cols-2 gap-3 text-sm mb-4">
+          <div class="glass-card p-3">
+            <div class="text-xs text-muted mb-1">Водитель</div>
+            <div class="font-medium flex items-center gap-2"><i class="fa-solid fa-user text-blue-500"></i>Иванов А.П.</div>
+          </div>
+          <div class="glass-card p-3">
+            <div class="text-xs text-muted mb-1">ТС</div>
+            <div class="font-medium flex items-center gap-2"><i class="fa-solid fa-truck text-emerald-500"></i>Е123МВ 777</div>
+          </div>
+          <div class="glass-card p-3">
+            <div class="text-xs text-muted mb-1">Груз</div>
+            <div class="font-medium flex items-center gap-2"><i class="fa-solid fa-box text-amber-500"></i>18.5 т</div>
+          </div>
+          <div class="glass-card p-3">
+            <div class="text-xs text-muted mb-1">Топливо</div>
+            <div class="font-medium flex items-center gap-2"><i class="fa-solid fa-gas-pump text-purple-500"></i>72%</div>
+          </div>
+        </div>
+
+        <!-- Documents -->
+        <div class="mb-4">
+          <div class="text-xs text-muted uppercase tracking-wider mb-2">Документы</div>
+          <div class="space-y-2">
+            <div class="flex items-center justify-between p-2 glass-card">
+              <div class="flex items-center gap-2"><i class="fa-solid fa-file-lines text-cyan-500"></i><span class="text-sm">eTTН #45892</span></div>
+              <span class="text-xs text-emerald-500">✓ Подписан</span>
+            </div>
+            <div class="flex items-center justify-between p-2 glass-card">
+              <div class="flex items-center gap-2"><i class="fa-solid fa-file-invoice text-amber-500"></i><span class="text-sm">Накладная</span></div>
+              <span class="text-xs text-emerald-500">✓ Готов</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex gap-2">
+          <button class="flex-1 btn-primary text-sm flex items-center justify-center gap-2"><i class="fa-solid fa-phone"></i>Связаться</button>
+          <button class="icon-btn"><i class="fa-solid fa-ellipsis-vertical text-muted"></i></button>
+        </div>
+      </div>
+
+      <!-- Recent Events -->
+      <div class="glass-panel p-4">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="font-semibold text-sm">События рейса</h3>
+          <span class="text-xs text-blue-500 cursor-pointer hover:underline">Все →</span>
+        </div>
+        <div class="space-y-2 text-sm">
+          <div class="flex items-start gap-2">
+            <i class="fa-solid fa-location-dot text-emerald-500 mt-1"></i>
+            <div><div>Проехал Тверь</div><div class="text-xs text-muted">10:45</div></div>
+          </div>
+          <div class="flex items-start gap-2">
+            <i class="fa-solid fa-gas-pump text-amber-500 mt-1"></i>
+            <div><div>Заправка +120л</div><div class="text-xs text-muted">09:20</div></div>
+          </div>
+          <div class="flex items-start gap-2">
+            <i class="fa-solid fa-play text-blue-500 mt-1"></i>
+            <div><div>Рейс начат</div><div class="text-xs text-muted">06:00</div></div>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <script>
+    // Theme management
+    const savedTheme = localStorage.getItem('routoxTheme') || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+
+    function toggleTheme() {
+      const current = document.documentElement.getAttribute('data-theme');
+      const next = current === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', next);
+      localStorage.setItem('routoxTheme', next);
+      updateMapTiles();
     }
 
-    window.addEventListener("DOMContentLoaded", async () => {
-      const { token, me } = await window.RoutoxCommon.requireAuth({ allowRoles: ["admin", "owner"] });
-      if (!token) return;
+    // Initialize map
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const map = L.map('tripMap', { zoomControl: false }).setView([56.8, 37.5], 7);
+    L.control.zoom({ position: 'bottomright' }).addTo(map);
+    
+    let tileLayer = L.tileLayer(
+      isDark 
+        ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+        : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+      { attribution: '© OpenStreetMap' }
+    ).addTo(map);
 
-      await window.RoutoxCommon.initHeaderPanels(token);
+    function updateMapTiles() {
+      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+      tileLayer.setUrl(
+        isDark 
+          ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+          : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'
+      );
+    }
 
-      try {
-        const orders = await window.RoutoxCommon.apiRequest("/orders", token);
-        renderOrders(orders);
-      } catch (e) {
-        const board = document.getElementById("tripsBoard");
-        const count = document.getElementById("tripCount");
-        if (count) count.textContent = "—";
-        if (board) board.innerHTML = `<div class="text-sm text-slate-400">${esc(e?.message || "Не удалось загрузить рейсы")}</div>`;
+    // Trip data
+    const trips = [
+      { id: 1, name: 'TR-001', from: 'Москва', to: 'Санкт-Петербург', driver: 'Иванов А.П.', vehicle: 'Е123МВ 777', status: 'active', progress: 67, lat: 56.8584, lng: 35.9176, distance: 456, eta: '5ч 30м', cargo: '18.5 т', fuel: 72 },
+      { id: 2, name: 'TR-002', from: 'Москва', to: 'Казань', driver: 'Петров С.И.', vehicle: 'М456АК 777', status: 'active', progress: 45, lat: 55.5, lng: 41.5, distance: 520, eta: '7ч 15м', cargo: '22 т', fuel: 58 },
+      { id: 3, name: 'TR-003', from: 'СПб', to: 'Москва', driver: 'Сидоров К.В.', vehicle: 'О789РТ 78', status: 'active', progress: 82, lat: 57.5, lng: 34.2, distance: 180, eta: '2ч 45м', cargo: '15 т', fuel: 45 },
+      { id: 4, name: 'TR-004', from: 'Москва', to: 'Нижний Новгород', driver: 'Козлов А.Н.', vehicle: 'В321СТ 777', status: 'delayed', progress: 35, lat: 55.9, lng: 40.2, distance: 290, eta: '4ч (опоздание)', cargo: '20 т', fuel: 62 },
+      { id: 5, name: 'TR-005', from: 'Екатеринбург', to: 'Челябинск', driver: 'Морозов Д.П.', vehicle: 'Х654УФ 96', status: 'planned', progress: 0, lat: 56.8, lng: 60.6, distance: 210, eta: 'Завтра 08:00', cargo: '25 т', fuel: 95 },
+      { id: 6, name: 'TR-006', from: 'Казань', to: 'Самара', driver: 'Волков И.С.', vehicle: 'А987ОП 16', status: 'active', progress: 58, lat: 54.5, lng: 50.5, distance: 180, eta: '3ч 20м', cargo: '19 т', fuel: 55 },
+      { id: 7, name: 'TR-007', from: 'Москва', to: 'Воронеж', driver: 'Соколов М.А.', vehicle: 'Р159МН 777', status: 'completed', progress: 100, lat: 51.6, lng: 39.2, distance: 0, eta: 'Доставлено', cargo: '17 т', fuel: 38 },
+    ];
+
+    const statusColors = { active: '#10b981', planned: '#3b82f6', completed: '#6b7280', delayed: '#f59e0b' };
+    const statusLabels = { active: 'В пути', planned: 'Плановый', completed: 'Завершён', delayed: 'Опоздание' };
+    const statusClasses = { active: 'status-active', planned: 'status-planned', completed: 'status-completed', delayed: 'status-delayed' };
+
+    // Add markers to map
+    const markers = {};
+    trips.forEach(trip => {
+      if (trip.lat && trip.lng) {
+        const marker = L.marker([trip.lat, trip.lng], {
+          icon: L.divIcon({
+            className: 'custom-marker',
+            html: `<div style="width:36px;height:36px;background:${statusColors[trip.status]};border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.3);"><i class="fa-solid fa-truck" style="font-size:14px;"></i></div>`,
+            iconSize: [36, 36],
+            iconAnchor: [18, 18]
+          })
+        }).addTo(map);
+        marker.bindPopup(`<b>${trip.name}</b><br>${trip.from} → ${trip.to}<br>Водитель: ${trip.driver}`);
+        markers[trip.id] = marker;
       }
     });
+
+    // Draw route line example
+    const routeCoords = [[55.7558, 37.6173], [56.8584, 35.9176], [59.9343, 30.3351]];
+    L.polyline(routeCoords, { color: '#3b82f6', weight: 3, opacity: 0.7, dashArray: '10, 10' }).addTo(map);
+
+    // Render trip list
+    function renderTripList(filter = 'all') {
+      const list = document.getElementById('tripList');
+      const filtered = filter === 'all' ? trips : trips.filter(t => t.status === filter);
+      document.getElementById('tripCount').textContent = `${filtered.length} рейсов`;
+      
+      list.innerHTML = filtered.map((trip, i) => `
+        <div class="trip-card glass-card p-4 ${trip.status} ${i === 0 ? 'selected' : ''}" data-id="${trip.id}">
+          <div class="flex items-start justify-between mb-2">
+            <div>
+              <div class="font-semibold">${trip.name}</div>
+              <div class="text-sm text-muted">${trip.from} → ${trip.to}</div>
+            </div>
+            <span class="status-badge ${statusClasses[trip.status]}">${statusLabels[trip.status]}</span>
+          </div>
+          <div class="flex items-center justify-between text-xs text-muted">
+            <span><i class="fa-solid fa-user mr-1"></i>${trip.driver}</span>
+            <span><i class="fa-solid fa-truck mr-1"></i>${trip.vehicle}</span>
+          </div>
+          <div class="mt-3">
+            <div class="flex justify-between text-xs mb-1"><span>Прогресс</span><span>${trip.progress}%</span></div>
+            <div class="h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
+              <div class="h-full rounded-full" style="width:${trip.progress}%;background:${statusColors[trip.status]}"></div>
+            </div>
+          </div>
+        </div>
+      `).join('');
+
+      // Add click handlers
+      list.querySelectorAll('.trip-card').forEach(card => {
+        card.addEventListener('click', () => {
+          list.querySelectorAll('.trip-card').forEach(c => c.classList.remove('selected'));
+          card.classList.add('selected');
+          const trip = trips.find(t => t.id === parseInt(card.dataset.id));
+          if (trip) selectTrip(trip);
+        });
+      });
+    }
+
+    function selectTrip(trip) {
+      // Update map
+      if (markers[trip.id]) map.setView([trip.lat, trip.lng], 8);
+      
+      // Update bottom overlay
+      document.getElementById('selectedTripName').textContent = `${trip.name} • ${trip.from} → ${trip.to}`;
+      document.getElementById('selectedTripDriver').textContent = `Водитель: ${trip.driver}`;
+      document.getElementById('selectedTripDistance').textContent = `${trip.distance} км`;
+      document.getElementById('selectedTripETA').textContent = trip.eta;
+      document.getElementById('selectedTripProgress').textContent = `${trip.progress}%`;
+
+      // Update right panel
+      document.getElementById('tripStatusBadge').className = `status-badge ${statusClasses[trip.status]}`;
+      document.getElementById('tripStatusBadge').textContent = statusLabels[trip.status];
+      document.getElementById('tripProgressValue').textContent = `${trip.progress}%`;
+      document.getElementById('detailTripName').textContent = `Рейс ${trip.name}`;
+      document.getElementById('detailTripRoute').textContent = `${trip.from} → ${trip.to}`;
+      
+      // Update progress ring
+      const circumference = 251;
+      const offset = circumference - (trip.progress / 100) * circumference;
+      document.getElementById('progressCircle').setAttribute('stroke-dashoffset', offset);
+    }
+
+    // Tab filtering
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        renderTripList(btn.dataset.filter);
+      });
+    });
+
+    // Initial render
+    renderTripList();
+    selectTrip(trips[0]);
+
+    // Role management
+    document.addEventListener('DOMContentLoaded', () => {
+      initNavigation('trips');
+      if (typeof updateRoleBadge === 'function') updateRoleBadge();
+    });
+
+    // Initialize navigation based on role
+    function initNavigation(currentPage) {
+      const role = localStorage.getItem('user_role') || 'admin';
+      const nav = document.getElementById('mainNav');
+      
+      let navItems = [];
+      
+      if (role === 'owner') {
+        navItems.push({ href: './owner.html', icon: 'fa-crown', text: 'Обзор', page: 'owner' });
+      }
+      
+      navItems = navItems.concat([
+        { href: './index.html', icon: 'fa-truck', text: 'Флот', page: 'index' },
+        { href: './trips.html', icon: 'fa-route', text: 'Рейсы', page: 'trips' },
+        { href: './geozones.html', icon: 'fa-map-location-dot', text: 'Геозоны', page: 'geozones' },
+        { href: './analytics.html', icon: 'fa-chart-line', text: 'Аналитика', page: 'analytics' },
+        { href: './fuel.html', icon: 'fa-gas-pump', text: 'Топливо', page: 'fuel' },
+        { href: './maintenance.html', icon: 'fa-wrench', text: 'ТО', page: 'maintenance' },
+        { href: './documents.html', icon: 'fa-file-lines', text: 'Документы', page: 'documents' }
+      ]);
+      
+      nav.innerHTML = navItems.map(item => 
+        `<a href="${item.href}" class="nav-pill ${item.page === currentPage ? 'active' : ''}"><i class="fa-solid ${item.icon}"></i><span>${item.text}</span></a>`
+      ).join('');
+    }
+
+    // Logout function
+    function logout() {
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('user_role');
+      localStorage.removeItem('demo_mode');
+      window.location.href = './login.html';
+    }
   </script>
+  <script src="./assets/js/routox-unified.js"></script>
 </body>
 </html>

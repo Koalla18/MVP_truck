@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RoutoX — Панель администратора</title>
+  <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+  <script src="https://kit.fontawesome.com/a2e0e9e5a9.js" crossorigin="anonymous"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <link rel="stylesheet" href="./assets/css/style.css" />
+  <style>
+    :root {
+      --bg-primary: #0a0f1c;
+      --bg-secondary: #111827;
+      --accent-blue: #3b82f6;
+      --accent-emerald: #10b981;
+    }
+
+    body {
+      background: var(--bg-primary);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    /* Glassmorphism enhanced */
+    .glass-panel {
+      background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 24px;
+    }
+
+    .glass-card {
+      background: linear-gradient(135deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 16px;
+      transition: all 0.3s ease;
+    }
+
+    .glass-card:hover {
+      border-color: rgba(59, 130, 246, 0.3);
+      transform: translateY(-2px);
+    }
+
+    .glass-card.selected {
+      border-color: rgba(59, 130, 246, 0.5);
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(16, 185, 129, 0.05) 100%);
+    }
+
+    /* 3D Truck Trailer Visualization */
+    .trailer-3d {
+      perspective: 1200px;
+      transform-style: preserve-3d;
+    }
+
+    .trailer-container {
+      transform-style: preserve-3d;
+      animation: trailerFloat 6s ease-in-out infinite;
+    }
+
+    @keyframes trailerFloat {
+      0%, 100% { transform: rotateX(5deg) rotateY(-5deg); }
+      50% { transform: rotateX(0deg) rotateY(5deg); }
+    }
+
+    /* Cargo cells 3D effect */
+    .cargo-cell {
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+
+    .cargo-cell:hover {
+      filter: brightness(1.2);
+      transform: translateY(-2px);
+    }
+
+    /* Progress bars */
+    .capacity-bar {
+      height: 6px;
+      background: rgba(30, 41, 59, 0.8);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .capacity-bar-fill {
+      height: 100%;
+      border-radius: 3px;
+      background: linear-gradient(90deg, #3b82f6, #10b981);
+      transition: width 0.5s ease;
+    }
+
+    /* Status badge */
+    .status-badge {
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 500;
+    }
+
+    .status-enroute {
+      background: rgba(16, 185, 129, 0.2);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .status-loading {
+      background: rgba(245, 158, 11, 0.2);
+      color: #fbbf24;
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+
+    .status-idle {
+      background: rgba(100, 116, 139, 0.2);
+      color: #94a3b8;
+      border: 1px solid rgba(100, 116, 139, 0.3);
+    }
+
+    /* Truck list item */
+    .truck-item {
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+
+    .truck-item:hover {
+      background: rgba(59, 130, 246, 0.1);
+    }
+
+    .truck-item.active {
+      background: linear-gradient(90deg, rgba(59, 130, 246, 0.2), transparent);
+      border-left: 3px solid #3b82f6;
+    }
+
+    /* Mechanical condition bars */
+    .mech-bar {
+      width: 100%;
+      height: 50px;
+      background: linear-gradient(to bottom, #1e293b, #0f172a);
+      border-radius: 8px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .mech-bar-fill {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: linear-gradient(to top, #3b82f6, #60a5fa, #93c5fd);
+      transition: height 0.5s ease;
+    }
+
+    .mech-bar-stripes {
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(
+        -45deg,
+        transparent,
+        transparent 3px,
+        rgba(255,255,255,0.05) 3px,
+        rgba(255,255,255,0.05) 6px
+      );
+    }
+
+    /* Scrollbar styling */
+    .custom-scroll::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .custom-scroll::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background: rgba(71, 85, 105, 0.5);
+      border-radius: 3px;
+    }
+
+    /* Navigation pills */
+    .nav-pill {
+      padding: 8px 16px;
+      border-radius: 10px;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: #94a3b8;
+    }
+
+    .nav-pill:hover {
+      background: rgba(255,255,255,0.05);
+      color: #fff;
+    }
+
+    .nav-pill.active {
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(16, 185, 129, 0.1));
+      color: #fff;
+      border: 1px solid rgba(59, 130, 246, 0.3);
+    }
+
+    /* Button styles */
+    .btn-primary {
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      color: white;
+      padding: 10px 20px;
+      border-radius: 12px;
+      font-weight: 500;
+      transition: all 0.2s ease;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 20px rgba(59, 130, 246, 0.4);
+    }
+
+    .icon-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+
+    .icon-btn:hover {
+      background: rgba(59, 130, 246, 0.2);
+      border-color: rgba(59, 130, 246, 0.3);
+    }
+
+    /* Live indicator */
+    .live-indicator {
+      animation: livePulse 2s ease-in-out infinite;
+    }
+
+    @keyframes livePulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    /* Map styling */
+    #fleetMap, #routeMapPreview {
+      border-radius: 16px;
+    }
+  </style>
+</head>
+<body class="min-h-screen text-white">
+  <!-- Top Navigation Bar -->
+  <header class="glass-panel mx-4 mt-4 px-6 py-4 flex items-center justify-between sticky top-4 z-30">
+    <div class="flex items-center gap-6">
+      <!-- Logo -->
+      <a href="./landing.html" class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-emerald-500 flex items-center justify-center font-bold text-lg">R</div>
+        <div>
+          <div class="font-semibold">RoutoX</div>
+          <div class="text-xs text-slate-400">Fleet Management</div>
+        </div>
+      </a>
+
+      <!-- Navigation -->
+      <nav class="flex items-center gap-1 ml-8">
+        <a href="./admin-dashboard.html" class="nav-pill active">
+          <i class="fa-solid fa-truck"></i>
+          <span>Флот</span>
+        </a>
+        <a href="./trips.html" class="nav-pill">
+          <i class="fa-solid fa-route"></i>
+          <span>Рейсы</span>
+        </a>
+        <a href="./geozones.html" class="nav-pill">
+          <i class="fa-solid fa-map-location-dot"></i>
+          <span>Геозоны</span>
+        </a>
+        <a href="./analytics.html" class="nav-pill">
+          <i class="fa-solid fa-chart-line"></i>
+          <span>Аналитика</span>
+        </a>
+        <a href="./inventory.html" class="nav-pill">
+          <i class="fa-solid fa-boxes-stacked"></i>
+          <span>Инвентарь</span>
+        </a>
+        <a href="./owner.html" class="nav-pill">
+          <i class="fa-solid fa-users"></i>
+          <span>Персонал</span>
+        </a>
+      </nav>
+    </div>
+
+    <!-- Header Actions -->
+    <div class="flex items-center gap-3">
+      <!-- Metrics Summary -->
+      <div class="flex items-center gap-6 mr-6 text-sm">
+        <div class="flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+          <span class="text-slate-400">Активные:</span>
+          <span class="font-semibold" id="activeCount">56</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+          <span class="text-slate-400">На ТО:</span>
+          <span class="font-semibold" id="maintenanceCount">8</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-slate-400">Эффективность:</span>
+          <span class="font-semibold text-emerald-400" id="efficiencyPercent">87%</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-slate-400">Грузы:</span>
+          <span class="font-semibold" id="cargoCount">128</span>
+        </div>
+      </div>
+
+      <!-- Notifications -->
+      <button class="icon-btn relative" id="notifBtn">
+        <i class="fa-solid fa-bell text-slate-300"></i>
+        <span class="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 text-xs flex items-center justify-center font-bold">2</span>
+      </button>
+
+      <!-- Search -->
+      <button class="icon-btn" id="searchBtn">
+        <i class="fa-solid fa-magnifying-glass text-slate-300"></i>
+      </button>
+
+      <!-- Settings -->
+      <button class="icon-btn" id="settingsBtn">
+        <i class="fa-solid fa-gear text-slate-300"></i>
+      </button>
+
+      <!-- User Avatar -->
+      <div class="w-10 h-10 rounded-xl overflow-hidden bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center">
+        <span class="text-sm font-semibold">АД</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="p-4 grid grid-cols-12 gap-4">
+    <!-- Left Sidebar - Vehicle Info -->
+    <aside class="col-span-3 space-y-4">
+      <!-- Selected Vehicle Card -->
+      <div class="glass-panel p-5" id="vehicleInfoPanel">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center gap-2">
+            <span class="text-xs text-slate-400 uppercase tracking-wider">Транспорт</span>
+            <span class="status-badge status-enroute">В пути</span>
+          </div>
+          <span class="text-xs text-slate-400">TR-001</span>
+        </div>
+
+        <h2 class="text-2xl font-bold mb-1" id="vehicleName">MAN TGX</h2>
+        
+        <div class="grid grid-cols-2 gap-4 mt-4">
+          <div>
+            <div class="text-xs text-slate-400">Нагрузка</div>
+            <div class="font-semibold">5,000 / 10,000кг</div>
+          </div>
+          <div>
+            <div class="text-xs text-slate-400">Объём</div>
+            <div class="font-semibold">23 / 45 м³</div>
+          </div>
+        </div>
+
+        <div class="mt-4">
+          <div class="text-xs text-slate-400 mb-2">Загрузка</div>
+          <div class="capacity-bar">
+            <div class="capacity-bar-fill" style="width: 50%"></div>
+          </div>
+          <div class="text-right text-xs text-slate-400 mt-1">50%</div>
+        </div>
+
+        <!-- Driver Info -->
+        <div class="mt-5 pt-5 border-t border-slate-800">
+          <div class="flex items-center gap-3">
+            <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-emerald-500 flex items-center justify-center">
+              <i class="fa-solid fa-user text-white"></i>
+            </div>
+            <div>
+              <div class="text-xs text-slate-400">Водитель</div>
+              <div class="font-semibold">Иванов Пётр</div>
+            </div>
+            <button class="ml-auto icon-btn w-10 h-10">
+              <i class="fa-solid fa-phone text-emerald-400 text-sm"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Vehicle Stats -->
+        <div class="grid grid-cols-2 gap-3 mt-5">
+          <div class="glass-card p-3">
+            <div class="flex items-center gap-2">
+              <i class="fa-solid fa-gas-pump text-amber-400"></i>
+              <span class="text-xs text-slate-400">Топливо</span>
+            </div>
+            <div class="text-lg font-bold mt-1">60%</div>
+          </div>
+          <div class="glass-card p-3">
+            <div class="flex items-center gap-2">
+              <i class="fa-solid fa-temperature-half text-blue-400"></i>
+              <span class="text-xs text-slate-400">Темп.</span>
+            </div>
+            <div class="text-lg font-bold mt-1">24°C</div>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex gap-2 mt-5">
+          <button class="flex-1 btn-primary text-sm flex items-center justify-center gap-2" id="mapViewBtn">
+            <i class="fa-solid fa-map"></i>
+            Карта
+          </button>
+          <button class="flex-1 glass-card py-2 text-sm flex items-center justify-center gap-2 hover:bg-red-500/20 hover:border-red-500/30" id="alertBtn">
+            <i class="fa-solid fa-bell text-red-400"></i>
+            Тревога
+          </button>
+        </div>
+      </div>
+
+      <!-- Route Map Preview -->
+      <div class="glass-panel p-4">
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-sm font-semibold">Карта маршрута</span>
+          <div class="flex items-center gap-1">
+            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+            <span class="text-xs text-emerald-400">В пути</span>
+          </div>
+        </div>
+        <div id="routeMapPreview" class="h-32 rounded-xl overflow-hidden bg-slate-800"></div>
+      </div>
+    </aside>
+
+    <!-- Center Panel - 3D Trailer View -->
+    <section class="col-span-6 space-y-4">
+      <!-- Quick Actions Bar -->
+      <div class="glass-panel p-4 flex items-center justify-between">
+        <button class="btn-primary flex items-center gap-2">
+          <i class="fa-solid fa-plus"></i>
+          Добавить ТС
+        </button>
+        
+        <div class="flex items-center gap-2">
+          <button class="icon-btn" title="Обновить">
+            <i class="fa-solid fa-arrows-rotate text-slate-400"></i>
+          </button>
+          <button class="icon-btn" title="Экспорт">
+            <i class="fa-solid fa-file-export text-slate-400"></i>
+          </button>
+          <button class="icon-btn" title="Редактировать">
+            <i class="fa-solid fa-pen-to-square text-slate-400"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- 3D Trailer Visualization -->
+      <div class="glass-panel p-6">
+        <div class="trailer-3d">
+          <div class="trailer-container">
+            <!-- SVG Trailer with Cargo Grid -->
+            <svg viewBox="0 0 800 350" class="w-full">
+              <defs>
+                <linearGradient id="trailerBodyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" style="stop-color:#374151;stop-opacity:1" />
+                  <stop offset="100%" style="stop-color:#1f2937;stop-opacity:1" />
+                </linearGradient>
+                <linearGradient id="cargoGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:0.8" />
+                  <stop offset="100%" style="stop-color:#2563eb;stop-opacity:0.6" />
+                </linearGradient>
+                <filter id="shadow">
+                  <feDropShadow dx="0" dy="4" stdDeviation="4" flood-opacity="0.3"/>
+                </filter>
+              </defs>
+
+              <!-- Trailer Body -->
+              <rect x="50" y="50" width="600" height="200" rx="8" fill="url(#trailerBodyGrad)" stroke="#4b5563" stroke-width="2" filter="url(#shadow)"/>
+              
+              <!-- Cargo Grid - Row 1 -->
+              <g class="cargo-row-1">
+                <rect x="60" y="60" width="70" height="60" rx="4" fill="url(#cargoGrad)" class="cargo-cell"/>
+                <text x="95" y="85" fill="#93c5fd" font-size="9" text-anchor="middle">BX-01</text>
+                <text x="95" y="100" fill="#93c5fd" font-size="8" text-anchor="middle">400 kg</text>
+                
+                <rect x="135" y="60" width="70" height="60" rx="4" fill="url(#cargoGrad)" class="cargo-cell"/>
+                <text x="170" y="85" fill="#93c5fd" font-size="9" text-anchor="middle">BX-05</text>
+                <text x="170" y="100" fill="#93c5fd" font-size="8" text-anchor="middle">400 kg</text>
+                
+                <rect x="210" y="60" width="70" height="60" rx="4" fill="url(#cargoGrad)" class="cargo-cell"/>
+                <text x="245" y="85" fill="#93c5fd" font-size="9" text-anchor="middle">BX-06</text>
+                <text x="245" y="100" fill="#93c5fd" font-size="8" text-anchor="middle">400 kg</text>
+                
+                <rect x="285" y="60" width="70" height="60" rx="4" fill="rgba(30,41,59,0.5)" stroke="#475569" stroke-dasharray="4" class="cargo-cell"/>
+                <text x="320" y="95" fill="#64748b" font-size="20" text-anchor="middle">+</text>
+                
+                <rect x="360" y="60" width="70" height="60" rx="4" fill="rgba(30,41,59,0.5)" stroke="#475569" stroke-dasharray="4" class="cargo-cell"/>
+                <text x="395" y="95" fill="#64748b" font-size="20" text-anchor="middle">+</text>
+                
+                <rect x="435" y="60" width="70" height="60" rx="4" fill="url(#cargoGrad)" class="cargo-cell"/>
+                <text x="470" y="85" fill="#93c5fd" font-size="9" text-anchor="middle">BX-14</text>
+                <text x="470" y="100" fill="#93c5fd" font-size="8" text-anchor="middle">400 kg</text>
+                
+                <rect x="510" y="60" width="70" height="60" rx="4" fill="url(#cargoGrad)" class="cargo-cell"/>
+                <text x="545" y="85" fill="#93c5fd" font-size="9" text-anchor="middle">BX-17</text>
+                <text x="545" y="100" fill="#93c5fd" font-size="8" text-anchor="middle">700 kg</text>
+                
+                <rect x="585" y="60" width="55" height="60" rx="4" fill="url(#cargoGrad)" class="cargo-cell"/>
+                <text x="612" y="85" fill="#93c5fd" font-size="9" text-anchor="middle">BX-18</text>
+                <text x="612" y="100" fill="#93c5fd" font-size="8" text-anchor="middle">100 kg</text>
+              </g>
+
+              <!-- Cargo Grid - Row 2 -->
+              <g class="cargo-row-2">
+                <rect x="60" y="125" width="145" height="55" rx="4" fill="url(#cargoGrad)" class="cargo-cell"/>
+                <text x="132" y="150" fill="#93c5fd" font-size="9" text-anchor="middle">BX-02</text>
+                <text x="132" y="165" fill="#93c5fd" font-size="8" text-anchor="middle">1550 kg</text>
+                
+                <rect x="210" y="125" width="70" height="55" rx="4" fill="url(#cargoGrad)" class="cargo-cell"/>
+                <text x="245" y="150" fill="#93c5fd" font-size="9" text-anchor="middle">BX-07</text>
+                <text x="245" y="165" fill="#93c5fd" font-size="8" text-anchor="middle">400 kg</text>
+                
+                <rect x="285" y="125" width="70" height="55" rx="4" fill="url(#cargoGrad)" class="cargo-cell"/>
+                <text x="320" y="150" fill="#93c5fd" font-size="9" text-anchor="middle">BX-10</text>
+                <text x="320" y="165" fill="#93c5fd" font-size="8" text-anchor="middle">900 kg</text>
+                
+                <rect x="360" y="125" width="70" height="55" rx="4" fill="url(#cargoGrad)" class="cargo-cell"/>
+                <text x="395" y="150" fill="#93c5fd" font-size="9" text-anchor="middle">BX-12</text>
+                <text x="395" y="165" fill="#93c5fd" font-size="8" text-anchor="middle">400 kg</text>
+                
+                <rect x="435" y="125" width="70" height="55" rx="4" fill="url(#cargoGrad)" class="cargo-cell"/>
+                <text x="470" y="150" fill="#93c5fd" font-size="9" text-anchor="middle">BX-15</text>
+                <text x="470" y="165" fill="#93c5fd" font-size="8" text-anchor="middle">700 kg</text>
+                
+                <rect x="510" y="125" width="130" height="55" rx="4" fill="rgba(30,41,59,0.5)" stroke="#475569" stroke-dasharray="4" class="cargo-cell"/>
+                <text x="575" y="157" fill="#64748b" font-size="20" text-anchor="middle">+</text>
+              </g>
+
+              <!-- Cargo Grid - Row 3 -->
+              <g class="cargo-row-3">
+                <rect x="60" y="185" width="70" height="55" rx="4" fill="url(#cargoGrad)" class="cargo-cell"/>
+                <text x="95" y="210" fill="#93c5fd" font-size="9" text-anchor="middle">BX-03</text>
+                <text x="95" y="225" fill="#93c5fd" font-size="8" text-anchor="middle">400 kg</text>
+                
+                <rect x="135" y="185" width="70" height="55" rx="4" fill="url(#cargoGrad)" class="cargo-cell"/>
+                <text x="170" y="210" fill="#93c5fd" font-size="9" text-anchor="middle">BX-04</text>
+                <text x="170" y="225" fill="#93c5fd" font-size="8" text-anchor="middle">400 kg</text>
+                
+                <rect x="210" y="185" width="145" height="55" rx="4" fill="url(#cargoGrad)" class="cargo-cell"/>
+                <text x="282" y="210" fill="#93c5fd" font-size="9" text-anchor="middle">BX-08</text>
+                <text x="282" y="225" fill="#93c5fd" font-size="8" text-anchor="middle">800 kg</text>
+                
+                <rect x="360" y="185" width="70" height="55" rx="4" fill="url(#cargoGrad)" class="cargo-cell"/>
+                <text x="395" y="210" fill="#93c5fd" font-size="9" text-anchor="middle">BX-11</text>
+                <text x="395" y="225" fill="#93c5fd" font-size="8" text-anchor="middle">400 kg</text>
+                
+                <rect x="435" y="185" width="70" height="55" rx="4" fill="url(#cargoGrad)" class="cargo-cell"/>
+                <text x="470" y="210" fill="#93c5fd" font-size="9" text-anchor="middle">BX-13</text>
+                <text x="470" y="225" fill="#93c5fd" font-size="8" text-anchor="middle">700 kg</text>
+                
+                <rect x="510" y="185" width="70" height="55" rx="4" fill="url(#cargoGrad)" class="cargo-cell"/>
+                <text x="545" y="210" fill="#93c5fd" font-size="9" text-anchor="middle">BX-16</text>
+                <text x="545" y="225" fill="#93c5fd" font-size="8" text-anchor="middle">700 kg</text>
+                
+                <rect x="585" y="185" width="55" height="55" rx="4" fill="url(#cargoGrad)" class="cargo-cell"/>
+                <text x="612" y="210" fill="#93c5fd" font-size="9" text-anchor="middle">BX-19</text>
+                <text x="612" y="225" fill="#93c5fd" font-size="8" text-anchor="middle">350 kg</text>
+              </g>
+
+              <!-- Cab -->
+              <rect x="655" y="70" width="120" height="180" rx="8" fill="url(#trailerBodyGrad)" stroke="#4b5563" stroke-width="2"/>
+              <rect x="670" y="90" width="80" height="50" rx="4" fill="#1e3a5f" stroke="#3b82f6" stroke-width="1"/>
+              
+              <!-- Wheels -->
+              <ellipse cx="120" cy="280" rx="30" ry="30" fill="#1f2937" stroke="#374151" stroke-width="4"/>
+              <ellipse cx="200" cy="280" rx="30" ry="30" fill="#1f2937" stroke="#374151" stroke-width="4"/>
+              <ellipse cx="500" cy="280" rx="30" ry="30" fill="#1f2937" stroke="#374151" stroke-width="4"/>
+              <ellipse cx="580" cy="280" rx="30" ry="30" fill="#1f2937" stroke="#374151" stroke-width="4"/>
+              <ellipse cx="715" cy="280" rx="30" ry="30" fill="#1f2937" stroke="#374151" stroke-width="4"/>
+
+              <!-- GPS Indicator -->
+              <circle cx="680" cy="75" r="6" fill="#10b981" class="live-indicator"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stats Row -->
+      <div class="grid grid-cols-3 gap-4">
+        <!-- Daily Active Time -->
+        <div class="glass-panel p-4">
+          <div class="text-xs text-slate-400 mb-2">Время в пути сегодня</div>
+          <div class="flex items-center justify-between">
+            <span class="text-2xl font-bold">8ч 40мин</span>
+            <span class="text-xs text-slate-400">/ 10ч макс</span>
+          </div>
+          <div class="mt-3 h-8 flex items-end gap-0.5">
+            <div class="flex-1 bg-blue-500 rounded-t" style="height: 70%"></div>
+            <div class="flex-1 bg-blue-500 rounded-t" style="height: 85%"></div>
+            <div class="flex-1 bg-blue-500 rounded-t" style="height: 60%"></div>
+            <div class="flex-1 bg-blue-500 rounded-t" style="height: 90%"></div>
+            <div class="flex-1 bg-blue-500 rounded-t" style="height: 75%"></div>
+            <div class="flex-1 bg-blue-500 rounded-t" style="height: 80%"></div>
+            <div class="flex-1 bg-blue-600 rounded-t" style="height: 100%"></div>
+          </div>
+          <div class="flex items-center gap-2 mt-2 text-xs text-slate-400">
+            <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+            <span>80% • Норма</span>
+          </div>
+        </div>
+
+        <!-- Average Speed -->
+        <div class="glass-panel p-4">
+          <div class="text-xs text-slate-400 mb-2">Средняя скорость</div>
+          <div class="text-2xl font-bold">60-80 км/ч</div>
+          <div class="mt-3 grid grid-cols-5 gap-1">
+            <div class="h-8 rounded bg-gradient-to-t from-red-500 to-amber-500"></div>
+            <div class="h-8 rounded bg-gradient-to-t from-amber-500 to-yellow-500"></div>
+            <div class="h-8 rounded bg-gradient-to-t from-yellow-500 to-emerald-500 ring-2 ring-white"></div>
+            <div class="h-8 rounded bg-gradient-to-t from-emerald-500 to-emerald-400"></div>
+            <div class="h-8 rounded bg-gradient-to-t from-emerald-400 to-cyan-400"></div>
+          </div>
+          <div class="flex items-center gap-2 mt-2 text-xs text-emerald-400">
+            <i class="fa-solid fa-check-circle"></i>
+            <span>Оптимально</span>
+          </div>
+        </div>
+
+        <!-- Camera Feed -->
+        <div class="glass-panel p-4 relative overflow-hidden">
+          <div class="text-xs text-slate-400 mb-2">Камера</div>
+          <div class="h-24 bg-slate-800 rounded-xl flex items-center justify-center relative overflow-hidden">
+            <i class="fa-solid fa-video text-slate-600 text-2xl"></i>
+            <div class="absolute bottom-2 left-2 flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-red-500 live-indicator"></span>
+              <span class="text-xs text-white">Live</span>
+            </div>
+            <div class="absolute bottom-2 right-2 text-xs text-slate-400">04:39:16</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mechanical Condition -->
+      <div class="glass-panel p-4">
+        <div class="flex items-center justify-between mb-4">
+          <div class="text-sm font-semibold">Техническое состояние</div>
+          <div class="flex items-center gap-2">
+            <span class="text-2xl font-bold">91%</span>
+            <span class="status-badge status-enroute">Оптимально</span>
+          </div>
+        </div>
+        
+        <div class="grid grid-cols-5 gap-4">
+          <div class="text-center">
+            <div class="mech-bar mx-auto w-10">
+              <div class="mech-bar-fill" style="height: 90%"></div>
+              <div class="mech-bar-stripes"></div>
+            </div>
+            <div class="text-xs text-slate-400 mt-2">Двигатель</div>
+            <div class="text-sm font-semibold">90%</div>
+          </div>
+          <div class="text-center">
+            <div class="mech-bar mx-auto w-10">
+              <div class="mech-bar-fill" style="height: 90%"></div>
+              <div class="mech-bar-stripes"></div>
+            </div>
+            <div class="text-xs text-slate-400 mt-2">Тормоза</div>
+            <div class="text-sm font-semibold">90%</div>
+          </div>
+          <div class="text-center">
+            <div class="mech-bar mx-auto w-10">
+              <div class="mech-bar-fill" style="height: 80%"></div>
+              <div class="mech-bar-stripes"></div>
+            </div>
+            <div class="text-xs text-slate-400 mt-2">Шины</div>
+            <div class="text-sm font-semibold">80%</div>
+          </div>
+          <div class="text-center">
+            <div class="mech-bar mx-auto w-10">
+              <div class="mech-bar-fill" style="height: 89%"></div>
+              <div class="mech-bar-stripes"></div>
+            </div>
+            <div class="text-xs text-slate-400 mt-2">Масло</div>
+            <div class="text-sm font-semibold">89%</div>
+          </div>
+          <div class="text-center">
+            <div class="mech-bar mx-auto w-10">
+              <div class="mech-bar-fill" style="height: 92%"></div>
+              <div class="mech-bar-stripes"></div>
+            </div>
+            <div class="text-xs text-slate-400 mt-2">Подвеска</div>
+            <div class="text-sm font-semibold">92%</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Right Sidebar - Truck List -->
+    <aside class="col-span-3 space-y-4">
+      <!-- Truck List Header -->
+      <div class="glass-panel p-4">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="font-semibold">Список ТС</h2>
+          <button class="icon-btn w-8 h-8">
+            <i class="fa-solid fa-sliders text-slate-400 text-sm"></i>
+          </button>
+        </div>
+
+        <!-- Truck List -->
+        <div class="space-y-2 max-h-[600px] overflow-y-auto custom-scroll" id="truckList">
+          <!-- Truck items will be rendered by JS -->
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <!-- Map Modal -->
+  <div id="mapModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden">
+    <div class="absolute inset-4 glass-panel overflow-hidden">
+      <div class="absolute top-4 right-4 z-10">
+        <button onclick="closeMapModal()" class="icon-btn bg-slate-900/80">
+          <i class="fa-solid fa-xmark text-white"></i>
+        </button>
+      </div>
+      <div id="fleetMap" class="w-full h-full"></div>
+    </div>
+  </div>
+
+  <script>
+    // Truck data
+    const trucks = [
+      { id: 'TR-001', name: 'MAN TGX', capacity: 50, status: 'enroute', burden: '5,000 / 10,000кг' },
+      { id: 'TR-002', name: 'SCANIA R-SERIES', capacity: 82, status: 'enroute' },
+      { id: 'TR-003', name: 'VOLVO FH', capacity: 77, status: 'enroute' },
+      { id: 'TR-004', name: 'FREIGHTLINER M2', capacity: 77, status: 'enroute' },
+      { id: 'TR-005', name: 'DURASTAR', capacity: 79, status: 'enroute' },
+      { id: 'TR-006', name: 'FREIGHTLINER 260', capacity: 75, status: 'enroute' },
+      { id: 'TR-007', name: 'POLARHAUL 5000', capacity: 92, status: 'enroute' },
+    ];
+
+    // Render truck list
+    function renderTruckList() {
+      const list = document.getElementById('truckList');
+      list.innerHTML = trucks.map((truck, i) => `
+        <div class="truck-item ${i === 0 ? 'active' : ''} p-3 rounded-xl flex items-center gap-3" data-id="${truck.id}">
+          <div class="w-16 h-10 rounded-lg bg-slate-800 flex items-center justify-center">
+            <i class="fa-solid fa-truck text-slate-400"></i>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center justify-between">
+              <span class="font-semibold text-sm">${truck.name}</span>
+              <span class="status-badge status-${truck.status}">В пути</span>
+            </div>
+            <div class="text-xs text-slate-400 mt-0.5">${truck.id}</div>
+            ${truck.burden ? `<div class="text-xs text-slate-400">Нагрузка: ${truck.burden}</div>` : ''}
+            <div class="flex items-center justify-between mt-2">
+              <span class="text-xs text-slate-400">Загрузка</span>
+              <span class="text-xs font-semibold">${truck.capacity}%</span>
+            </div>
+            <div class="capacity-bar mt-1">
+              <div class="capacity-bar-fill" style="width: ${truck.capacity}%"></div>
+            </div>
+          </div>
+        </div>
+      `).join('');
+
+      // Add click handlers
+      list.querySelectorAll('.truck-item').forEach(item => {
+        item.addEventListener('click', () => {
+          list.querySelectorAll('.truck-item').forEach(i => i.classList.remove('active'));
+          item.classList.add('active');
+          const truckId = item.dataset.id;
+          const truck = trucks.find(t => t.id === truckId);
+          if (truck) {
+            document.getElementById('vehicleName').textContent = truck.name;
+          }
+        });
+      });
+    }
+
+    renderTruckList();
+
+    // Initialize mini route map
+    const miniMap = L.map('routeMapPreview', {
+      zoomControl: false,
+      attributionControl: false
+    }).setView([55.7558, 37.6173], 5);
+
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(miniMap);
+
+    // Add route line
+    const routeCoords = [[55.7558, 37.6173], [55.7963, 49.1088]];
+    L.polyline(routeCoords, { color: '#3b82f6', weight: 3 }).addTo(miniMap);
+
+    // Add truck marker
+    L.circleMarker([55.5, 43.5], {
+      radius: 6,
+      fillColor: '#10b981',
+      color: '#fff',
+      weight: 2,
+      fillOpacity: 1
+    }).addTo(miniMap);
+
+    // Map modal
+    let fullMap = null;
+
+    document.getElementById('mapViewBtn')?.addEventListener('click', () => {
+      document.getElementById('mapModal').classList.remove('hidden');
+      
+      if (!fullMap) {
+        fullMap = L.map('fleetMap').setView([55.7558, 37.6173], 6);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+          attribution: '© OpenStreetMap'
+        }).addTo(fullMap);
+
+        // Add multiple trucks
+        trucks.forEach((truck, i) => {
+          const positions = [
+            [55.5, 43.5], [56.3, 44.0], [54.9, 52.4],
+            [55.0, 50.1], [56.8, 41.5], [54.2, 48.3], [55.2, 45.8]
+          ];
+          
+          L.marker(positions[i] || [55.5, 43.5], {
+            icon: L.divIcon({
+              className: 'custom-marker',
+              html: `<div style="width:36px;height:36px;background:linear-gradient(135deg,#3b82f6,#10b981);border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;border:3px solid white;box-shadow:0 4px 12px rgba(0,0,0,0.3);"><i class="fa-solid fa-truck" style="font-size:14px;"></i></div>`,
+              iconSize: [36, 36],
+              iconAnchor: [18, 18]
+            })
+          }).addTo(fullMap).bindPopup(`<b>${truck.name}</b><br>${truck.id}`);
+        });
+      }
+      
+      setTimeout(() => fullMap.invalidateSize(), 100);
+    });
+
+    function closeMapModal() {
+      document.getElementById('mapModal').classList.add('hidden');
+    }
+
+    // Close modal on Escape
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeMapModal();
+    });
+  </script>
+</body>
+</html>
