@@ -370,25 +370,6 @@ pytest
 
 ---
 
-## 📧 Контакты
-
-**Автор проекта:** Maksim Kluev
-
-- GitHub: [@yourusername](https://github.com/yourusername)
-- Email: your.email@example.com
-
-**Project Link:** [https://github.com/yourusername/routox](https://github.com/yourusername/routox)
-
----
-
-## 🙏 Благодарности
-
-- [FastAPI](https://fastapi.tiangolo.com/) за отличный фреймворк
-- [SQLAlchemy](https://www.sqlalchemy.org/) за мощный ORM
-- Сообщество Python за инструменты и библиотеки
-
----
-
 <div align="center">
 
 **⭐ Если проект был полезен, поставьте звёздочку! ⭐**
