@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CRM Клиенты — RoutoX</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/routox-unified.css">
+</head>
+<body class="bg-slate-900 min-h-screen font-['Inter']">
+  
+  <nav id="main-nav"></nav>
+
+  <div class="pt-20 px-4 md:px-8 pb-8">
+    <div class="max-w-7xl mx-auto">
+      
+      <!-- Header -->
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+        <div>
+          <h1 class="text-3xl font-bold text-white mb-2">
+            <i class="fa-solid fa-users text-blue-400 mr-3"></i>
+            CRM Клиенты
+          </h1>
+          <p class="text-slate-400">Управление базой клиентов и контрактами</p>
+        </div>
+        
+        <div class="flex gap-3">
+          <button onclick="exportClients()" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-xl transition flex items-center gap-2">
+            <i class="fa-solid fa-file-export"></i>
+            Экспорт
+          </button>
+          <button onclick="openAddClient()" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl transition flex items-center gap-2">
+            <i class="fa-solid fa-plus"></i>
+            Добавить клиента
+          </button>
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+        <div class="glass-card p-4 rounded-xl">
+          <div class="text-2xl font-bold text-white">47</div>
+          <div class="text-sm text-slate-400">Всего клиентов</div>
+        </div>
+        <div class="glass-card p-4 rounded-xl">
+          <div class="text-2xl font-bold text-green-400">32</div>
+          <div class="text-sm text-slate-400">Активные</div>
+        </div>
+        <div class="glass-card p-4 rounded-xl">
+          <div class="text-2xl font-bold text-amber-400">8</div>
+          <div class="text-sm text-slate-400">В работе</div>
+        </div>
+        <div class="glass-card p-4 rounded-xl">
+          <div class="text-2xl font-bold text-blue-400">12.4M ₽</div>
+          <div class="text-sm text-slate-400">Оборот/мес</div>
+        </div>
+        <div class="glass-card p-4 rounded-xl">
+          <div class="text-2xl font-bold text-purple-400">94%</div>
+          <div class="text-sm text-slate-400">Повторные</div>
+        </div>
+      </div>
+
+      <!-- Search & Filters -->
+      <div class="flex flex-col md:flex-row gap-4 mb-6">
+        <div class="relative flex-1">
+          <i class="fa-solid fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+          <input type="text" id="searchInput" placeholder="Поиск по названию, ИНН, контакту..." 
+            class="w-full pl-12 pr-4 py-3 bg-slate-800/50 border border-slate-700 rounded-xl text-white placeholder-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none">
+        </div>
+        <select class="px-4 py-3 bg-slate-800/50 border border-slate-700 rounded-xl text-white" id="statusFilter">
+          <option value="">Все статусы</option>
+          <option value="active">Активные</option>
+          <option value="prospect">Потенциальные</option>
+          <option value="negotiation">Переговоры</option>
+          <option value="inactive">Неактивные</option>
+        </select>
+        <select class="px-4 py-3 bg-slate-800/50 border border-slate-700 rounded-xl text-white" id="sortBy">
+          <option value="name">По названию</option>
+          <option value="revenue">По обороту</option>
+          <option value="lastOrder">По последнему заказу</option>
+          <option value="created">По дате добавления</option>
+        </select>
+      </div>
+
+      <!-- Clients Grid -->
+      <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4" id="clientsGrid">
+        
+        <!-- Client Card 1 -->
+        <div class="client-card" data-status="active">
+          <div class="client-header">
+            <div class="client-avatar bg-gradient-to-br from-blue-500 to-blue-600">
+              <span>ОЗ</span>
+            </div>
+            <div class="client-info">
+              <h3 class="client-name">ООО "Озон"</h3>
+              <p class="client-inn">ИНН: 7743111222</p>
+            </div>
+            <span class="status-badge active">Активный</span>
+          </div>
+          
+          <div class="client-stats">
+            <div class="stat-item">
+              <span class="stat-value">156</span>
+              <span class="stat-label">заказов</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value">4.2M ₽</span>
+              <span class="stat-label">оборот</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value">98%</span>
+              <span class="stat-label">в срок</span>
+            </div>
+          </div>
+          
+          <div class="client-contact">
+            <div class="contact-row">
+              <i class="fa-solid fa-user"></i>
+              <span>Алексей Смирнов (логист)</span>
+            </div>
+            <div class="contact-row">
+              <i class="fa-solid fa-phone"></i>
+              <span>+7 (495) 123-45-67</span>
+            </div>
+            <div class="contact-row">
+              <i class="fa-solid fa-envelope"></i>
+              <span>logistics@ozon.ru</span>
+            </div>
+          </div>
+          
+          <div class="client-footer">
+            <span class="last-order">Последний заказ: вчера</span>
+            <div class="client-actions">
+              <button onclick="viewClient(1)" title="Просмотр"><i class="fa-solid fa-eye"></i></button>
+              <button onclick="createOrder(1)" title="Новый заказ"><i class="fa-solid fa-plus"></i></button>
+              <button onclick="callClient(1)" title="Позвонить"><i class="fa-solid fa-phone"></i></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Client Card 2 -->
+        <div class="client-card" data-status="active">
+          <div class="client-header">
+            <div class="client-avatar bg-gradient-to-br from-green-500 to-green-600">
+              <span>WB</span>
+            </div>
+            <div class="client-info">
+              <h3 class="client-name">ООО "Вайлдберриз"</h3>
+              <p class="client-inn">ИНН: 7721546864</p>
+            </div>
+            <span class="status-badge active">Активный</span>
+          </div>
+          
+          <div class="client-stats">
+            <div class="stat-item">
+              <span class="stat-value">234</span>
+              <span class="stat-label">заказов</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value">5.8M ₽</span>
+              <span class="stat-label">оборот</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value">96%</span>
+              <span class="stat-label">в срок</span>
+            </div>
+          </div>
+          
+          <div class="client-contact">
+            <div class="contact-row">
+              <i class="fa-solid fa-user"></i>
+              <span>Мария Козлова (менеджер)</span>
+            </div>
+            <div class="contact-row">
+              <i class="fa-solid fa-phone"></i>
+              <span>+7 (495) 987-65-43</span>
+            </div>
+            <div class="contact-row">
+              <i class="fa-solid fa-envelope"></i>
+              <span>transport@wb.ru</span>
+            </div>
+          </div>
+          
+          <div class="client-footer">
+            <span class="last-order">Последний заказ: сегодня</span>
+            <div class="client-actions">
+              <button onclick="viewClient(2)" title="Просмотр"><i class="fa-solid fa-eye"></i></button>
+              <button onclick="createOrder(2)" title="Новый заказ"><i class="fa-solid fa-plus"></i></button>
+              <button onclick="callClient(2)" title="Позвонить"><i class="fa-solid fa-phone"></i></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Client Card 3 - Negotiation -->
+        <div class="client-card" data-status="negotiation">
+          <div class="client-header">
+            <div class="client-avatar bg-gradient-to-br from-amber-500 to-amber-600">
+              <span>ЯМ</span>
+            </div>
+            <div class="client-info">
+              <h3 class="client-name">Яндекс.Маркет</h3>
+              <p class="client-inn">ИНН: 7736207543</p>
+            </div>
+            <span class="status-badge negotiation">Переговоры</span>
+          </div>
+          
+          <div class="client-stats">
+            <div class="stat-item">
+              <span class="stat-value">5</span>
+              <span class="stat-label">заказов</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value">320K ₽</span>
+              <span class="stat-label">оборот</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value">100%</span>
+              <span class="stat-label">в срок</span>
+            </div>
+          </div>
+          
+          <div class="client-contact">
+            <div class="contact-row">
+              <i class="fa-solid fa-user"></i>
+              <span>Дмитрий Волков (директор)</span>
+            </div>
+            <div class="contact-row">
+              <i class="fa-solid fa-phone"></i>
+              <span>+7 (495) 739-70-00</span>
+            </div>
+            <div class="contact-row">
+              <i class="fa-solid fa-envelope"></i>
+              <span>logistics@yandex-market.ru</span>
+            </div>
+          </div>
+          
+          <div class="client-footer">
+            <span class="last-order">Встреча: 20.01.2026</span>
+            <div class="client-actions">
+              <button onclick="viewClient(3)" title="Просмотр"><i class="fa-solid fa-eye"></i></button>
+              <button onclick="addNote(3)" title="Добавить заметку"><i class="fa-solid fa-note-sticky"></i></button>
+              <button onclick="callClient(3)" title="Позвонить"><i class="fa-solid fa-phone"></i></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Client Card 4 - Prospect -->
+        <div class="client-card" data-status="prospect">
+          <div class="client-header">
+            <div class="client-avatar bg-gradient-to-br from-purple-500 to-purple-600">
+              <span>СМ</span>
+            </div>
+            <div class="client-info">
+              <h3 class="client-name">Сбермегамаркет</h3>
+              <p class="client-inn">ИНН: 7707083893</p>
+            </div>
+            <span class="status-badge prospect">Потенциальный</span>
+          </div>
+          
+          <div class="client-stats">
+            <div class="stat-item">
+              <span class="stat-value">0</span>
+              <span class="stat-label">заказов</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value">—</span>
+              <span class="stat-label">оборот</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value">—</span>
+              <span class="stat-label">в срок</span>
+            </div>
+          </div>
+          
+          <div class="client-contact">
+            <div class="contact-row">
+              <i class="fa-solid fa-user"></i>
+              <span>Анна Петрова (закупки)</span>
+            </div>
+            <div class="contact-row">
+              <i class="fa-solid fa-phone"></i>
+              <span>+7 (495) 500-55-50</span>
+            </div>
+            <div class="contact-row">
+              <i class="fa-solid fa-envelope"></i>
+              <span>procurement@sbermarket.ru</span>
+            </div>
+          </div>
+          
+          <div class="client-footer">
+            <span class="last-order">Добавлен: 3 дня назад</span>
+            <div class="client-actions">
+              <button onclick="viewClient(4)" title="Просмотр"><i class="fa-solid fa-eye"></i></button>
+              <button onclick="sendOffer(4)" title="Отправить КП"><i class="fa-solid fa-file-invoice"></i></button>
+              <button onclick="callClient(4)" title="Позвонить"><i class="fa-solid fa-phone"></i></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Client Card 5 -->
+        <div class="client-card" data-status="active">
+          <div class="client-header">
+            <div class="client-avatar bg-gradient-to-br from-red-500 to-red-600">
+              <span>МВ</span>
+            </div>
+            <div class="client-info">
+              <h3 class="client-name">М.Видео-Эльдорадо</h3>
+              <p class="client-inn">ИНН: 7707247386</p>
+            </div>
+            <span class="status-badge active">Активный</span>
+          </div>
+          
+          <div class="client-stats">
+            <div class="stat-item">
+              <span class="stat-value">89</span>
+              <span class="stat-label">заказов</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value">1.9M ₽</span>
+              <span class="stat-label">оборот</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value">94%</span>
+              <span class="stat-label">в срок</span>
+            </div>
+          </div>
+          
+          <div class="client-contact">
+            <div class="contact-row">
+              <i class="fa-solid fa-user"></i>
+              <span>Игорь Сидоров (логистика)</span>
+            </div>
+            <div class="contact-row">
+              <i class="fa-solid fa-phone"></i>
+              <span>+7 (495) 777-77-75</span>
+            </div>
+            <div class="contact-row">
+              <i class="fa-solid fa-envelope"></i>
+              <span>delivery@mvideo.ru</span>
+            </div>
+          </div>
+          
+          <div class="client-footer">
+            <span class="last-order">Последний заказ: 2 дня назад</span>
+            <div class="client-actions">
+              <button onclick="viewClient(5)" title="Просмотр"><i class="fa-solid fa-eye"></i></button>
+              <button onclick="createOrder(5)" title="Новый заказ"><i class="fa-solid fa-plus"></i></button>
+              <button onclick="callClient(5)" title="Позвонить"><i class="fa-solid fa-phone"></i></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Client Card 6 - Inactive -->
+        <div class="client-card" data-status="inactive">
+          <div class="client-header">
+            <div class="client-avatar bg-gradient-to-br from-slate-500 to-slate-600">
+              <span>ДН</span>
+            </div>
+            <div class="client-info">
+              <h3 class="client-name">DNS</h3>
+              <p class="client-inn">ИНН: 2540167061</p>
+            </div>
+            <span class="status-badge inactive">Неактивный</span>
+          </div>
+          
+          <div class="client-stats">
+            <div class="stat-item">
+              <span class="stat-value">23</span>
+              <span class="stat-label">заказов</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value">480K ₽</span>
+              <span class="stat-label">оборот</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value">87%</span>
+              <span class="stat-label">в срок</span>
+            </div>
+          </div>
+          
+          <div class="client-contact">
+            <div class="contact-row">
+              <i class="fa-solid fa-user"></i>
+              <span>Олег Кузнецов</span>
+            </div>
+            <div class="contact-row">
+              <i class="fa-solid fa-phone"></i>
+              <span>+7 (423) 202-22-22</span>
+            </div>
+            <div class="contact-row">
+              <i class="fa-solid fa-envelope"></i>
+              <span>logistics@dns-shop.ru</span>
+            </div>
+          </div>
+          
+          <div class="client-footer">
+            <span class="last-order">Последний заказ: 3 мес. назад</span>
+            <div class="client-actions">
+              <button onclick="viewClient(6)" title="Просмотр"><i class="fa-solid fa-eye"></i></button>
+              <button onclick="reactivate(6)" title="Реактивировать"><i class="fa-solid fa-rotate"></i></button>
+              <button onclick="callClient(6)" title="Позвонить"><i class="fa-solid fa-phone"></i></button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Client Modal -->
+  <div id="addClientModal" class="modal-overlay hidden">
+    <div class="modal-content max-w-2xl">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-xl font-bold text-white">Новый клиент</h2>
+        <button onclick="closeAddClient()" class="text-slate-400 hover:text-white">
+          <i class="fa-solid fa-xmark text-xl"></i>
+        </button>
+      </div>
+      
+      <form id="addClientForm" class="space-y-4">
+        <div class="grid md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm text-slate-400 mb-2">Название компании *</label>
+            <input type="text" required class="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:border-blue-500 outline-none" placeholder='ООО "Компания"'>
+          </div>
+          <div>
+            <label class="block text-sm text-slate-400 mb-2">ИНН *</label>
+            <input type="text" required pattern="[0-9]{10,12}" class="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:border-blue-500 outline-none" placeholder="1234567890">
+          </div>
+        </div>
+        
+        <div class="grid md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm text-slate-400 mb-2">Контактное лицо *</label>
+            <input type="text" required class="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:border-blue-500 outline-none" placeholder="Иван Иванов">
+          </div>
+          <div>
+            <label class="block text-sm text-slate-400 mb-2">Должность</label>
+            <input type="text" class="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:border-blue-500 outline-none" placeholder="Менеджер по логистике">
+          </div>
+        </div>
+        
+        <div class="grid md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm text-slate-400 mb-2">Телефон *</label>
+            <input type="tel" required class="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:border-blue-500 outline-none" placeholder="+7 (999) 123-45-67">
+          </div>
+          <div>
+            <label class="block text-sm text-slate-400 mb-2">Email</label>
+            <input type="email" class="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:border-blue-500 outline-none" placeholder="email@company.ru">
+          </div>
+        </div>
+        
+        <div>
+          <label class="block text-sm text-slate-400 mb-2">Адрес</label>
+          <input type="text" class="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:border-blue-500 outline-none" placeholder="г. Москва, ул. Примерная, д. 1">
+        </div>
+        
+        <div>
+          <label class="block text-sm text-slate-400 mb-2">Статус</label>
+          <select class="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:border-blue-500 outline-none">
+            <option value="prospect">Потенциальный</option>
+            <option value="negotiation">Переговоры</option>
+            <option value="active">Активный</option>
+          </select>
+        </div>
+        
+        <div>
+          <label class="block text-sm text-slate-400 mb-2">Заметки</label>
+          <textarea rows="3" class="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:border-blue-500 outline-none resize-none" placeholder="Дополнительная информация..."></textarea>
+        </div>
+        
+        <div class="flex gap-3 pt-4">
+          <button type="submit" class="flex-1 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl transition font-medium">
+            <i class="fa-solid fa-plus mr-2"></i>Добавить клиента
+          </button>
+          <button type="button" onclick="closeAddClient()" class="px-6 py-3 bg-slate-700 hover:bg-slate-600 text-white rounded-xl transition">
+            Отмена
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <style>
+    .glass-card {
+      background: rgba(30, 41, 59, 0.6);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .client-card {
+      background: rgba(30, 41, 59, 0.6);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      padding: 20px;
+      transition: all 0.3s;
+    }
+
+    .client-card:hover {
+      background: rgba(30, 41, 59, 0.8);
+      transform: translateY(-4px);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+    }
+
+    .client-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .client-avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 700;
+      font-size: 16px;
+    }
+
+    .client-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .client-name {
+      color: white;
+      font-weight: 600;
+      font-size: 15px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .client-inn {
+      color: #64748b;
+      font-size: 12px;
+    }
+
+    .status-badge {
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .status-badge.active {
+      background: rgba(34, 197, 94, 0.2);
+      color: #4ade80;
+    }
+
+    .status-badge.negotiation {
+      background: rgba(245, 158, 11, 0.2);
+      color: #fbbf24;
+    }
+
+    .status-badge.prospect {
+      background: rgba(168, 85, 247, 0.2);
+      color: #c084fc;
+    }
+
+    .status-badge.inactive {
+      background: rgba(100, 116, 139, 0.2);
+      color: #94a3b8;
+    }
+
+    .client-stats {
+      display: flex;
+      gap: 16px;
+      padding: 12px 0;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      margin-bottom: 12px;
+    }
+
+    .stat-item {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .stat-value {
+      color: white;
+      font-weight: 600;
+      font-size: 15px;
+    }
+
+    .stat-label {
+      color: #64748b;
+      font-size: 11px;
+    }
+
+    .client-contact {
+      margin-bottom: 12px;
+    }
+
+    .contact-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: #94a3b8;
+      font-size: 13px;
+      padding: 4px 0;
+    }
+
+    .contact-row i {
+      width: 16px;
+      color: #64748b;
+    }
+
+    .client-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 12px;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .last-order {
+      color: #64748b;
+      font-size: 12px;
+    }
+
+    .client-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .client-actions button {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.05);
+      border: none;
+      color: #94a3b8;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .client-actions button:hover {
+      background: rgba(59, 130, 246, 0.2);
+      color: #60a5fa;
+    }
+
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .modal-overlay.hidden {
+      display: none;
+    }
+
+    .modal-content {
+      background: #1e293b;
+      border-radius: 20px;
+      padding: 24px;
+      width: 90%;
+      max-height: 90vh;
+      overflow-y: auto;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+  </style>
+
+  <script src="./assets/js/routa-core.js"></script>
+  <script src="./assets/js/routox-ai.js"></script>
+  <script>
+    // Apply theme immediately
+    Routa.Theme.load();
+    
+    // Initialize
+    (async function() {
+      const user = await Routa.App.init({
+        requireAuth: true,
+        currentPage: 'crm.html'
+      });
+      if (!user) return;
+    })();
+    
+    // Search & Filter
+    const searchInput = document.getElementById('searchInput');
+    const statusFilter = document.getElementById('statusFilter');
+    
+    function filterClients() {
+      const query = searchInput.value.toLowerCase();
+      const status = statusFilter.value;
+      
+      document.querySelectorAll('.client-card').forEach(card => {
+        const name = card.querySelector('.client-name').textContent.toLowerCase();
+        const inn = card.querySelector('.client-inn').textContent.toLowerCase();
+        const cardStatus = card.dataset.status;
+        
+        const matchesSearch = name.includes(query) || inn.includes(query);
+        const matchesStatus = !status || cardStatus === status;
+        
+        card.style.display = matchesSearch && matchesStatus ? 'block' : 'none';
+      });
+    }
+    
+    searchInput.addEventListener('input', filterClients);
+    statusFilter.addEventListener('change', filterClients);
+
+    // Modal functions
+    function openAddClient() {
+      document.getElementById('addClientModal').classList.remove('hidden');
+    }
+
+    function closeAddClient() {
+      document.getElementById('addClientModal').classList.add('hidden');
+    }
+
+    document.getElementById('addClientForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      closeAddClient();
+      showToast('Клиент успешно добавлен');
+    });
+
+    // Action functions
+    function viewClient(id) { window.location.href = `crm.html?client=${id}`; }
+    function createOrder(id) { window.location.href = `trips.html?newOrder=1&client=${id}`; }
+    function callClient(id) { showToast('Открытие звонка...'); }
+    function addNote(id) { showToast('Открытие заметок...'); }
+    function sendOffer(id) { showToast('Формирование КП...'); }
+    function reactivate(id) { showToast('Отправка предложения клиенту...'); }
+    function exportClients() { showToast('Экспорт в Excel...'); }
+
+    function showToast(message) {
+      const toast = document.createElement('div');
+      toast.className = 'fixed bottom-24 right-6 px-4 py-3 bg-green-600 text-white rounded-xl shadow-lg z-50';
+      toast.innerHTML = `<i class="fa-solid fa-check mr-2"></i>${message}`;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 3000);
+    }
+  </script>
+</body>
+</html>

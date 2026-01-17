@@ -5,19 +5,36 @@
  */
 
 // ========== Theme Management ==========
-const THEME_KEY = 'routoxTheme';
+const THEME_KEY = 'routox_theme';
 
 function initTheme() {
   const saved = localStorage.getItem(THEME_KEY) || 'light';
   document.documentElement.setAttribute('data-theme', saved);
+  document.body.classList.toggle('theme-light', saved === 'light');
+  document.documentElement.style.colorScheme = saved === 'light' ? 'light' : 'dark';
+  
+  // Update toggle visual
+  const toggle = document.querySelector('.theme-toggle-track');
+  if (toggle) {
+    toggle.classList.toggle('light', saved === 'light');
+  }
+  
   return saved;
 }
 
 function toggleTheme() {
-  const current = document.documentElement.getAttribute('data-theme');
+  const current = document.documentElement.getAttribute('data-theme') || 'light';
   const next = current === 'dark' ? 'light' : 'dark';
   document.documentElement.setAttribute('data-theme', next);
+  document.body.classList.toggle('theme-light', next === 'light');
+  document.documentElement.style.colorScheme = next === 'light' ? 'light' : 'dark';
   localStorage.setItem(THEME_KEY, next);
+  
+  // Update toggle visual
+  const toggle = document.querySelector('.theme-toggle-track');
+  if (toggle) {
+    toggle.classList.toggle('light', next === 'light');
+  }
   
   // Dispatch custom event for components that need to react
   window.dispatchEvent(new CustomEvent('themechange', { detail: { theme: next } }));

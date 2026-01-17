@@ -30,6 +30,10 @@
     .timeline-item::after { content: ''; position: absolute; left: 4px; top: 22px; width: 2px; height: calc(100% + 8px); background: rgba(59, 130, 246, 0.3); }
     .timeline-item:last-child::after { display: none; }
     .qr-container { background: white; padding: 12px; border-radius: 12px; }
+    .role-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+    .role-badge.admin { background: rgba(59, 130, 246, 0.15); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.3); }
+    .role-badge.owner { background: rgba(139, 92, 246, 0.15); color: #8b5cf6; border: 1px solid rgba(139, 92, 246, 0.3); }
+    .role-badge.dispatcher { background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); }
   </style>
 </head>
 <body class="min-h-screen">
@@ -44,21 +48,22 @@
         </div>
       </a>
       <nav id="mainNav" class="flex items-center gap-1 ml-8">
-        <!-- Navigation populated by JS -->
+        <!-- Навигация заполняется динамически -->
       </nav>
     </div>
     <div class="flex items-center gap-3">
-      <span class="role-badge admin" id="roleBadge">
-        <i class="fa-solid fa-user-gear"></i>
-        <span id="roleText">Администратор</span>
+      <span class="role-badge" id="roleBadge">
+        <i class="fa-solid fa-user-gear" id="roleIcon"></i>
+        <span id="roleText">Загрузка...</span>
       </span>
+      <button class="icon-btn" title="Настройки"><i class="fa-solid fa-gear text-muted"></i></button>
       <div class="theme-toggle-track" onclick="toggleTheme()">
         <div class="theme-toggle-thumb"></div>
       </div>
-      <button class="icon-btn" title="Уведомления">
+      <a href="./notifications.html" class="icon-btn relative" title="Уведомления">
         <i class="fa-solid fa-bell text-muted"></i>
         <span class="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center font-bold">3</span>
-      </button>
+      </a>
       <button class="icon-btn" title="Выход" onclick="logout()"><i class="fa-solid fa-right-from-bracket text-muted"></i></button>
     </div>
   </header>
@@ -74,14 +79,15 @@
             <i class="fa-solid fa-plus"></i>
             Создать eTTН
           </button>
-          <button class="glass-card px-4 py-2.5 flex items-center gap-2 text-sm">
+          <button class="glass-card px-4 py-2.5 flex items-center gap-2 text-sm" onclick="importDocuments()">
             <i class="fa-solid fa-file-import text-blue-500"></i>
             Импорт
           </button>
-          <button class="glass-card px-4 py-2.5 flex items-center gap-2 text-sm">
+          <button class="glass-card px-4 py-2.5 flex items-center gap-2 text-sm" onclick="showExportModal()">
             <i class="fa-solid fa-file-export text-emerald-500"></i>
             Экспорт
           </button>
+          <input type="file" id="importInput" accept=".json,.csv,.xlsx" style="display: none" onchange="handleImport(event)">
         </div>
 
         <div class="flex items-center gap-2">
@@ -527,46 +533,149 @@
     // Initial render
     renderDocuments();
 
-    // Role management
-    document.addEventListener('DOMContentLoaded', () => {
-      initNavigation('documents');
-      if (typeof updateRoleBadge === 'function') updateRoleBadge();
-    });
-
-    // Initialize navigation based on role
-    function initNavigation(currentPage) {
-      const role = localStorage.getItem('user_role') || 'admin';
-      const nav = document.getElementById('mainNav');
-      
-      let navItems = [];
-      
-      if (role === 'owner') {
-        navItems.push({ href: './owner.html', icon: 'fa-crown', text: 'Обзор', page: 'owner' });
-      }
-      
-      navItems = navItems.concat([
-        { href: './index.html', icon: 'fa-truck', text: 'Флот', page: 'index' },
-        { href: './trips.html', icon: 'fa-route', text: 'Рейсы', page: 'trips' },
-        { href: './geozones.html', icon: 'fa-map-location-dot', text: 'Геозоны', page: 'geozones' },
-        { href: './analytics.html', icon: 'fa-chart-line', text: 'Аналитика', page: 'analytics' },
-        { href: './fuel.html', icon: 'fa-gas-pump', text: 'Топливо', page: 'fuel' },
-        { href: './maintenance.html', icon: 'fa-wrench', text: 'ТО', page: 'maintenance' },
-        { href: './documents.html', icon: 'fa-file-lines', text: 'Документы', page: 'documents' }
-      ]);
-      
-      nav.innerHTML = navItems.map(item => 
-        `<a href="${item.href}" class="nav-pill ${item.page === currentPage ? 'active' : ''}"><i class="fa-solid ${item.icon}"></i><span>${item.text}</span></a>`
-      ).join('');
+    // Import/Export functions
+    function importDocuments() {
+      document.getElementById('importInput').click();
     }
 
-    // Logout function
-    function logout() {
-      localStorage.removeItem('auth_token');
-      localStorage.removeItem('user_role');
-      localStorage.removeItem('demo_mode');
-      window.location.href = './login.html';
+    function handleImport(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const data = JSON.parse(e.target.result);
+          alert(`Импортировано ${data.length || 1} документов`);
+          // In real app, send to API
+        } catch {
+          alert('Ошибка при импорте файла. Проверьте формат.');
+        }
+      };
+      reader.readAsText(file);
+      event.target.value = '';
     }
+
+    function showExportModal() {
+      const modal = document.createElement('div');
+      modal.className = 'fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm';
+      modal.innerHTML = `
+        <div class="glass-panel p-6 w-full max-w-md">
+          <div class="flex items-center justify-between mb-6">
+            <h2 class="text-xl font-bold">Экспорт документов</h2>
+            <button onclick="this.closest('.fixed').remove()" class="icon-btn"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+          
+          <div class="space-y-4">
+            <div>
+              <label class="text-sm text-muted mb-2 block">Формат экспорта</label>
+              <div class="grid grid-cols-3 gap-2">
+                <button class="export-format-btn glass-card p-4 text-center border-2 border-transparent hover:border-blue-500" onclick="selectExportFormat(this, 'pdf')">
+                  <i class="fa-solid fa-file-pdf text-2xl text-red-500 mb-2"></i>
+                  <div class="text-sm font-medium">PDF</div>
+                </button>
+                <button class="export-format-btn glass-card p-4 text-center border-2 border-blue-500" onclick="selectExportFormat(this, 'xlsx')">
+                  <i class="fa-solid fa-file-excel text-2xl text-emerald-500 mb-2"></i>
+                  <div class="text-sm font-medium">Excel</div>
+                </button>
+                <button class="export-format-btn glass-card p-4 text-center border-2 border-transparent hover:border-blue-500" onclick="selectExportFormat(this, 'csv')">
+                  <i class="fa-solid fa-file-csv text-2xl text-blue-500 mb-2"></i>
+                  <div class="text-sm font-medium">CSV</div>
+                </button>
+              </div>
+            </div>
+            
+            <div>
+              <label class="text-sm text-muted mb-2 block">Период</label>
+              <select class="input-field w-full">
+                <option>Текущий месяц</option>
+                <option>Последние 3 месяца</option>
+                <option>Текущий год</option>
+                <option>Произвольный период</option>
+              </select>
+            </div>
+            
+            <div>
+              <label class="text-sm text-muted mb-2 block">Типы документов</label>
+              <div class="space-y-2">
+                <label class="flex items-center gap-2">
+                  <input type="checkbox" checked class="rounded">
+                  <span class="text-sm">eTTН</span>
+                </label>
+                <label class="flex items-center gap-2">
+                  <input type="checkbox" checked class="rounded">
+                  <span class="text-sm">Счета</span>
+                </label>
+                <label class="flex items-center gap-2">
+                  <input type="checkbox" checked class="rounded">
+                  <span class="text-sm">Договоры</span>
+                </label>
+              </div>
+            </div>
+          </div>
+          
+          <div class="flex gap-3 mt-6">
+            <button onclick="this.closest('.fixed').remove()" class="flex-1 glass-card py-3">Отмена</button>
+            <button onclick="exportDocuments()" class="flex-1 btn-primary py-3 flex items-center justify-center gap-2">
+              <i class="fa-solid fa-download"></i>
+              Скачать
+            </button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(modal);
+    }
+
+    let selectedExportFormat = 'xlsx';
+
+    function selectExportFormat(btn, format) {
+      document.querySelectorAll('.export-format-btn').forEach(b => b.classList.remove('border-blue-500'));
+      btn.classList.add('border-blue-500');
+      selectedExportFormat = format;
+    }
+
+    function exportDocuments() {
+      // Create fake download
+      const data = documents.map(d => ({
+        'Номер': d.id,
+        'Тип': d.type === 'ttn' ? 'eTTН' : d.type === 'invoice' ? 'Счёт' : 'Договор',
+        'Маршрут': d.route,
+        'Дата': d.date,
+        'Статус': statusMap[d.status].label,
+        'Вес': d.weight,
+        'Стоимость': d.cost
+      }));
+
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `documents_export_${new Date().toISOString().split('T')[0]}.${selectedExportFormat === 'xlsx' ? 'json' : selectedExportFormat}`;
+      a.click();
+      URL.revokeObjectURL(url);
+      
+      document.querySelector('.fixed.z-50')?.remove();
+      alert('Документы успешно экспортированы!');
+    }
+
   </script>
+  <script src="./assets/js/routa-core.js"></script>
   <script src="./assets/js/routox-unified.js"></script>
+  <script src="./assets/js/routox-ai.js"></script>
+  <script>
+    // ========== ROUTA PLATFORM INITIALIZATION ==========
+    (async function() {
+      Routa.Theme.load();
+      const user = await Routa.App.init({
+        requireAuth: true,
+        currentPage: 'documents.html'
+      });
+      if (!user) return;
+      console.log('Documents page initialized for:', user.role, user.edition);
+    })();
+    
+    function logout() { Routa.Auth.logout(); }
+    function toggleTheme() { Routa.Theme.toggle(); }
+  </script>
 </body>
 </html>

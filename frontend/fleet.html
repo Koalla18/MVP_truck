@@ -153,6 +153,12 @@
       border: 1px solid rgba(139, 92, 246, 0.3);
     }
 
+    .role-badge.dispatcher {
+      background: rgba(16, 185, 129, 0.15);
+      color: #10b981;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
     .stat-value {
       font-size: 28px;
       font-weight: 700;
@@ -173,6 +179,25 @@
     }
     .tab-btn:hover { color: #3b82f6; background: rgba(59, 130, 246, 0.08); }
     .tab-btn.active { background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; }
+
+    /* Camera styles */
+    .camera-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+    .camera-thumbnail { position: relative; border-radius: 12px; overflow: hidden; aspect-ratio: 16/9; cursor: pointer; }
+    .camera-thumbnail img { width: 100%; height: 100%; object-fit: cover; }
+    .camera-thumbnail .camera-overlay { position: absolute; inset: 0; background: linear-gradient(180deg, transparent 50%, rgba(0,0,0,0.7)); }
+    .camera-thumbnail .camera-label { position: absolute; bottom: 8px; left: 8px; display: flex; align-items: center; gap: 6px; font-size: 11px; color: white; }
+    .camera-thumbnail .live-dot { width: 6px; height: 6px; background: #ef4444; border-radius: 50%; animation: pulse 1.5s ease infinite; }
+    .camera-thumbnail:hover { transform: scale(1.02); transition: transform 0.2s; }
+    .camera-expand-btn { position: absolute; top: 8px; right: 8px; width: 28px; height: 28px; border-radius: 8px; background: rgba(0,0,0,0.5); color: white; display: flex; align-items: center; justify-content: center; font-size: 12px; opacity: 0; transition: opacity 0.2s; }
+    .camera-thumbnail:hover .camera-expand-btn { opacity: 1; }
+    
+    /* Camera modal */
+    .camera-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 100; display: none; align-items: center; justify-content: center; padding: 20px; }
+    .camera-modal.active { display: flex; }
+    .camera-modal-content { position: relative; max-width: 900px; width: 100%; }
+    .camera-modal-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    .camera-modal-single { border-radius: 16px; overflow: hidden; }
+    .camera-modal-single img { width: 100%; aspect-ratio: 16/9; object-fit: cover; }
   </style>
 </head>
 <body class="min-h-screen">
@@ -186,14 +211,8 @@
           <div class="text-xs text-muted">Управление флотом</div>
         </div>
       </a>
-      <nav class="flex gap-2">
-        <a href="./fleet.html" class="nav-pill active"><i class="fa-solid fa-truck"></i><span>Флот</span></a>
-        <a href="./trips.html" class="nav-pill"><i class="fa-solid fa-route"></i><span>Рейсы</span></a>
-        <a href="./geozones.html" class="nav-pill"><i class="fa-solid fa-map-location-dot"></i><span>Геозоны</span></a>
-        <a href="./analytics.html" class="nav-pill"><i class="fa-solid fa-chart-line"></i><span>Аналитика</span></a>
-        <a href="./fuel.html" class="nav-pill"><i class="fa-solid fa-gas-pump"></i><span>Топливо</span></a>
-        <a href="./maintenance.html" class="nav-pill"><i class="fa-solid fa-wrench"></i><span>ТО</span></a>
-        <a href="./documents.html" class="nav-pill"><i class="fa-solid fa-file-lines"></i><span>Документы</span></a>
+      <nav id="mainNav" class="flex items-center gap-1 ml-8">
+        <!-- Навигация будет заполнена в зависимости от роли -->
       </nav>
     </div>
     <div class="flex items-center gap-3">
@@ -201,18 +220,21 @@
         <span class="w-2 h-2 rounded-full bg-emerald-500 live-pulse"></span>
         <span class="text-sm text-emerald-600 font-medium">Live</span>
       </div>
-      <span class="role-badge admin" id="roleBadge">
-        <i class="fa-solid fa-user-gear"></i>
-        <span id="roleText">Администратор</span>
+      <span class="role-badge" id="roleBadge">
+        <i class="fa-solid fa-user-gear" id="roleIcon"></i>
+        <span id="roleText">Загрузка...</span>
       </span>
-      <button class="icon-btn" id="notifBtn">
+      <a href="./notifications.html" class="icon-btn relative" title="Уведомления">
         <i class="fa-solid fa-bell"></i>
         <span class="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-[10px] text-white flex items-center justify-center">3</span>
+      </a>
+      <button class="icon-btn" title="Настройки">
+        <i class="fa-solid fa-gear"></i>
       </button>
       <div class="theme-toggle-track" onclick="toggleTheme()">
         <div class="theme-toggle-thumb"></div>
       </div>
-      <button class="icon-btn" onclick="logout()">
+      <button class="icon-btn" onclick="logout()" title="Выход">
         <i class="fa-solid fa-right-from-bracket"></i>
       </button>
     </div>
@@ -475,8 +497,83 @@
           </div>
         </div>
       </div>
+
+      <!-- Camera Section -->
+      <div class="glass-panel p-4">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="font-semibold flex items-center gap-2">
+            <i class="fa-solid fa-video text-red-500"></i>
+            Камеры видеонаблюдения
+            <span class="px-2 py-0.5 rounded-full bg-red-500/15 text-red-500 text-xs ml-2">
+              <span class="inline-block w-1.5 h-1.5 bg-red-500 rounded-full mr-1 animate-pulse"></span>
+              LIVE
+            </span>
+          </h3>
+          <button class="btn-secondary text-sm flex items-center gap-2" onclick="openCameraModal('all')">
+            <i class="fa-solid fa-expand"></i>
+            Все камеры
+          </button>
+        </div>
+        <div class="camera-grid" id="cameraGrid">
+          <div class="camera-thumbnail" onclick="openCameraModal('front')">
+            <img src="https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=225&fit=crop" alt="Front camera">
+            <div class="camera-overlay"></div>
+            <div class="camera-label"><span class="live-dot"></span>Передняя</div>
+            <button class="camera-expand-btn"><i class="fa-solid fa-expand"></i></button>
+          </div>
+          <div class="camera-thumbnail" onclick="openCameraModal('cabin')">
+            <img src="https://images.unsplash.com/photo-1449965408869-ebd3fee52a27?w=400&h=225&fit=crop" alt="Cabin camera">
+            <div class="camera-overlay"></div>
+            <div class="camera-label"><span class="live-dot"></span>Кабина</div>
+            <button class="camera-expand-btn"><i class="fa-solid fa-expand"></i></button>
+          </div>
+          <div class="camera-thumbnail" onclick="openCameraModal('rear')">
+            <img src="https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=400&h=225&fit=crop" alt="Rear camera">
+            <div class="camera-overlay"></div>
+            <div class="camera-label"><span class="live-dot"></span>Задняя</div>
+            <button class="camera-expand-btn"><i class="fa-solid fa-expand"></i></button>
+          </div>
+          <div class="camera-thumbnail" onclick="openCameraModal('cargo')">
+            <img src="https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=400&h=225&fit=crop" alt="Cargo camera">
+            <div class="camera-overlay"></div>
+            <div class="camera-label"><span class="live-dot"></span>Прицеп</div>
+            <button class="camera-expand-btn"><i class="fa-solid fa-expand"></i></button>
+          </div>
+        </div>
+        <div class="flex items-center justify-between mt-4 pt-4 border-t border-white/10">
+          <div class="flex items-center gap-4 text-sm text-muted">
+            <span><i class="fa-solid fa-hard-drive mr-2"></i>DVR: 85% свободно</span>
+            <span><i class="fa-solid fa-clock mr-2"></i>Запись: 24/7</span>
+          </div>
+          <button class="text-sm text-blue-500 hover:text-blue-400" onclick="downloadRecording()">
+            <i class="fa-solid fa-download mr-1"></i>Скачать запись
+          </button>
+        </div>
+      </div>
     </div>
   </main>
+
+  <!-- Camera Modal -->
+  <div class="camera-modal" id="cameraModal">
+    <div class="camera-modal-content">
+      <button onclick="closeCameraModal()" class="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 text-white flex items-center justify-center hover:bg-white/20 z-10">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+      <div class="mb-4 flex items-center justify-between text-white">
+        <h3 class="text-xl font-bold" id="cameraModalTitle">Камеры</h3>
+        <div class="flex items-center gap-2">
+          <span class="px-3 py-1 rounded-full bg-red-500/20 text-red-400 text-sm">
+            <span class="inline-block w-2 h-2 bg-red-500 rounded-full mr-2 animate-pulse"></span>
+            LIVE
+          </span>
+          <button class="px-3 py-1 rounded-lg bg-white/10 text-sm" onclick="markIncident()">
+            <i class="fa-solid fa-flag mr-1"></i>Отметить инцидент
+          </button>
+        </div>
+      </div>
+      <div id="cameraModalContent"></div>
+    </div>
+  </div>
 
   <!-- Add Vehicle Modal -->
   <div class="modal-backdrop hidden" id="addVehicleModal">
@@ -541,7 +638,6 @@
 
     // Initialize
     document.addEventListener('DOMContentLoaded', () => {
-      initTheme();
       checkRole();
       renderVehicleList();
       selectVehicle(vehicles[0]);
@@ -713,12 +809,110 @@
       document.getElementById('addVehicleModal').classList.add('hidden');
     }
 
-    // Logout
+    // Camera data
+    const cameraFeeds = {
+      front: { label: 'Передняя камера', img: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&h=450&fit=crop' },
+      cabin: { label: 'Кабина', img: 'https://images.unsplash.com/photo-1449965408869-ebd3fee52a27?w=800&h=450&fit=crop' },
+      rear: { label: 'Задняя камера', img: 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=800&h=450&fit=crop' },
+      cargo: { label: 'Прицеп', img: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&h=450&fit=crop' }
+    };
+
+    function openCameraModal(cameraId) {
+      const modal = document.getElementById('cameraModal');
+      const content = document.getElementById('cameraModalContent');
+      const title = document.getElementById('cameraModalTitle');
+      
+      if (cameraId === 'all') {
+        title.textContent = `Камеры - ${selectedVehicle.plate}`;
+        content.innerHTML = `
+          <div class="camera-modal-grid">
+            ${Object.entries(cameraFeeds).map(([id, cam]) => `
+              <div class="camera-modal-single relative" onclick="event.stopPropagation(); openCameraModal('${id}')">
+                <img src="${cam.img}" alt="${cam.label}">
+                <div class="absolute bottom-3 left-3 flex items-center gap-2 text-white text-sm">
+                  <span class="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+                  ${cam.label}
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        `;
+      } else {
+        const cam = cameraFeeds[cameraId];
+        title.textContent = `${cam.label} - ${selectedVehicle.plate}`;
+        content.innerHTML = `
+          <div class="camera-modal-single">
+            <img src="${cam.img}" alt="${cam.label}" style="border-radius: 16px;">
+          </div>
+          <div class="mt-4 grid grid-cols-4 gap-2">
+            ${Object.entries(cameraFeeds).map(([id, c]) => `
+              <div class="cursor-pointer rounded-lg overflow-hidden border-2 ${id === cameraId ? 'border-blue-500' : 'border-transparent'}" onclick="event.stopPropagation(); openCameraModal('${id}')">
+                <img src="${c.img}" alt="${c.label}" class="w-full h-16 object-cover">
+              </div>
+            `).join('')}
+          </div>
+        `;
+      }
+      
+      modal.classList.add('active');
+    }
+
+    function closeCameraModal() {
+      document.getElementById('cameraModal').classList.remove('active');
+    }
+
+    function markIncident() {
+      const time = new Date().toLocaleTimeString('ru-RU');
+      if (confirm(`Отметить инцидент в ${time}?\nВидеозапись будет сохранена для ${selectedVehicle.plate}`)) {
+        alert('Инцидент отмечен. Видеозапись сохранена.');
+      }
+    }
+
+    function downloadRecording() {
+      alert(`Начинается загрузка записи для ${selectedVehicle.plate}.\nВыберите период в появившемся диалоге.`);
+    }
+
+    // Close camera modal on click outside
+    document.getElementById('cameraModal').addEventListener('click', (e) => {
+      if (e.target.id === 'cameraModal') {
+        closeCameraModal();
+      }
+    });
+
+    // Logout - use RoutoX
     function logout() {
-      localStorage.removeItem('auth_token');
-      localStorage.removeItem('user_role');
-      localStorage.removeItem('demo_mode');
+      RoutoX.Auth.logout();
       window.location.href = './login.html';
+    }
+  </script>
+  <script src="./assets/js/routa-core.js"></script>
+  <script src="./assets/js/routox-unified.js"></script>
+  <script src="./assets/js/routox-ai.js"></script>
+  <script>
+    // ========== ROUTA PLATFORM INITIALIZATION ==========
+    // Инициализация через единое ядро Routa
+    (async function() {
+      // Применяем тему до полной загрузки (предотвращает мигание)
+      Routa.Theme.load();
+      
+      // Инициализируем приложение
+      const user = await Routa.App.init({
+        requireAuth: true,
+        currentPage: 'fleet.html'
+      });
+      
+      if (!user) return; // Редирект на login уже произошёл
+      
+      console.log('Fleet page initialized for:', user.role, user.edition);
+    })();
+    
+    // Глобальные функции для совместимости
+    function logout() {
+      Routa.Auth.logout();
+    }
+    
+    function toggleTheme() {
+      Routa.Theme.toggle();
     }
   </script>
 </body>

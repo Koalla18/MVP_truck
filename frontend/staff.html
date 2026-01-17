@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RoutoX — Персонал</title>
+  <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+  <script src="https://kit.fontawesome.com/a2e0e9e5a9.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="./assets/css/routox-unified.css">
+  <style>
+    /* Owner purple theme */
+    .nav-pill.active {
+      background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+      box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+    }
+
+    .btn-primary:hover {
+      box-shadow: 0 4px 20px rgba(139, 92, 246, 0.4);
+    }
+
+    /* Employee card styles */
+    .employee-card {
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .employee-card:hover {
+      transform: translateY(-2px);
+      border-color: rgba(139, 92, 246, 0.4);
+    }
+
+    .employee-avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 16px;
+    }
+
+    .role-driver { background: linear-gradient(135deg, #10b981, #059669); color: white; }
+    .role-admin { background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; }
+    .role-mechanic { background: linear-gradient(135deg, #f59e0b, #d97706); color: white; }
+    .role-dispatcher { background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: white; }
+
+    .status-badge {
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 500;
+    }
+
+    .status-online { background: rgba(16, 185, 129, 0.15); color: #10b981; }
+    .status-offline { background: rgba(107, 114, 128, 0.15); color: #6b7280; }
+    .status-busy { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
+    .status-vacation { background: rgba(59, 130, 246, 0.15); color: #3b82f6; }
+
+    /* Kanban columns */
+    .kanban-column {
+      min-height: 400px;
+    }
+
+    /* Stats cards */
+    .stat-value {
+      background: linear-gradient(135deg, #8b5cf6, #10b981);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .role-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+    .role-badge.admin { background: rgba(59, 130, 246, 0.15); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.3); }
+    .role-badge.owner { background: rgba(139, 92, 246, 0.15); color: #8b5cf6; border: 1px solid rgba(139, 92, 246, 0.3); }
+    .role-badge.dispatcher { background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); }
+  </style>
+</head>
+<body class="min-h-screen">
+  <!-- Header -->
+  <header class="glass-panel mx-4 mt-4 px-6 py-4 flex items-center justify-between sticky top-4 z-30">
+    <div class="flex items-center gap-6">
+      <a href="./staff.html" class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center font-bold text-lg text-white shadow-lg">R</div>
+        <div>
+          <div class="font-semibold">RoutoX</div>
+          <div class="text-xs text-muted">Управление персоналом</div>
+        </div>
+      </a>
+      <nav id="mainNav" class="flex items-center gap-1 ml-8">
+        <!-- Навигация заполняется динамически -->
+      </nav>
+    </div>
+    <div class="flex items-center gap-3">
+      <span class="role-badge" id="roleBadge">
+        <i class="fa-solid fa-crown" id="roleIcon"></i>
+        <span id="roleText">Владелец</span>
+      </span>
+      <a href="./notifications.html" class="icon-btn relative" title="Уведомления">
+        <i class="fa-solid fa-bell"></i>
+        <span class="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-[10px] text-white flex items-center justify-center">5</span>
+      </a>
+      <button class="icon-btn" title="Настройки">
+        <i class="fa-solid fa-gear"></i>
+      </button>
+      <div class="theme-toggle-track" onclick="toggleTheme()">
+        <div class="theme-toggle-thumb"></div>
+      </div>
+      <button class="icon-btn" title="Выход" onclick="logout()">
+        <i class="fa-solid fa-right-from-bracket"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="p-4 space-y-4">
+    <!-- Stats Row -->
+    <div class="grid grid-cols-5 gap-4">
+      <div class="glass-panel p-4 relative overflow-hidden">
+        <div class="gradient-orb w-24 h-24 bg-purple-500 -top-12 -right-12 opacity-30"></div>
+        <div class="relative z-10">
+          <div class="flex items-center gap-3 mb-2">
+            <div class="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center">
+              <i class="fa-solid fa-users text-purple-400"></i>
+            </div>
+          </div>
+          <div class="text-2xl font-bold stat-value" id="totalEmployees">24</div>
+          <div class="text-sm text-muted">Всего сотрудников</div>
+        </div>
+      </div>
+
+      <div class="glass-panel p-4 relative overflow-hidden">
+        <div class="gradient-orb w-24 h-24 bg-emerald-500 -top-12 -right-12 opacity-30"></div>
+        <div class="relative z-10">
+          <div class="flex items-center gap-3 mb-2">
+            <div class="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center">
+              <i class="fa-solid fa-circle-check text-emerald-400"></i>
+            </div>
+          </div>
+          <div class="text-2xl font-bold stat-value" id="onlineEmployees">18</div>
+          <div class="text-sm text-muted">На линии</div>
+        </div>
+      </div>
+
+      <div class="glass-panel p-4 relative overflow-hidden">
+        <div class="gradient-orb w-24 h-24 bg-blue-500 -top-12 -right-12 opacity-30"></div>
+        <div class="relative z-10">
+          <div class="flex items-center gap-3 mb-2">
+            <div class="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center">
+              <i class="fa-solid fa-truck text-blue-400"></i>
+            </div>
+          </div>
+          <div class="text-2xl font-bold stat-value" id="driversCount">16</div>
+          <div class="text-sm text-muted">Водителей</div>
+        </div>
+      </div>
+
+      <div class="glass-panel p-4 relative overflow-hidden">
+        <div class="gradient-orb w-24 h-24 bg-amber-500 -top-12 -right-12 opacity-30"></div>
+        <div class="relative z-10">
+          <div class="flex items-center gap-3 mb-2">
+            <div class="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center">
+              <i class="fa-solid fa-wrench text-amber-400"></i>
+            </div>
+          </div>
+          <div class="text-2xl font-bold stat-value" id="mechanicsCount">4</div>
+          <div class="text-sm text-muted">Механиков</div>
+        </div>
+      </div>
+
+      <div class="glass-panel p-4 relative overflow-hidden">
+        <div class="gradient-orb w-24 h-24 bg-rose-500 -top-12 -right-12 opacity-30"></div>
+        <div class="relative z-10">
+          <div class="flex items-center gap-3 mb-2">
+            <div class="w-10 h-10 rounded-xl bg-rose-500/20 flex items-center justify-center">
+              <i class="fa-solid fa-calendar-xmark text-rose-400"></i>
+            </div>
+          </div>
+          <div class="text-2xl font-bold stat-value" id="vacationCount">2</div>
+          <div class="text-sm text-muted">В отпуске</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions Bar -->
+    <div class="glass-panel p-4 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <button class="btn-primary px-4 py-2 rounded-xl text-white font-medium flex items-center gap-2" onclick="openAddEmployeeModal()">
+          <i class="fa-solid fa-user-plus"></i>
+          Добавить сотрудника
+        </button>
+        <div class="relative">
+          <input type="text" id="searchEmployee" placeholder="Поиск по имени..." 
+                 class="bg-black/20 border border-white/10 rounded-xl px-4 py-2 pl-10 text-sm focus:border-purple-500/50 focus:outline-none w-64">
+          <i class="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-muted"></i>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <select id="roleFilter" onchange="applyFilters()" class="bg-black/20 border border-white/10 rounded-xl px-4 py-2 text-sm focus:border-purple-500/50 focus:outline-none">
+          <option value="">Все роли</option>
+          <option value="driver">Водители</option>
+          <option value="admin">Администраторы</option>
+          <option value="mechanic">Механики</option>
+          <option value="dispatcher">Диспетчеры</option>
+        </select>
+        <select id="statusFilter" onchange="applyFilters()" class="bg-black/20 border border-white/10 rounded-xl px-4 py-2 text-sm focus:border-purple-500/50 focus:outline-none">
+          <option value="">Все статусы</option>
+          <option value="online">На линии</option>
+          <option value="offline">Не в сети</option>
+          <option value="busy">Занят</option>
+          <option value="vacation">В отпуске</option>
+        </select>
+        <select id="sortBy" onchange="applyFilters()" class="bg-black/20 border border-white/10 rounded-xl px-4 py-2 text-sm focus:border-purple-500/50 focus:outline-none">
+          <option value="name-asc">По имени А-Я</option>
+          <option value="name-desc">По имени Я-А</option>
+          <option value="rating-desc">По рейтингу ↓</option>
+          <option value="rating-asc">По рейтингу ↑</option>
+          <option value="experience-desc">По стажу ↓</option>
+          <option value="experience-asc">По стажу ↑</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Employee Grid -->
+    <div class="grid grid-cols-3 gap-4">
+      <!-- Drivers Column -->
+      <div class="glass-panel p-4 kanban-column">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center">
+              <i class="fa-solid fa-truck text-emerald-400 text-sm"></i>
+            </div>
+            <h3 class="font-semibold">Водители</h3>
+          </div>
+          <span class="px-2 py-1 bg-emerald-500/20 text-emerald-400 rounded-lg text-xs font-medium">16</span>
+        </div>
+        <div class="space-y-3" id="driversList">
+          <!-- Employee cards will be populated by JS -->
+        </div>
+      </div>
+
+      <!-- Admins & Dispatchers Column -->
+      <div class="glass-panel p-4 kanban-column">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center">
+              <i class="fa-solid fa-headset text-blue-400 text-sm"></i>
+            </div>
+            <h3 class="font-semibold">Офис</h3>
+          </div>
+          <span class="px-2 py-1 bg-blue-500/20 text-blue-400 rounded-lg text-xs font-medium">4</span>
+        </div>
+        <div class="space-y-3" id="officeList">
+          <!-- Employee cards will be populated by JS -->
+        </div>
+      </div>
+
+      <!-- Mechanics Column -->
+      <div class="glass-panel p-4 kanban-column">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center">
+              <i class="fa-solid fa-wrench text-amber-400 text-sm"></i>
+            </div>
+            <h3 class="font-semibold">Механики</h3>
+          </div>
+          <span class="px-2 py-1 bg-amber-500/20 text-amber-400 rounded-lg text-xs font-medium">4</span>
+        </div>
+        <div class="space-y-3" id="mechanicsList">
+          <!-- Employee cards will be populated by JS -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="glass-panel p-4">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="font-semibold">Последняя активность</h3>
+        <a href="#" class="text-sm text-purple-400 hover:text-purple-300">Вся история</a>
+      </div>
+      <div class="space-y-3" id="activityList">
+        <!-- Activity items will be populated by JS -->
+      </div>
+    </div>
+  </main>
+
+  <!-- Add Employee Modal -->
+  <div id="addEmployeeModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+    <div class="glass-panel rounded-2xl p-6 w-full max-w-lg">
+      <div class="flex items-center justify-between mb-6">
+        <h3 class="text-xl font-bold">Добавить сотрудника</h3>
+        <button onclick="closeAddEmployeeModal()" class="icon-btn">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      
+      <form id="addEmployeeForm" class="space-y-4">
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-muted mb-2">Имя</label>
+            <input type="text" required class="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-2 focus:border-purple-500/50 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-muted mb-2">Фамилия</label>
+            <input type="text" required class="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-2 focus:border-purple-500/50 focus:outline-none">
+          </div>
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium text-muted mb-2">Email</label>
+          <input type="email" required class="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-2 focus:border-purple-500/50 focus:outline-none">
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium text-muted mb-2">Телефон</label>
+          <input type="tel" class="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-2 focus:border-purple-500/50 focus:outline-none" placeholder="+7 (___) ___-__-__">
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium text-muted mb-2">Должность</label>
+          <select required class="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-2 focus:border-purple-500/50 focus:outline-none">
+            <option value="">Выберите должность</option>
+            <option value="driver">Водитель</option>
+            <option value="admin">Администратор</option>
+            <option value="mechanic">Механик</option>
+            <option value="dispatcher">Диспетчер</option>
+          </select>
+        </div>
+        
+        <div class="flex gap-3 pt-4">
+          <button type="button" onclick="closeAddEmployeeModal()" class="flex-1 py-3 rounded-xl border border-white/10 font-medium hover:bg-white/5 transition">
+            Отмена
+          </button>
+          <button type="submit" class="flex-1 btn-primary py-3 rounded-xl text-white font-medium">
+            Добавить
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Employee Detail Modal -->
+  <div id="employeeDetailModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+    <div class="glass-panel rounded-2xl p-6 w-full max-w-2xl">
+      <div class="flex items-center justify-between mb-6">
+        <h3 class="text-xl font-bold">Профиль сотрудника</h3>
+        <button onclick="closeEmployeeDetailModal()" class="icon-btn">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      
+      <div id="employeeDetailContent">
+        <!-- Content populated by JS -->
+      </div>
+    </div>
+  </div>
+
+  <script src="./assets/js/routa-core.js"></script>
+  <script src="./assets/js/routox-ai.js"></script>
+  <script>
+    // Initialize page
+    document.addEventListener('DOMContentLoaded', async () => {
+      Routa.Theme.load();
+      const user = await Routa.App.init({ 
+        requireAuth: true,
+        currentPage: 'staff.html'
+      });
+      if (!user) return;
+      
+      loadEmployees();
+      loadActivity();
+    });
+
+    // Demo data
+    const employees = [
+      { id: 1, name: 'Артем Малышев', role: 'driver', status: 'online', phone: '+7 (912) 345-67-89', experience: '9 лет', experienceYears: 9, rating: 4.9, hireDate: '2015-03-15' },
+      { id: 2, name: 'Сергей Иванов', role: 'driver', status: 'busy', phone: '+7 (915) 123-45-67', experience: '5 лет', experienceYears: 5, rating: 4.7, hireDate: '2019-06-20' },
+      { id: 3, name: 'Михаил Петров', role: 'driver', status: 'online', phone: '+7 (916) 987-65-43', experience: '12 лет', experienceYears: 12, rating: 4.8, hireDate: '2012-01-10' },
+      { id: 4, name: 'Алексей Козлов', role: 'driver', status: 'offline', phone: '+7 (917) 555-44-33', experience: '3 года', experienceYears: 3, rating: 4.5, hireDate: '2021-09-05' },
+      { id: 5, name: 'Дмитрий Новиков', role: 'driver', status: 'online', phone: '+7 (918) 222-11-00', experience: '7 лет', experienceYears: 7, rating: 4.6, hireDate: '2017-04-12' },
+      { id: 6, name: 'Владимир Морозов', role: 'driver', status: 'vacation', phone: '+7 (919) 888-77-66', experience: '4 года', experienceYears: 4, rating: 4.4, hireDate: '2020-02-28' },
+      { id: 7, name: 'Анна Соколова', role: 'dispatcher', status: 'online', phone: '+7 (920) 111-22-33', experience: '2 года', experienceYears: 2, rating: 4.9, hireDate: '2022-08-01' },
+      { id: 8, name: 'Елена Волкова', role: 'admin', status: 'online', phone: '+7 (921) 444-55-66', experience: '6 лет', experienceYears: 6, rating: 5.0, hireDate: '2018-05-22' },
+      { id: 9, name: 'Николай Зайцев', role: 'mechanic', status: 'online', phone: '+7 (922) 777-88-99', experience: '15 лет', experienceYears: 15, rating: 4.8, hireDate: '2009-11-30' },
+      { id: 10, name: 'Павел Лебедев', role: 'mechanic', status: 'busy', phone: '+7 (923) 333-22-11', experience: '8 лет', experienceYears: 8, rating: 4.7, hireDate: '2016-07-14' },
+      { id: 11, name: 'Игорь Федоров', role: 'driver', status: 'online', phone: '+7 (924) 111-22-33', experience: '6 лет', experienceYears: 6, rating: 4.8, hireDate: '2018-03-10' },
+      { id: 12, name: 'Олег Кузнецов', role: 'mechanic', status: 'offline', phone: '+7 (925) 555-66-77', experience: '10 лет', experienceYears: 10, rating: 4.6, hireDate: '2014-12-01' },
+    ];
+
+    const activities = [
+      { id: 1, type: 'login', user: 'Артем Малышев', time: '5 минут назад', icon: 'fa-right-to-bracket', color: 'emerald' },
+      { id: 2, type: 'trip', user: 'Сергей Иванов', time: '15 минут назад', icon: 'fa-route', color: 'blue', desc: 'Начал рейс Москва → Казань' },
+      { id: 3, type: 'maintenance', user: 'Николай Зайцев', time: '1 час назад', icon: 'fa-wrench', color: 'amber', desc: 'Завершил ТО грузовика #A123BC' },
+      { id: 4, type: 'document', user: 'Елена Волкова', time: '2 часа назад', icon: 'fa-file-lines', color: 'purple', desc: 'Обновила страховку на ТС #B456CD' },
+    ];
+
+    // Filtering and sorting
+    function applyFilters() {
+      const roleFilter = document.getElementById('roleFilter').value;
+      const statusFilter = document.getElementById('statusFilter').value;
+      const sortBy = document.getElementById('sortBy').value;
+      const searchTerm = document.getElementById('searchEmployee').value.toLowerCase();
+
+      let filtered = [...employees];
+
+      // Apply search
+      if (searchTerm) {
+        filtered = filtered.filter(e => e.name.toLowerCase().includes(searchTerm));
+      }
+
+      // Apply role filter
+      if (roleFilter) {
+        filtered = filtered.filter(e => e.role === roleFilter);
+      }
+
+      // Apply status filter
+      if (statusFilter) {
+        filtered = filtered.filter(e => e.status === statusFilter);
+      }
+
+      // Apply sorting
+      const [field, direction] = sortBy.split('-');
+      filtered.sort((a, b) => {
+        let valA, valB;
+        
+        switch(field) {
+          case 'name':
+            valA = a.name.toLowerCase();
+            valB = b.name.toLowerCase();
+            break;
+          case 'rating':
+            valA = a.rating;
+            valB = b.rating;
+            break;
+          case 'experience':
+            valA = a.experienceYears;
+            valB = b.experienceYears;
+            break;
+          default:
+            valA = a.name.toLowerCase();
+            valB = b.name.toLowerCase();
+        }
+
+        if (direction === 'asc') {
+          return valA > valB ? 1 : valA < valB ? -1 : 0;
+        } else {
+          return valA < valB ? 1 : valA > valB ? -1 : 0;
+        }
+      });
+
+      renderFilteredEmployees(filtered);
+      updateStats(filtered);
+    }
+
+    function renderFilteredEmployees(filteredList) {
+      const driversList = document.getElementById('driversList');
+      const officeList = document.getElementById('officeList');
+      const mechanicsList = document.getElementById('mechanicsList');
+
+      const drivers = filteredList.filter(e => e.role === 'driver');
+      const office = filteredList.filter(e => ['admin', 'dispatcher'].includes(e.role));
+      const mechanics = filteredList.filter(e => e.role === 'mechanic');
+
+      driversList.innerHTML = drivers.length > 0 
+        ? drivers.map(e => createEmployeeCard(e)).join('')
+        : '<div class="text-center text-muted py-8">Нет сотрудников</div>';
+      
+      officeList.innerHTML = office.length > 0
+        ? office.map(e => createEmployeeCard(e)).join('')
+        : '<div class="text-center text-muted py-8">Нет сотрудников</div>';
+      
+      mechanicsList.innerHTML = mechanics.length > 0
+        ? mechanics.map(e => createEmployeeCard(e)).join('')
+        : '<div class="text-center text-muted py-8">Нет сотрудников</div>';
+
+      // Update column counts
+      document.querySelector('#driversList').closest('.kanban-column').querySelector('.text-xs').textContent = drivers.length;
+      document.querySelector('#officeList').closest('.kanban-column').querySelector('.text-xs').textContent = office.length;
+      document.querySelector('#mechanicsList').closest('.kanban-column').querySelector('.text-xs').textContent = mechanics.length;
+    }
+
+    function updateStats(filteredList) {
+      const onlineCount = filteredList.filter(e => e.status === 'online').length;
+      const driversCount = filteredList.filter(e => e.role === 'driver').length;
+      const mechanicsCount = filteredList.filter(e => e.role === 'mechanic').length;
+      const vacationCount = filteredList.filter(e => e.status === 'vacation').length;
+
+      document.getElementById('totalEmployees').textContent = filteredList.length;
+      document.getElementById('onlineEmployees').textContent = onlineCount;
+      document.getElementById('driversCount').textContent = driversCount;
+      document.getElementById('mechanicsCount').textContent = mechanicsCount;
+      document.getElementById('vacationCount').textContent = vacationCount;
+    }
+
+    // Search input handler
+    document.getElementById('searchEmployee').addEventListener('input', debounce(applyFilters, 300));
+
+    function debounce(func, wait) {
+      let timeout;
+      return function executedFunction(...args) {
+        const later = () => {
+          clearTimeout(timeout);
+          func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+      };
+    }
+
+    function loadEmployees() {
+      applyFilters();
+      loadActivity();
+    }
+
+    function createEmployeeCard(employee) {
+      const initials = employee.name.split(' ').map(n => n[0]).join('');
+      const statusClass = `status-${employee.status}`;
+      const statusText = {
+        online: 'На линии',
+        offline: 'Не в сети',
+        busy: 'В рейсе',
+        vacation: 'В отпуске'
+      }[employee.status];
+
+      const roleClass = `role-${employee.role}`;
+
+      return `
+        <div class="employee-card glass-panel p-3 rounded-xl border border-white/5" onclick="showEmployeeDetail(${employee.id})">
+          <div class="flex items-center gap-3">
+            <div class="employee-avatar ${roleClass}">${initials}</div>
+            <div class="flex-1 min-w-0">
+              <div class="font-medium truncate">${employee.name}</div>
+              <div class="text-xs text-muted">${employee.experience}</div>
+            </div>
+            <span class="status-badge ${statusClass}">${statusText}</span>
+          </div>
+          <div class="flex items-center gap-3 mt-3 text-xs text-muted">
+            <span><i class="fa-solid fa-phone mr-1"></i>${employee.phone}</span>
+            <span class="ml-auto"><i class="fa-solid fa-star text-amber-400 mr-1"></i>${employee.rating}</span>
+          </div>
+        </div>
+      `;
+    }
+
+    function loadActivity() {
+      const activityList = document.getElementById('activityList');
+      
+      activityList.innerHTML = activities.map(a => `
+        <div class="flex items-center gap-4 p-3 rounded-xl bg-white/5">
+          <div class="w-10 h-10 rounded-xl bg-${a.color}-500/20 flex items-center justify-center">
+            <i class="fa-solid ${a.icon} text-${a.color}-400"></i>
+          </div>
+          <div class="flex-1">
+            <div class="font-medium">${a.user}</div>
+            <div class="text-sm text-muted">${a.desc || 'Вошёл в систему'}</div>
+          </div>
+          <div class="text-xs text-muted">${a.time}</div>
+        </div>
+      `).join('');
+    }
+
+    function showEmployeeDetail(id) {
+      const employee = employees.find(e => e.id === id);
+      if (!employee) return;
+
+      const initials = employee.name.split(' ').map(n => n[0]).join('');
+      const roleClass = `role-${employee.role}`;
+      const roleText = {
+        driver: 'Водитель',
+        admin: 'Администратор',
+        mechanic: 'Механик',
+        dispatcher: 'Диспетчер'
+      }[employee.role];
+
+      document.getElementById('employeeDetailContent').innerHTML = `
+        <div class="flex items-start gap-6">
+          <div class="employee-avatar ${roleClass}" style="width: 80px; height: 80px; font-size: 24px;">${initials}</div>
+          <div class="flex-1">
+            <h4 class="text-2xl font-bold mb-1">${employee.name}</h4>
+            <div class="text-muted mb-4">${roleText} · Стаж ${employee.experience}</div>
+            
+            <div class="grid grid-cols-2 gap-4">
+              <div class="glass-panel p-3 rounded-xl">
+                <div class="text-xs text-muted mb-1">Телефон</div>
+                <div class="font-medium">${employee.phone}</div>
+              </div>
+              <div class="glass-panel p-3 rounded-xl">
+                <div class="text-xs text-muted mb-1">Рейтинг</div>
+                <div class="font-medium"><i class="fa-solid fa-star text-amber-400 mr-1"></i>${employee.rating}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="mt-6 grid grid-cols-3 gap-4">
+          <div class="glass-panel p-4 rounded-xl text-center">
+            <div class="text-2xl font-bold stat-value">156</div>
+            <div class="text-sm text-muted">Рейсов</div>
+          </div>
+          <div class="glass-panel p-4 rounded-xl text-center">
+            <div class="text-2xl font-bold stat-value">45,230 км</div>
+            <div class="text-sm text-muted">Пройдено</div>
+          </div>
+          <div class="glass-panel p-4 rounded-xl text-center">
+            <div class="text-2xl font-bold stat-value">0</div>
+            <div class="text-sm text-muted">Нарушений</div>
+          </div>
+        </div>
+        
+        <div class="flex gap-3 mt-6">
+          <button class="flex-1 py-3 rounded-xl border border-white/10 font-medium hover:bg-white/5 transition">
+            <i class="fa-solid fa-phone mr-2"></i>Позвонить
+          </button>
+          <button class="flex-1 btn-primary py-3 rounded-xl text-white font-medium">
+            <i class="fa-solid fa-pen mr-2"></i>Редактировать
+          </button>
+        </div>
+      `;
+
+      document.getElementById('employeeDetailModal').classList.remove('hidden');
+      document.getElementById('employeeDetailModal').classList.add('flex');
+    }
+
+    function closeEmployeeDetailModal() {
+      document.getElementById('employeeDetailModal').classList.add('hidden');
+      document.getElementById('employeeDetailModal').classList.remove('flex');
+    }
+
+    function openAddEmployeeModal() {
+      document.getElementById('addEmployeeModal').classList.remove('hidden');
+      document.getElementById('addEmployeeModal').classList.add('flex');
+    }
+
+    function closeAddEmployeeModal() {
+      document.getElementById('addEmployeeModal').classList.add('hidden');
+      document.getElementById('addEmployeeModal').classList.remove('flex');
+    }
+
+    // Close modals on backdrop click
+    document.getElementById('addEmployeeModal').addEventListener('click', (e) => {
+      if (e.target === document.getElementById('addEmployeeModal')) {
+        closeAddEmployeeModal();
+      }
+    });
+
+    document.getElementById('employeeDetailModal').addEventListener('click', (e) => {
+      if (e.target === document.getElementById('employeeDetailModal')) {
+        closeEmployeeDetailModal();
+      }
+    });
+
+    // Form submit
+    document.getElementById('addEmployeeForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      showNotification('Сотрудник добавлен', 'success');
+      closeAddEmployeeModal();
+    });
+
+    function showNotification(message, type = 'success') {
+      const colors = { success: 'emerald', error: 'red', warning: 'amber', info: 'blue' };
+      const icons = { success: 'check', error: 'xmark', warning: 'exclamation', info: 'info' };
+      const notif = document.createElement('div');
+      notif.className = `fixed bottom-4 right-4 glass-panel px-4 py-3 flex items-center gap-3 z-50`;
+      notif.innerHTML = `
+        <div class="w-8 h-8 rounded-lg bg-${colors[type]}-500/20 flex items-center justify-center">
+          <i class="fa-solid fa-${icons[type]} text-${colors[type]}-500"></i>
+        </div>
+        <span class="font-medium">${message}</span>
+      `;
+      document.body.appendChild(notif);
+      setTimeout(() => {
+        notif.style.opacity = '0';
+        setTimeout(() => notif.remove(), 300);
+      }, 3000);
+    }
+  </script>
+  <script src="./assets/js/routa-core.js"></script>
+  <script src="./assets/js/routox-unified.js"></script>
+  <script src="./assets/js/routox-ai.js"></script>
+  <script>
+    // ========== ROUTA PLATFORM INITIALIZATION ==========
+    (async function() {
+      Routa.Theme.load();
+      const user = await Routa.App.init({
+        requireAuth: true,
+        currentPage: 'staff.html'
+      });
+      if (!user) return;
+      console.log('Staff page initialized for:', user.role, user.edition);
+    })();
+    
+    function logout() { Routa.Auth.logout(); }
+    function toggleTheme() { Routa.Theme.toggle(); }
+  </script>
+</body>
+</html>

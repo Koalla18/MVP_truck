@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Вход — RoutoX</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://kit.fontawesome.com/a2e0e9e5a9.js" crossorigin="anonymous"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./assets/css/routox-unified.css">
+  <style>
+    * { font-family: 'Inter', sans-serif; }
+    
+    body {
+      min-height: 100vh;
+      background: #0a0f1c;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    /* Subtle gradient background */
+    .bg-gradient {
+      position: fixed;
+      inset: 0;
+      background: 
+        radial-gradient(ellipse 80% 50% at 50% -20%, rgba(59, 130, 246, 0.15), transparent),
+        radial-gradient(ellipse 60% 40% at 100% 100%, rgba(16, 185, 129, 0.1), transparent),
+        linear-gradient(180deg, #0a0f1c 0%, #111827 100%);
+    }
+
+    /* Grid pattern */
+    .grid-pattern {
+      position: fixed;
+      inset: 0;
+      background-image: 
+        linear-gradient(rgba(59, 130, 246, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(59, 130, 246, 0.03) 1px, transparent 1px);
+      background-size: 60px 60px;
+      mask-image: radial-gradient(ellipse at center, black 20%, transparent 70%);
+    }
+
+    /* Login card */
+    .login-card {
+      background: rgba(17, 24, 39, 0.8);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 
+        0 0 0 1px rgba(255, 255, 255, 0.05),
+        0 20px 50px -10px rgba(0, 0, 0, 0.5);
+    }
+
+    /* Logo */
+    .logo-icon {
+      width: 56px;
+      height: 56px;
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      font-weight: 800;
+      color: white;
+      box-shadow: 0 8px 24px rgba(59, 130, 246, 0.35);
+    }
+
+    /* Input styling */
+    .input-field {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      transition: all 0.2s ease;
+    }
+
+    .input-field:focus {
+      border-color: rgba(59, 130, 246, 0.5);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+      outline: none;
+    }
+
+    .input-field::placeholder {
+      color: #64748b;
+    }
+
+    /* Primary button */
+    .btn-primary {
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+      box-shadow: 0 4px 14px rgba(59, 130, 246, 0.4);
+      transition: all 0.2s ease;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(59, 130, 246, 0.5);
+    }
+
+    .btn-primary:active {
+      transform: translateY(0);
+    }
+
+    /* Demo card */
+    .demo-card {
+      background: rgba(15, 23, 42, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    /* Demo button */
+    .demo-btn {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      transition: all 0.2s ease;
+    }
+
+    .demo-btn:hover {
+      background: rgba(59, 130, 246, 0.1);
+      border-color: rgba(59, 130, 246, 0.3);
+    }
+
+    /* Role icons */
+    .role-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .role-owner { background: linear-gradient(135deg, #8b5cf6, #7c3aed); }
+    .role-admin { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+    .role-driver { background: linear-gradient(135deg, #10b981, #059669); }
+
+    /* Feature highlights */
+    .feature-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .feature-item:last-child {
+      border-bottom: none;
+    }
+
+    .feature-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+    }
+
+    /* Animated status dot */
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .status-dot {
+      animation: pulse 2s ease-in-out infinite;
+    }
+  </style>
+</head>
+<body>
+  <!-- Background -->
+  <div class="bg-gradient"></div>
+  <div class="grid-pattern"></div>
+
+  <!-- Main content -->
+  <div class="relative min-h-screen flex">
+    <!-- Left side - Branding (hidden on mobile) -->
+    <div class="hidden lg:flex lg:w-1/2 flex-col justify-center p-12 xl:p-20">
+      <div class="max-w-lg">
+        <!-- Logo -->
+        <div class="flex items-center gap-4 mb-8">
+          <div class="logo-icon">R</div>
+          <div>
+            <h1 class="text-2xl font-bold text-white">RoutoX</h1>
+            <p class="text-slate-400 text-sm">Управление автопарком</p>
+          </div>
+        </div>
+
+        <!-- Tagline -->
+        <h2 class="text-4xl xl:text-5xl font-bold text-white leading-tight mb-6">
+          Контроль флота<br>
+          <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400">в реальном времени</span>
+        </h2>
+
+        <p class="text-slate-400 text-lg mb-10">
+          Мониторинг транспорта, оптимизация маршрутов и полная аналитика в одной системе.
+        </p>
+
+        <!-- Features -->
+        <div class="space-y-1">
+          <div class="feature-item">
+            <div class="feature-icon bg-blue-500/20 text-blue-400">
+              <i class="fa-solid fa-location-dot"></i>
+            </div>
+            <div>
+              <div class="text-white font-medium">GPS-мониторинг</div>
+              <div class="text-slate-500 text-sm">Отслеживание в реальном времени</div>
+            </div>
+          </div>
+          <div class="feature-item">
+            <div class="feature-icon bg-emerald-500/20 text-emerald-400">
+              <i class="fa-solid fa-chart-line"></i>
+            </div>
+            <div>
+              <div class="text-white font-medium">Аналитика</div>
+              <div class="text-slate-500 text-sm">Детальные отчёты и KPI</div>
+            </div>
+          </div>
+          <div class="feature-item">
+            <div class="feature-icon bg-purple-500/20 text-purple-400">
+              <i class="fa-solid fa-bell"></i>
+            </div>
+            <div>
+              <div class="text-white font-medium">Уведомления</div>
+              <div class="text-slate-500 text-sm">Алерты о важных событиях</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="flex gap-8 mt-10 pt-8 border-t border-white/10">
+          <div>
+            <div class="text-3xl font-bold text-white">150+</div>
+            <div class="text-slate-500 text-sm">Компаний</div>
+          </div>
+          <div>
+            <div class="text-3xl font-bold text-white">5,000+</div>
+            <div class="text-slate-500 text-sm">Транспортных средств</div>
+          </div>
+          <div>
+            <div class="text-3xl font-bold text-white">99.9%</div>
+            <div class="text-slate-500 text-sm">Uptime</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right side - Login form -->
+    <div class="w-full lg:w-1/2 flex items-center justify-center p-6 lg:p-12">
+      <div class="w-full max-w-md">
+        <!-- Mobile logo -->
+        <div class="flex items-center justify-center gap-3 mb-8 lg:hidden">
+          <div class="logo-icon">R</div>
+          <div>
+            <h1 class="text-xl font-bold text-white">RoutoX</h1>
+            <p class="text-slate-400 text-xs">Управление автопарком</p>
+          </div>
+        </div>
+
+        <!-- Login card -->
+        <div class="login-card rounded-2xl p-8">
+          <div class="text-center mb-8">
+            <h2 class="text-2xl font-bold text-white mb-2">Добро пожаловать</h2>
+            <p class="text-slate-400">Войдите в свой аккаунт</p>
+          </div>
+
+          <!-- Login form -->
+          <form id="loginForm" class="space-y-5">
+            <div>
+              <label class="block text-sm font-medium text-slate-300 mb-2">Email</label>
+              <input 
+                type="email" 
+                id="email" 
+                class="input-field w-full px-4 py-3 rounded-xl text-white"
+                placeholder="name@company.com"
+                required
+              >
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-slate-300 mb-2">Пароль</label>
+              <input 
+                type="password" 
+                id="password" 
+                class="input-field w-full px-4 py-3 rounded-xl text-white"
+                placeholder="••••••••"
+                required
+              >
+            </div>
+
+            <div class="flex items-center justify-between">
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" class="rounded border-slate-600 bg-slate-800 text-blue-500 focus:ring-blue-500/20">
+                <span class="text-sm text-slate-400">Запомнить меня</span>
+              </label>
+              <a href="#forgot-password" class="text-sm text-blue-400 hover:text-blue-300 transition">
+                Забыли пароль?
+              </a>
+            </div>
+
+            <!-- Error message -->
+            <div id="error" class="hidden p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm text-center">
+              <i class="fa-solid fa-circle-exclamation mr-2"></i>
+              <span id="errorText"></span>
+            </div>
+
+            <button type="submit" class="btn-primary w-full py-3.5 rounded-xl text-white font-semibold">
+              <i class="fa-solid fa-right-to-bracket mr-2"></i>Войти
+            </button>
+          </form>
+
+          <!-- Divider -->
+          <div class="flex items-center gap-4 my-6">
+            <div class="flex-1 h-px bg-white/10"></div>
+            <span class="text-slate-500 text-sm">или</span>
+            <div class="flex-1 h-px bg-white/10"></div>
+          </div>
+
+          <!-- Demo accounts -->
+          <div class="demo-card rounded-xl p-4">
+            <div class="flex items-center gap-2 mb-4">
+              <div class="w-2 h-2 rounded-full bg-emerald-500 status-dot"></div>
+              <span class="text-sm text-slate-300 font-medium">Демо-аккаунты</span>
+            </div>
+
+            <div class="space-y-2">
+              <!-- Owner -->
+              <button type="button" class="demo-btn w-full flex items-center gap-3 p-3 rounded-lg" 
+                      onclick="fillDemo('owner@example.com', 'owner123')">
+                <div class="role-icon role-owner">
+                  <i class="fa-solid fa-crown text-white text-sm"></i>
+                </div>
+                <div class="flex-1 text-left">
+                  <div class="text-white text-sm font-medium">Владелец</div>
+                  <div class="text-slate-500 text-xs">owner@example.com</div>
+                </div>
+                <i class="fa-solid fa-chevron-right text-slate-600 text-xs"></i>
+              </button>
+
+              <!-- Admin -->
+              <button type="button" class="demo-btn w-full flex items-center gap-3 p-3 rounded-lg"
+                      onclick="fillDemo('admin@example.com', 'admin123')">
+                <div class="role-icon role-admin">
+                  <i class="fa-solid fa-user-gear text-white text-sm"></i>
+                </div>
+                <div class="flex-1 text-left">
+                  <div class="text-white text-sm font-medium">Администратор</div>
+                  <div class="text-slate-500 text-xs">admin@example.com</div>
+                </div>
+                <i class="fa-solid fa-chevron-right text-slate-600 text-xs"></i>
+              </button>
+
+              <!-- Driver -->
+              <button type="button" class="demo-btn w-full flex items-center gap-3 p-3 rounded-lg"
+                      onclick="fillDemo('driver@example.com', 'driver123')">
+                <div class="role-icon role-driver">
+                  <i class="fa-solid fa-truck text-white text-sm"></i>
+                </div>
+                <div class="flex-1 text-left">
+                  <div class="text-white text-sm font-medium">Водитель</div>
+                  <div class="text-slate-500 text-xs">driver@example.com</div>
+                </div>
+                <i class="fa-solid fa-chevron-right text-slate-600 text-xs"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="mt-6 text-center">
+          <a href="./landing.html" class="text-sm text-slate-500 hover:text-slate-300 transition">
+            <i class="fa-solid fa-arrow-left mr-1"></i>На главную
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Password Reset Modal -->
+  <div id="resetModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+    <div class="login-card rounded-2xl p-8 w-full max-w-md">
+      <div class="text-center mb-6">
+        <div class="w-14 h-14 rounded-2xl bg-blue-500/20 flex items-center justify-center mx-auto mb-4">
+          <i class="fa-solid fa-envelope text-blue-400 text-xl"></i>
+        </div>
+        <h3 class="text-xl font-bold text-white mb-2">Восстановление пароля</h3>
+        <p class="text-slate-400 text-sm">Введите email, и мы отправим инструкции для сброса пароля</p>
+      </div>
+      
+      <input type="email" id="resetEmail" 
+             class="input-field w-full px-4 py-3 rounded-xl text-white mb-4"
+             placeholder="name@company.com">
+      
+      <div id="resetSuccess" class="hidden p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm text-center mb-4">
+        <i class="fa-solid fa-check-circle mr-2"></i>
+        Инструкции отправлены на указанный email
+      </div>
+      
+      <div id="resetError" class="hidden p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm text-center mb-4">
+        <i class="fa-solid fa-circle-exclamation mr-2"></i>
+        <span id="resetErrorText"></span>
+      </div>
+      
+      <div class="flex gap-3">
+        <button onclick="closeResetModal()" class="flex-1 py-3 rounded-xl border border-white/10 text-slate-300 font-medium hover:bg-white/5 transition">
+          Отмена
+        </button>
+        <button onclick="sendResetEmail()" class="flex-1 btn-primary py-3 rounded-xl text-white font-medium">
+          Отправить
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="./assets/js/routa-core.js"></script>
+  <script>
+    // Apply theme
+    Routa.Theme.load();
+    
+    // Redirect if already authenticated
+    if (Routa.Auth.getAccessToken()) {
+      const user = Routa.Auth.getCachedUser();
+      if (user) Routa.Nav.redirectByRole(user.role);
+    }
+
+    // Fill demo credentials
+    function fillDemo(email, password) {
+      document.getElementById('email').value = email;
+      document.getElementById('password').value = password;
+      document.getElementById('error').classList.add('hidden');
+      
+      // Visual feedback
+      document.getElementById('email').classList.add('ring-2', 'ring-blue-500/50');
+      document.getElementById('password').classList.add('ring-2', 'ring-blue-500/50');
+      
+      setTimeout(() => {
+        document.getElementById('email').classList.remove('ring-2', 'ring-blue-500/50');
+        document.getElementById('password').classList.remove('ring-2', 'ring-blue-500/50');
+      }, 500);
+    }
+
+    // Login form handler
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      const errorDiv = document.getElementById('error');
+      const errorText = document.getElementById('errorText');
+      const submitBtn = e.target.querySelector('button[type="submit"]');
+      
+      // Clear old tokens
+      Routa.Auth.clearTokens();
+      
+      // Hide error, show loading
+      errorDiv.classList.add('hidden');
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>Вход...';
+      
+      try {
+        await Routa.API.login(email, password);
+        const me = await Routa.API.getMe();
+        if (me) Routa.Auth.setCachedUser(me);
+        
+        // Success feedback
+        submitBtn.innerHTML = '<i class="fa-solid fa-check mr-2"></i>Успешно!';
+        submitBtn.classList.remove('bg-gradient-to-r', 'from-blue-500', 'to-blue-600');
+        submitBtn.classList.add('bg-emerald-500');
+        
+        setTimeout(() => {
+          Routa.Nav.redirectByRole(me?.role || 'admin');
+        }, 300);
+      } catch (error) {
+        errorText.textContent = error.message;
+        errorDiv.classList.remove('hidden');
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fa-solid fa-right-to-bracket mr-2"></i>Войти';
+      }
+    });
+
+    // Forgot password
+    document.querySelector('a[href="#forgot-password"]').addEventListener('click', (e) => {
+      e.preventDefault();
+      document.getElementById('resetModal').classList.remove('hidden');
+      document.getElementById('resetModal').classList.add('flex');
+      document.getElementById('resetEmail').value = document.getElementById('email').value || '';
+      document.getElementById('resetEmail').focus();
+    });
+
+    function closeResetModal() {
+      document.getElementById('resetModal').classList.add('hidden');
+      document.getElementById('resetModal').classList.remove('flex');
+      document.getElementById('resetSuccess').classList.add('hidden');
+      document.getElementById('resetError').classList.add('hidden');
+    }
+
+    async function sendResetEmail() {
+      const email = document.getElementById('resetEmail').value;
+      const successDiv = document.getElementById('resetSuccess');
+      const errorDiv = document.getElementById('resetError');
+      
+      if (!email) {
+        document.getElementById('resetErrorText').textContent = 'Введите email';
+        errorDiv.classList.remove('hidden');
+        return;
+      }
+      
+      try {
+        await Routa.API.requestPasswordReset(email);
+        
+        // Always show success for security
+        errorDiv.classList.add('hidden');
+        successDiv.classList.remove('hidden');
+        
+        setTimeout(() => {
+          closeResetModal();
+        }, 3000);
+        
+      } catch (error) {
+        // Still show success for security
+        errorDiv.classList.add('hidden');
+        successDiv.classList.remove('hidden');
+      }
+    }
+
+    // Close modal on backdrop click
+    document.getElementById('resetModal').addEventListener('click', (e) => {
+      if (e.target === document.getElementById('resetModal')) {
+        closeResetModal();
+      }
+    });
+
+    // Close modal on Escape
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeResetModal();
+    });
+  </script>
+</body>
+</html>

@@ -103,7 +103,7 @@ def seed_demo():
             {'name': 'Scania R500 #3', 'plate': 'С003СС77', 'vin': 'VIN00000000000003', 'origin': 'Екатеринбург', 'destination': 'Челябинск', 'load_pct': 100, 'fuel_pct': 90, 'status_main': 'В пути', 'driver_idx': 2},
             {'name': 'Mercedes Actros #4', 'plate': 'Е004ЕЕ77', 'vin': 'VIN00000000000004', 'origin': 'Ростов-на-Дону', 'destination': 'Краснодар', 'load_pct': 75, 'fuel_pct': 55, 'status_main': 'В пути', 'driver_idx': 3},
             {'name': 'DAF XF #5', 'plate': 'К005КК77', 'vin': 'VIN00000000000005', 'origin': 'Самара', 'destination': 'Саратов', 'load_pct': 50, 'fuel_pct': 80, 'status_main': 'В пути', 'driver_idx': 4},
-            {'name': 'Iveco Stralis #6', 'plate': 'М006ММ77', 'vin': 'VIN00000000000006', 'origin': None, 'destination': None, 'load_pct': 0, 'fuel_pct': 95, 'status_main': 'Свободен', 'driver_idx': 5},44444444
+            {'name': 'Iveco Stralis #6', 'plate': 'М006ММ77', 'vin': 'VIN00000000000006', 'origin': None, 'destination': None, 'load_pct': 0, 'fuel_pct': 95, 'status_main': 'Свободен', 'driver_idx': 5},
             {'name': 'Renault T #7', 'plate': 'О007ОО77', 'vin': 'VIN00000000000007', 'origin': 'Воронеж', 'destination': 'Липецк', 'load_pct': 90, 'fuel_pct': 65, 'status_main': 'В пути', 'driver_idx': 6},
             {'name': 'КАМАЗ 5490 #8', 'plate': 'Р008РР77', 'vin': 'VIN00000000000008', 'origin': None, 'destination': None, 'load_pct': 0, 'fuel_pct': 100, 'status_main': 'Свободен', 'driver_idx': 7},
         ]

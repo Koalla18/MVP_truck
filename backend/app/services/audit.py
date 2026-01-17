@@ -26,3 +26,24 @@ def write_audit(
         actor_user_id=actor_user_id,
         payload=payload or {},
     )
+
+
+def record_event(
+    db: Session,
+    entity_type: str,
+    entity_id: str,
+    action: str,
+    payload: dict[str, Any] = None,
+    actor_user_id: str = None,
+    company_id: str = "default",
+):
+    """Convenience wrapper for audit logging"""
+    write_audit(
+        db,
+        company_id=company_id,
+        entity_type=entity_type,
+        entity_id=entity_id,
+        action=action,
+        actor_user_id=actor_user_id,
+        payload=payload or {},
+    )
