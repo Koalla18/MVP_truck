@@ -1,101 +1,15 @@
 <!DOCTYPE html>
-<!--
-RoutoX — Intelligent Fleet Management Dashboard
-This single-page demo recreates the described PDF layout: dark tech look, responsive grid, interactive vehicle list,
-live-ish metric jitter, mechanical status LEDs, map & alert modals, and add-vehicle form. Built with Tailwind CDN + vanilla JS.
--->
-<html lang="en">
+<html lang="ru">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Панель RoutoX</title>
-  <link rel="stylesheet" href="./assets/css/routox-unified.css">
-  <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
-  <script src="https://kit.fontawesome.com/a2e0e9e5a9.js" crossorigin="anonymous"></script>
-  <!-- Leaflet Map -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <link rel="stylesheet" href="./assets/css/style.css" />
-  <link rel="stylesheet" href="./assets/css/liquid-glass.css" />
+  <meta charset="UTF-8">
+  <meta http-equiv="refresh" content="0;url=fleet.html">
+  <title>RoutoX — Перенаправление</title>
 </head>
-<body class="min-h-screen flex flex-col">
-  <!-- Header -->
-  <header class="glass-panel mx-4 mt-4 px-6 py-4 flex items-center justify-between sticky top-4 z-30">
-    <div class="flex items-center gap-6">
-      <a href="./index.html" class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold text-lg shadow-lg">R</div>
-        <div>
-          <div class="font-semibold text-lg">RoutoX</div>
-          <div class="text-xs text-muted">Управление флотом</div>
-        </div>
-      </a>
-      <nav class="flex items-center gap-1 ml-8" id="mainNav">
-        <!-- Navigation will be populated by JS based on role -->
-      </nav>
-    </div>
-    <div class="flex items-center gap-3">
-      <div class="flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-500/15 border border-emerald-500/30">
-        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-        <span class="text-sm text-emerald-500 font-medium">Live</span>
-      </div>
-      <span class="role-badge admin" id="roleBadge">
-        <i class="fa-solid fa-user-gear"></i>
-        <span id="roleText">Администратор</span>
-      </span>
-      <button class="icon-btn" id="notifBtn">
-        <i class="fa-solid fa-bell"></i>
-        <span class="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-[10px] text-white flex items-center justify-center">3</span>
-      </button>
-      <div class="theme-toggle-track" onclick="toggleTheme()">
-        <div class="theme-toggle-thumb"></div>
-      </div>
-      <button class="icon-btn" onclick="logout()">
-        <i class="fa-solid fa-right-from-bracket"></i>
-      </button>
-    </div>
-  </header>
-
-  <!-- Quick Stats Bar -->
-  <div class="mx-4 mt-4 glass-panel p-4">
-    <div class="grid grid-cols-4 gap-4">
-      <div class="flex items-center gap-4">
-        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500/20 to-blue-600/20 flex items-center justify-center">
-          <i class="fa-solid fa-truck text-blue-500 text-xl"></i>
-        </div>
-        <div>
-          <div class="text-xs text-muted">Активные</div>
-          <div class="text-2xl font-bold" id="metricActiveFleet">—</div>
-        </div>
-      </div>
-      <div class="flex items-center gap-4">
-        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 flex items-center justify-center">
-          <i class="fa-solid fa-screwdriver-wrench text-amber-500 text-xl"></i>
-        </div>
-        <div>
-          <div class="text-xs text-muted">На ТО</div>
-          <div class="text-2xl font-bold" id="metricMaintenance">—</div>
-        </div>
-      </div>
-      <div class="flex items-center gap-4">
-        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500/20 to-green-500/20 flex items-center justify-center">
-          <i class="fa-solid fa-gauge-high text-emerald-500 text-xl"></i>
-        </div>
-        <div>
-          <div class="text-xs text-muted">Эффективность</div>
-          <div class="text-2xl font-bold" id="metricEfficiency">—</div>
-        </div>
-      </div>
-      <div class="flex items-center gap-4">
-        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500/20 to-violet-500/20 flex items-center justify-center">
-          <i class="fa-solid fa-boxes-stacked text-purple-500 text-xl"></i>
-        </div>
-        <div>
-          <div class="text-xs text-muted">Грузы в пути</div>
-          <div class="text-2xl font-bold" id="metricCargoValue">—</div>
-        </div>
-      </div>
-    </div>
-  </div>
+<body>
+  <p>Перенаправление на <a href="fleet.html">fleet.html</a>...</p>
+  <script>window.location.href = 'fleet.html';</script>
+</body>
+</html>
 
   <!-- Main Grid -->
   <main class="p-6 grid lg:grid-cols-[320px_1fr_320px] gap-4 flex-1">
@@ -1205,49 +1119,26 @@ live-ish metric jitter, mechanical status LEDs, map & alert modals, and add-vehi
     </div>
   </div>
 
+    <script src="./assets/js/routa-core.js"></script>
     <script src="./assets/js/app.js"></script>
     <script src="./assets/js/routox-unified.js"></script>
+    <script src="./assets/js/routox-ai.js"></script>
     <script>
-      // Initialize navigation and role
-      document.addEventListener('DOMContentLoaded', () => {
-        initTheme();
-        initNavigation();
-        updateRoleBadge();
+      // Apply theme immediately
+      Routa.Theme.load();
+      
+      // Initialize page with Routa
+      document.addEventListener('DOMContentLoaded', async () => {
+        const user = await Routa.App.init({
+          requireAuth: true,
+          currentPage: 'index.html'
+        });
+        if (!user) return;
       });
 
       // Logout function
       function logout() {
-        localStorage.removeItem('auth_token');
-        localStorage.removeItem('user_role');
-        localStorage.removeItem('demo_mode');
-        window.location.href = './login.html';
-      }
-
-      // Initialize navigation based on role
-      function initNavigation() {
-        const role = localStorage.getItem('user_role') || 'admin';
-        const nav = document.getElementById('mainNav');
-        const currentPage = 'index.html';
-        
-        let navItems = [];
-        
-        if (role === 'owner') {
-          navItems.push({ href: './owner.html', icon: 'fa-crown', text: 'Обзор', active: false });
-        }
-        
-        navItems = navItems.concat([
-          { href: './index.html', icon: 'fa-truck', text: 'Флот', active: true },
-          { href: './trips.html', icon: 'fa-route', text: 'Рейсы', active: false },
-          { href: './geozones.html', icon: 'fa-map-location-dot', text: 'Геозоны', active: false },
-          { href: './analytics.html', icon: 'fa-chart-line', text: 'Аналитика', active: false },
-          { href: './fuel.html', icon: 'fa-gas-pump', text: 'Топливо', active: false },
-          { href: './maintenance.html', icon: 'fa-wrench', text: 'ТО', active: false },
-          { href: './documents.html', icon: 'fa-file-lines', text: 'Документы', active: false }
-        ]);
-        
-        nav.innerHTML = navItems.map(item => 
-          `<a href="${item.href}" class="nav-pill ${item.active ? 'active' : ''}"><i class="fa-solid ${item.icon}"></i><span>${item.text}</span></a>`
-        ).join('');
+        Routa.Auth.logout();
       }
     </script>
 </body>

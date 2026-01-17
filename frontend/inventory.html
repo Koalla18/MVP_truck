@@ -1,363 +1,529 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Инвентарь · RoutoX</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Инвентарь — RoutoX</title>
+  <link rel="stylesheet" href="./assets/css/routox-unified.css">
   <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
-  <link rel="stylesheet" href="./assets/css/style.css" />
-  <script defer src="./assets/js/common.js"></script>
+  <script src="https://kit.fontawesome.com/a2e0e9e5a9.js" crossorigin="anonymous"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    .inventory-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 20px;
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+    .inventory-card:hover {
+      transform: translateY(-2px);
+      border-color: rgba(59, 130, 246, 0.4);
+      box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+    }
+    .stock-badge {
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .stock-ok { background: rgba(16, 185, 129, 0.15); color: #10b981; }
+    .stock-low { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
+    .stock-critical { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+    .stock-out { background: rgba(107, 114, 128, 0.15); color: #6b7280; }
+    .category-tab {
+      padding: 10px 20px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      transition: all 0.2s;
+      cursor: pointer;
+    }
+    .category-tab:hover {
+      background: rgba(59, 130, 246, 0.1);
+      color: #3b82f6;
+    }
+    .category-tab.active {
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      color: white;
+    }
+    .stat-value {
+      font-size: 28px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #3b82f6, #10b981);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .progress-bar {
+      height: 6px;
+      background: var(--border-color);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      border-radius: 3px;
+      transition: width 0.3s ease;
+    }
+    .progress-fill.ok { background: linear-gradient(90deg, #10b981, #34d399); }
+    .progress-fill.low { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+    .progress-fill.critical { background: linear-gradient(90deg, #ef4444, #f87171); }
+    .live-pulse { animation: pulse 2s ease-in-out infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+    .role-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+    .role-badge.admin { background: rgba(59, 130, 246, 0.15); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.3); }
+    .role-badge.owner { background: rgba(139, 92, 246, 0.15); color: #8b5cf6; border: 1px solid rgba(139, 92, 246, 0.3); }
+    .role-badge.dispatcher { background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); }
+    
+    /* Enhanced Inventory Cards */
+    .inventory-card {
+      background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 20px;
+      padding: 1.5rem;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+    }
+    .inventory-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, #3b82f6, #10b981);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    .inventory-card:hover {
+      transform: translateY(-4px);
+      border-color: rgba(59, 130, 246, 0.3);
+      box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.3);
+    }
+    .inventory-card:hover::before {
+      opacity: 1;
+    }
+    .inventory-card .card-image {
+      width: 64px;
+      height: 64px;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      transition: transform 0.3s ease;
+    }
+    .inventory-card:hover .card-image {
+      transform: scale(1.1);
+    }
+    .inventory-card .quick-actions {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      display: flex;
+      gap: 0.5rem;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    .inventory-card:hover .quick-actions {
+      opacity: 1;
+    }
+  </style>
 </head>
-<body class="min-h-screen flex flex-col">
-  <header class="glass px-6 py-5 flex flex-col gap-4 sticky top-0 z-20">
-    <div class="flex flex-wrap items-center justify-between gap-4">
-      <div class="flex flex-wrap items-center gap-4">
-        <a href="./index.html" class="flex items-center gap-3 hover:opacity-90 transition">
-          <div class="brand-mark">R</div>
-          <div>
-            <div class="text-lg font-semibold">RoutoX</div>
-            <div class="text-xs text-slate-400">Управление флотом</div>
-          </div>
-        </a>
-        <nav class="flex flex-wrap gap-2 text-sm">
-          <a href="./index.html" class="nav-pill"><i class="fa-solid fa-gauge-high"></i><span>Флот</span></a>
-          <a href="./trips.html" class="nav-pill"><i class="fa-solid fa-route"></i><span>Рейсы</span></a>
-          <a href="./geozones.html" class="nav-pill"><i class="fa-solid fa-map"></i><span>Геозоны</span></a>
-          <a href="./analytics-new.html" class="nav-pill"><i class="fa-solid fa-chart-line"></i><span>Аналитика</span></a>
-          <a href="./fuel.html" class="nav-pill"><i class="fa-solid fa-gas-pump"></i><span>Топливо</span></a>
-          <a href="./maintenance.html" class="nav-pill"><i class="fa-solid fa-wrench"></i><span>ТО</span></a>
-          <a href="./documents.html" class="nav-pill"><i class="fa-solid fa-file-lines"></i><span>Документы</span></a>
-          <a href="./inventory.html" class="nav-pill nav-pill-active"><i class="fa-solid fa-boxes-stacked"></i><span>Инвентарь</span></a>
-        </nav>
-      </div>
-      <div class="flex items-center gap-2 relative">
-        <button id="notifBtn" class="icon-button" aria-label="Уведомления">
-          <svg class="w-5 h-5 text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
-            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-          </svg>
-          <span class="notif-dot hidden"></span>
-        </button>
-        <button id="settingsBtn" class="icon-button" aria-label="Настройки">
-          <svg class="w-5 h-5 text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="3"></circle>
-            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-          </svg>
-        </button>
-        <div class="header-avatar" aria-label="Профиль">LD</div>
-        <div id="notifPanel" class="floating-panel hidden" role="dialog" aria-label="Активные уведомления">
-          <div class="panel-header">Активные уведомления</div>
-          <div class="panel-body" id="notifList"></div>
+<body class="min-h-screen">
+  <!-- Header -->
+  <header class="glass-panel mx-4 mt-4 px-6 py-4 flex items-center justify-between sticky top-4 z-30">
+    <div class="flex items-center gap-6">
+      <a href="./fleet.html" class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-emerald-500 flex items-center justify-center font-bold text-lg text-white shadow-lg">R</div>
+        <div>
+          <div class="font-semibold text-lg">RoutoX</div>
+          <div class="text-xs text-muted">Управление флотом</div>
         </div>
-        <div id="settingsPanel" class="floating-panel hidden" role="dialog" aria-label="Системные настройки">
-          <div class="panel-header">Системные настройки</div>
-          <div class="panel-body space-y-3 text-sm">
-            <label class="flex items-center justify-between gap-3">Часовой пояс
-              <select id="tzSelect" class="input-select">
-                <option value="UTC+3">UTC+3 Москва</option>
-                <option value="UTC+2">UTC+2 Калининград</option>
-                <option value="UTC+5">UTC+5 Екатеринбург</option>
-              </select>
-            </label>
-            <label class="flex items-center justify-between gap-3">Топливо в
-              <select id="fuelUnitSelect" class="input-select">
-                <option value="l">литрах</option>
-                <option value="gal">галлонах</option>
-              </select>
-            </label>
-            <label class="flex items-center justify-between gap-3">Температура
-              <select id="tempUnitSelect" class="input-select">
-                <option value="c">°C</option>
-                <option value="f">°F</option>
-              </select>
-            </label>
-            <label class="flex items-center justify-between gap-3">Оповещения
-              <select id="alertModeSelect" class="input-select">
-                <option value="push">Push + Email</option>
-                <option value="push-only">Только Push</option>
-                <option value="email">Только Email</option>
-              </select>
-            </label>
-          </div>
-        </div>
-        <label id="themeToggle" class="theme-toggle" aria-live="polite">
-          <input type="checkbox" id="themeToggleInput" aria-describedby="themeToggleHint" />
-          <span class="toggle-track">
-            <span class="toggle-icon sun"><i class="fa-solid fa-sun"></i></span>
-            <span class="toggle-icon moon"><i class="fa-solid fa-moon"></i></span>
-            <span class="toggle-thumb"></span>
-          </span>
-          <span id="themeToggleHint" class="sr-only">Переключатель темы</span>
-        </label>
-      </div>
+      </a>
+      <nav id="mainNav" class="flex items-center gap-1 ml-8">
+        <!-- Навигация заполняется динамически -->
+      </nav>
     </div>
-    <div class="flex items-center justify-between">
-      <h1 class="text-2xl font-semibold">Инвентарь</h1>
-      <span class="text-sm text-slate-400">Демо-режим (локальные данные)</span>
+    <div class="flex items-center gap-3">
+      <span class="role-badge" id="roleBadge">
+        <i class="fa-solid fa-user-gear" id="roleIcon"></i>
+        <span id="roleText">Загрузка...</span>
+      </span>
+      <a href="./notifications.html" class="icon-btn relative" title="Уведомления">
+        <i class="fa-solid fa-bell"></i>
+        <span class="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-[10px] text-white flex items-center justify-center">3</span>
+      </a>
+      <button class="icon-btn" title="Настройки">
+        <i class="fa-solid fa-gear"></i>
+      </button>
+      <div class="theme-toggle-track" onclick="toggleTheme()">
+        <div class="theme-toggle-thumb"></div>
+      </div>
+      <button class="icon-btn" onclick="logout()" title="Выход">
+        <i class="fa-solid fa-right-from-bracket"></i>
+      </button>
     </div>
   </header>
 
-  <main class="p-6 space-y-6">
-    <div class="grid xl:grid-cols-3 gap-4">
-      <div class="glass rounded-2xl p-4 space-y-3">
-        <div class="flex items-center justify-between">
-          <h2 class="text-lg font-semibold">Сводка запасов</h2>
-          <span class="text-xs text-slate-400" id="invMeta">—</span>
-        </div>
-        <div id="invSummary" class="analytics-grid"></div>
+  <!-- Main Content -->
+  <main class="p-4 max-w-7xl mx-auto">
+    <!-- Page Header -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+      <div>
+        <h1 class="text-2xl font-bold flex items-center gap-3">
+          <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center">
+            <i class="fa-solid fa-boxes-stacked text-white text-lg"></i>
+          </div>
+          Инвентарь
+        </h1>
+        <p class="text-muted text-sm mt-2">Управление запасами и комплектующими</p>
       </div>
-      <div class="glass rounded-2xl p-4 space-y-3">
-        <div class="flex items-center justify-between">
-          <h2 class="text-lg font-semibold">Резервы и критичность</h2>
-          <span class="text-xs text-slate-400">Автообновление</span>
-        </div>
-        <div id="invReserves" class="space-y-2"></div>
-      </div>
-      <div class="glass rounded-2xl p-4 space-y-3">
-        <div class="flex items-center justify-between">
-          <h2 class="text-lg font-semibold">Телеметрия датчиков</h2>
-          <span class="text-xs text-slate-400">Вкл. сигнал</span>
-        </div>
-        <div id="invSensors" class="space-y-2"></div>
+      <div class="flex gap-3">
+        <button class="btn-secondary">
+          <i class="fa-solid fa-file-export"></i>
+          Экспорт
+        </button>
+        <button class="btn-primary" onclick="openAddItemModal()">
+          <i class="fa-solid fa-plus"></i>
+          Добавить позицию
+        </button>
       </div>
     </div>
 
-    <div class="glass rounded-2xl p-4">
-      <div class="flex items-center justify-between mb-3">
-        <h2 class="text-lg font-semibold">Склад</h2>
-        <button id="addItemBtn" class="icon-button"><i class="fa-solid fa-plus"></i></button>
+    <!-- Stats Row -->
+    <div class="grid grid-cols-4 gap-4 mb-6">
+      <div class="glass-panel p-4">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 rounded-xl bg-blue-500/15 flex items-center justify-center">
+            <i class="fa-solid fa-cubes text-blue-500 text-xl"></i>
+          </div>
+          <div>
+            <div class="stat-value">247</div>
+            <div class="text-xs text-muted">Всего позиций</div>
+          </div>
+        </div>
       </div>
-      <div id="inventoryList" class="space-y-2"></div>
+      <div class="glass-panel p-4">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 rounded-xl bg-emerald-500/15 flex items-center justify-center">
+            <i class="fa-solid fa-check-circle text-emerald-500 text-xl"></i>
+          </div>
+          <div>
+            <div class="stat-value">198</div>
+            <div class="text-xs text-muted">В наличии</div>
+          </div>
+        </div>
+      </div>
+      <div class="glass-panel p-4">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 rounded-xl bg-amber-500/15 flex items-center justify-center">
+            <i class="fa-solid fa-exclamation-triangle text-amber-500 text-xl"></i>
+          </div>
+          <div>
+            <div class="stat-value">34</div>
+            <div class="text-xs text-muted">Заканчивается</div>
+          </div>
+        </div>
+      </div>
+      <div class="glass-panel p-4">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 rounded-xl bg-red-500/15 flex items-center justify-center">
+            <i class="fa-solid fa-times-circle text-red-500 text-xl"></i>
+          </div>
+          <div>
+            <div class="stat-value">15</div>
+            <div class="text-xs text-muted">Нет в наличии</div>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <div class="glass rounded-2xl p-4">
-      <div class="flex items-center justify-between mb-3">
-        <h2 class="text-lg font-semibold">История операций</h2>
-        <span class="text-xs text-slate-400">Последние заявки</span>
+    <!-- Filters & Categories -->
+    <div class="glass-panel p-4 mb-6">
+      <div class="flex flex-wrap items-center gap-4">
+        <div class="flex gap-2">
+          <button class="category-tab active" data-category="all">Все</button>
+          <button class="category-tab" data-category="parts">Запчасти</button>
+          <button class="category-tab" data-category="tires">Шины</button>
+          <button class="category-tab" data-category="fluids">Жидкости</button>
+          <button class="category-tab" data-category="tools">Инструменты</button>
+          <button class="category-tab" data-category="equipment">Оборудование</button>
+        </div>
+        <div class="flex-1"></div>
+        <div class="relative">
+          <input type="text" placeholder="Поиск..." class="input-field w-64 pl-10 rounded-xl">
+          <i class="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-muted"></i>
+        </div>
+        <select class="input-field rounded-xl">
+          <option>По наличию</option>
+          <option>По названию</option>
+          <option>По категории</option>
+          <option>По дате</option>
+        </select>
       </div>
-      <div id="inventoryLog" class="space-y-2"></div>
+    </div>
+
+    <!-- Inventory Grid -->
+    <div class="grid grid-cols-3 gap-4" id="inventoryGrid">
+      <!-- Items will be rendered here -->
     </div>
   </main>
 
-  <div id="itemModal" class="modal fixed inset-0 hidden items-center justify-center z-40">
-    <div class="glass rounded-2xl p-6 w-[90%] max-w-md border border-slate-700 relative fade-in">
-      <button class="absolute top-3 right-3 text-slate-400 hover:text-white" onclick="toggle(false)"><i class="fa-solid fa-xmark"></i></button>
-      <h3 class="text-lg font-semibold mb-3 flex items-center gap-2"><i class="fa-solid fa-box"></i> Добавить позицию</h3>
-      <form id="itemForm" class="space-y-3">
+  <!-- Add Item Modal -->
+  <div id="addItemModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden items-center justify-center">
+    <div class="glass-panel p-6 w-full max-w-lg mx-4" onclick="event.stopPropagation()">
+      <div class="flex items-center justify-between mb-6">
+        <h3 class="text-xl font-bold">Добавить позицию</h3>
+        <button onclick="closeAddItemModal()" class="icon-btn">
+          <i class="fa-solid fa-times"></i>
+        </button>
+      </div>
+      <form id="addItemForm" class="space-y-4">
         <div>
-          <label class="text-sm text-slate-300">Название</label>
-          <input required name="name" class="mt-1 w-full rounded-lg bg-slate-800 border border-slate-700 px-3 py-2" />
+          <label class="block text-sm font-medium mb-2">Название</label>
+          <input type="text" class="input-field w-full rounded-xl" placeholder="Масло моторное 5W-40" required>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium mb-2">Категория</label>
+            <select class="input-field w-full rounded-xl">
+              <option>Запчасти</option>
+              <option>Шины</option>
+              <option>Жидкости</option>
+              <option>Инструменты</option>
+              <option>Оборудование</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-2">Артикул</label>
+            <input type="text" class="input-field w-full rounded-xl" placeholder="MOT-5W40-5L">
+          </div>
+        </div>
+        <div class="grid grid-cols-3 gap-4">
+          <div>
+            <label class="block text-sm font-medium mb-2">Количество</label>
+            <input type="number" class="input-field w-full rounded-xl" placeholder="0" min="0">
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-2">Мин. запас</label>
+            <input type="number" class="input-field w-full rounded-xl" placeholder="10" min="0">
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-2">Цена</label>
+            <input type="number" class="input-field w-full rounded-xl" placeholder="₽ 0">
+          </div>
         </div>
         <div>
-          <label class="text-sm text-slate-300">Количество</label>
-          <input required type="number" min="0" name="qty" class="mt-1 w-full rounded-lg bg-slate-800 border border-slate-700 px-3 py-2" />
+          <label class="block text-sm font-medium mb-2">Склад</label>
+          <select class="input-field w-full rounded-xl">
+            <option>Основной склад</option>
+            <option>Склад Москва-Юг</option>
+            <option>Склад СПб</option>
+          </select>
         </div>
-        <div>
-          <label class="text-sm text-slate-300">Статус</label>
-          <input name="status" class="mt-1 w-full rounded-lg bg-slate-800 border border-slate-700 px-3 py-2" placeholder="Резерв / Онлайн" />
+        <div class="flex gap-3 pt-4">
+          <button type="button" onclick="closeAddItemModal()" class="flex-1 btn-secondary">Отмена</button>
+          <button type="submit" class="flex-1 btn-primary">Добавить</button>
         </div>
-        <button class="w-full mt-2 bg-emerald-600 hover:bg-emerald-500 rounded-lg py-2 font-semibold">Сохранить</button>
       </form>
     </div>
   </div>
 
-  <script src="https://kit.fontawesome.com/a2e0e9e5a9.js" crossorigin="anonymous"></script>
+  <script src="./assets/js/routa-core.js"></script>
+  <script src="./assets/js/routox-unified.js"></script>
+  <script src="./assets/js/routox-ai.js"></script>
   <script>
-    const STORAGE_KEY = "routox-inventory";
-    const defaultItems = [
-      { name: "Датчики (температура)", qty: 42, status: "Работают" },
-      { name: "Камеры кабины", qty: 18, status: "HD 1080p" },
-      { name: "Шины зимние", qty: 64, status: "Склад 3" },
-      { name: "ЗИП · ремни", qty: 120, status: "Резерв" },
-      { name: "Топливо резерв", qty: 3100, status: "Литры" }
+    // Sample inventory data
+    const inventory = [
+      { id: 1, name: 'Масло моторное 5W-40', category: 'fluids', sku: 'MOT-5W40-5L', quantity: 45, minStock: 20, price: 3500, status: 'ok' },
+      { id: 2, name: 'Фильтр масляный', category: 'parts', sku: 'FIL-OIL-001', quantity: 8, minStock: 15, price: 850, status: 'low' },
+      { id: 3, name: 'Шина 315/70 R22.5', category: 'tires', sku: 'TIR-315-70', quantity: 24, minStock: 10, price: 28500, status: 'ok' },
+      { id: 4, name: 'Антифриз G12+', category: 'fluids', sku: 'ANT-G12-10L', quantity: 0, minStock: 5, price: 1200, status: 'out' },
+      { id: 5, name: 'Колодки тормозные', category: 'parts', sku: 'BRK-PAD-001', quantity: 3, minStock: 8, price: 4500, status: 'critical' },
+      { id: 6, name: 'Лампа H7 12V', category: 'parts', sku: 'LMP-H7-12V', quantity: 56, minStock: 20, price: 350, status: 'ok' },
+      { id: 7, name: 'Ключ накидной 32мм', category: 'tools', sku: 'TLS-KEY-32', quantity: 12, minStock: 5, price: 1100, status: 'ok' },
+      { id: 8, name: 'Домкрат гидравлический', category: 'equipment', sku: 'EQP-JACK-20T', quantity: 4, minStock: 3, price: 15000, status: 'ok' },
+      { id: 9, name: 'Ремень генератора', category: 'parts', sku: 'BLT-GEN-001', quantity: 2, minStock: 5, price: 2200, status: 'critical' },
+      { id: 10, name: 'Жидкость тормозная DOT4', category: 'fluids', sku: 'BRK-DOT4-1L', quantity: 18, minStock: 10, price: 650, status: 'ok' },
+      { id: 11, name: 'Фильтр воздушный', category: 'parts', sku: 'FIL-AIR-001', quantity: 22, minStock: 10, price: 1800, status: 'ok' },
+      { id: 12, name: 'Компрессор для накачки', category: 'equipment', sku: 'EQP-COMP-12V', quantity: 6, minStock: 3, price: 8500, status: 'ok' },
     ];
-    const clamp = (v, min = 0, max = 100) => Math.max(min, Math.min(max, v));
 
-    function loadItems() {
-      try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (!raw) return defaultItems;
-        const parsed = JSON.parse(raw);
-        return Array.isArray(parsed) ? parsed : defaultItems;
-      } catch (e) {
-        return defaultItems;
-      }
-    }
+    const categoryIcons = {
+      parts: 'fa-cogs',
+      tires: 'fa-circle',
+      fluids: 'fa-droplet',
+      tools: 'fa-wrench',
+      equipment: 'fa-toolbox'
+    };
 
-    function saveItems(items) { localStorage.setItem(STORAGE_KEY, JSON.stringify(items)); }
+    const categoryNames = {
+      parts: 'Запчасти',
+      tires: 'Шины',
+      fluids: 'Жидкости',
+      tools: 'Инструменты',
+      equipment: 'Оборудование'
+    };
 
-    function render(items) {
-      const list = document.getElementById("inventoryList");
-      if (!list) return;
-      list.innerHTML = items
-        .map((i, idx) => `
-          <div class="inventory-item">
-            <div>
-              <div class="font-semibold">${i.name}</div>
-              <div class="text-xs text-slate-400">${i.status || ""}</div>
-            </div>
-            <div class="flex items-center gap-2">
-              <span class="pill-muted">${i.qty}</span>
-              <button class="text-red-300 text-xs" data-remove="${idx}">✕</button>
-            </div>
-          </div>`)
-        .join("");
-    }
+    const statusConfig = {
+      ok: { class: 'stock-ok', text: 'В наличии', progressClass: 'ok' },
+      low: { class: 'stock-low', text: 'Заканчивается', progressClass: 'low' },
+      critical: { class: 'stock-critical', text: 'Критично', progressClass: 'critical' },
+      out: { class: 'stock-out', text: 'Нет в наличии', progressClass: 'critical' }
+    };
 
-    function renderSummary(items) {
-      const grid = document.getElementById("invSummary");
-      const meta = document.getElementById("invMeta");
-      if (!grid) return;
-      const totalQty = items.reduce((s, i) => s + Number(i.qty || 0), 0);
-      const reserves = items.filter((i) => (i.status || "").toLowerCase().includes("резерв"));
-      const critical = items.filter((i) => Number(i.qty || 0) < 20);
-      const cards = [
-        { title: "Позиций", value: items.length, bar: clamp((items.length / 20) * 100, 5, 100) },
-        { title: "Всего ед.", value: totalQty, bar: clamp((totalQty / 4000) * 100, 5, 100) },
-        { title: "Резерв", value: `${reserves.length} поз.`, bar: clamp((reserves.length / Math.max(items.length, 1)) * 100, 5, 100) },
-        { title: "Критично", value: `${critical.length} поз.`, bar: clamp((critical.length / Math.max(items.length, 1)) * 100, 5, 100) }
-      ];
-      grid.innerHTML = cards
-        .map((c) => `
-          <div class="analytics-card">
-            <div class="flex items-center justify-between">
-              <div class="text-sm text-slate-300 font-semibold">${c.title}</div>
-              <div class="text-xs pill-muted">live</div>
-            </div>
-            <div class="text-2xl font-semibold mt-1">${c.value}</div>
-            <div class="analytics-bar"><span style="width:${clamp(c.bar, 6, 100)}%"></span></div>
-          </div>`)
-        .join("");
-      if (meta) meta.textContent = `${items.length} позиций · ${totalQty} ед.`;
-    }
+    let currentCategory = 'all';
 
-    function renderReserves(items) {
-      const wrap = document.getElementById("invReserves");
-      if (!wrap) return;
-      const sorted = [...items]
-        .sort((a, b) => Number(a.qty || 0) - Number(b.qty || 0))
-        .slice(0, 4);
-      wrap.innerHTML = sorted
-        .map((i) => {
-          const health = clamp((Number(i.qty || 0) / 120) * 100, 4, 100);
-          const status = (i.status || "").toLowerCase();
-          const tone = status.includes("резерв") ? "text-amber-300" : "text-slate-400";
-          return `
-            <div class="rounded-xl border border-slate-800 p-3 bg-slate-900/35 space-y-1">
-              <div class="flex items-center justify-between text-sm font-semibold">
-                <span>${i.name}</span>
-                <span class="pill-muted">${i.qty}</span>
-              </div>
-              <div class="text-xs ${tone}">${i.status || "—"}</div>
-              <div class="progress mt-1"><span style="width:${health}%"></span></div>
-            </div>`;
-        })
-        .join("");
-    }
+    function renderInventory(category = 'all') {
+      const grid = document.getElementById('inventoryGrid');
+      let filtered = category === 'all' ? inventory : inventory.filter(i => i.category === category);
 
-    function renderSensors() {
-      const wrap = document.getElementById("invSensors");
-      if (!wrap) return;
-      const sensors = [
-        { name: "Температура рефриж.", value: "+4.3°C", level: "ok" },
-        { name: "Давление шин", value: "Норма", level: "ok" },
-        { name: "Камеры 1080p", value: "18 актив.", level: "warn" },
-        { name: "GPS датчики", value: "2 вне сети", level: "danger" }
-      ];
-      wrap.innerHTML = sensors
-        .map((s) => {
-          const color = s.level === "danger" ? "text-red-400" : s.level === "warn" ? "text-amber-300" : "text-emerald-300";
-          return `
-            <div class="inventory-item">
-              <div>
-                <div class="font-semibold">${s.name}</div>
-                <div class="text-xs text-slate-400">Сигнал</div>
-              </div>
-              <span class="text-sm font-semibold ${color}">${s.value}</span>
-            </div>`;
-        })
-        .join("");
-    }
-
-    function renderLog(items) {
-      const wrap = document.getElementById("inventoryLog");
-      if (!wrap) return;
-      const events = [
-        { title: "Отгрузка шин", meta: "-12 шт · Склад 3" },
-        { title: "Датчики температуры", meta: "+10 шт · Холод" },
-        { title: "Топливо резерв", meta: "+800 л · Заправка" },
-        { title: "Камеры кабины", meta: "-2 шт · Сервис" }
-      ];
-      wrap.innerHTML = events
-        .map((e) => `
-          <div class="rounded-xl border border-slate-800 p-3 bg-slate-900/35 flex items-center justify-between">
-            <div>
-              <div class="font-semibold text-sm">${e.title}</div>
-              <div class="text-xs text-slate-400">${e.meta}</div>
-            </div>
-            <span class="pill-muted">${new Date().toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}</span>
-          </div>`)
-        .join("");
-    }
-
-    function updateAll() {
-      render(state.items);
-      renderSummary(state.items);
-      renderReserves(state.items);
-      renderSensors();
-      renderLog(state.items);
-    }
-
-    function toggle(show) {
-      const modal = document.getElementById("itemModal");
-      if (!modal) return;
-      modal.classList.toggle("hidden", !show);
-      modal.classList.toggle("flex", show);
-    }
-
-    const state = { items: [] };
-
-    window.addEventListener("DOMContentLoaded", async () => {
-      const { token } = await window.RoutoxCommon.requireAuth({ allowRoles: ["admin", "owner"] });
-      if (!token) return;
-
-      await window.RoutoxCommon.initHeaderPanels(token);
-
-      state.items = loadItems();
-      updateAll();
-
-      const addBtn = document.getElementById("addItemBtn");
-      if (addBtn) addBtn.onclick = () => toggle(true);
-
-      const form = document.getElementById("itemForm");
-      if (form) {
-        form.onsubmit = (e) => {
-          e.preventDefault();
-          const data = new FormData(e.target);
-          state.items.unshift({ name: data.get("name"), qty: Number(data.get("qty") || 0), status: data.get("status") });
-          saveItems(state.items);
-          updateAll();
-          toggle(false);
-          e.target.reset();
+      grid.innerHTML = filtered.map(item => {
+        const status = statusConfig[item.status];
+        const stockPercent = item.minStock > 0 ? Math.min(100, (item.quantity / item.minStock) * 50) : 100;
+        const categoryColors = {
+          parts: { bg: 'from-blue-500/20 to-blue-600/10', icon: 'text-blue-500' },
+          tires: { bg: 'from-slate-500/20 to-slate-600/10', icon: 'text-slate-400' },
+          fluids: { bg: 'from-cyan-500/20 to-cyan-600/10', icon: 'text-cyan-500' },
+          tools: { bg: 'from-amber-500/20 to-amber-600/10', icon: 'text-amber-500' },
+          equipment: { bg: 'from-purple-500/20 to-purple-600/10', icon: 'text-purple-500' }
         };
-      }
+        const colors = categoryColors[item.category] || categoryColors.parts;
+        
+        return `
+          <div class="inventory-card" onclick="viewItem(${item.id})">
+            <div class="quick-actions">
+              <button class="icon-btn w-8 h-8 bg-blue-500/20" onclick="event.stopPropagation(); editItem(${item.id})" title="Редактировать">
+                <i class="fa-solid fa-pen text-blue-500 text-xs"></i>
+              </button>
+              <button class="icon-btn w-8 h-8 bg-emerald-500/20" onclick="event.stopPropagation(); orderItem(${item.id})" title="Заказать">
+                <i class="fa-solid fa-cart-plus text-emerald-500 text-xs"></i>
+              </button>
+            </div>
+            <div class="flex items-start gap-4 mb-4">
+              <div class="card-image bg-gradient-to-br ${colors.bg}">
+                <i class="fa-solid ${categoryIcons[item.category]} ${colors.icon}"></i>
+              </div>
+              <div class="flex-1 min-w-0">
+                <h3 class="font-semibold text-base mb-1 truncate">${item.name}</h3>
+                <p class="text-xs text-muted flex items-center gap-2">
+                  <span class="px-2 py-0.5 bg-slate-500/20 rounded-md">${item.sku}</span>
+                  <span>${categoryNames[item.category]}</span>
+                </p>
+              </div>
+            </div>
+            <div class="flex items-center justify-between mb-2">
+              <span class="stock-badge ${status.class}">
+                <i class="fa-solid ${item.status === 'ok' ? 'fa-check' : item.status === 'out' ? 'fa-xmark' : 'fa-exclamation'} text-[10px]"></i>
+                ${status.text}
+              </span>
+              <span class="text-lg font-bold">${item.quantity} <span class="text-xs text-muted font-normal">шт</span></span>
+            </div>
+            <div class="progress-bar mb-3">
+              <div class="progress-fill ${status.progressClass}" style="width: ${stockPercent}%"></div>
+            </div>
+            <div class="flex items-center justify-between text-sm pt-3 border-t border-white/5">
+              <div class="flex items-center gap-2 text-muted">
+                <i class="fa-solid fa-layer-group text-xs"></i>
+                <span>Мин: ${item.minStock}</span>
+              </div>
+              <span class="font-bold text-emerald-500">₽${item.price.toLocaleString()}</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
 
-      const list = document.getElementById("inventoryList");
-      if (list) {
-        list.onclick = (e) => {
-          const btn = e.target.closest("[data-remove]");
-          if (!btn) return;
-          const idx = Number(btn.dataset.remove);
-          state.items.splice(idx, 1);
-          saveItems(state.items);
-          updateAll();
-        };
-      }
+    function editItem(id) {
+      const item = inventory.find(i => i.id === id);
+      if (item) showNotification(`Редактирование: ${item.name}`, 'info');
+    }
 
-      document.getElementById("itemModal")?.addEventListener("click", (e) => {
-        if (e.target.id === "itemModal") toggle(false);
+    function orderItem(id) {
+      const item = inventory.find(i => i.id === id);
+      if (item) showNotification(`Добавлено в заказ: ${item.name}`, 'success');
+    }
+
+    function viewItem(id) {
+      const item = inventory.find(i => i.id === id);
+      if (item) {
+        showNotification(`Открыт товар: ${item.name}`, 'info');
+      }
+    }
+
+    function openAddItemModal() {
+      document.getElementById('addItemModal').classList.remove('hidden');
+      document.getElementById('addItemModal').classList.add('flex');
+    }
+
+    function closeAddItemModal() {
+      document.getElementById('addItemModal').classList.add('hidden');
+      document.getElementById('addItemModal').classList.remove('flex');
+    }
+
+    // Category tabs
+    document.querySelectorAll('.category-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.category-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        currentCategory = tab.dataset.category;
+        renderInventory(currentCategory);
       });
     });
+
+    // Form submit
+    document.getElementById('addItemForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      showNotification('Позиция добавлена', 'success');
+      closeAddItemModal();
+    });
+
+    // Close modal on backdrop
+    document.getElementById('addItemModal').addEventListener('click', (e) => {
+      if (e.target === document.getElementById('addItemModal')) {
+        closeAddItemModal();
+      }
+    });
+
+    // Notification
+    function showNotification(message, type = 'success') {
+      const colors = { success: 'emerald', error: 'red', warning: 'amber', info: 'blue' };
+      const icons = { success: 'check', error: 'xmark', warning: 'exclamation', info: 'info' };
+      const notif = document.createElement('div');
+      notif.className = `fixed bottom-4 right-4 glass-panel px-4 py-3 flex items-center gap-3 z-50`;
+      notif.innerHTML = `
+        <div class="w-8 h-8 rounded-lg bg-${colors[type]}-500/20 flex items-center justify-center">
+          <i class="fa-solid fa-${icons[type]} text-${colors[type]}-500"></i>
+        </div>
+        <span class="font-medium">${message}</span>
+      `;
+      document.body.appendChild(notif);
+      setTimeout(() => {
+        notif.style.opacity = '0';
+        setTimeout(() => notif.remove(), 300);
+      }, 3000);
+    }
+
+    // ========== ROUTA PLATFORM INITIALIZATION ==========
+    (async function() {
+      Routa.Theme.load();
+      const user = await Routa.App.init({
+        requireAuth: true,
+        currentPage: 'inventory.html'
+      });
+      if (!user) return;
+      console.log('Inventory page initialized for:', user.role, user.edition);
+      renderInventory();
+    })();
+    
+    function logout() { Routa.Auth.logout(); }
+    function toggleTheme() { Routa.Theme.toggle(); }
   </script>
 </body>
 </html>

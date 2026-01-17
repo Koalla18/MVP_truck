@@ -497,6 +497,30 @@ alembic downgrade -1
 
 ## 🚀 Развертывание
 
+### Development (без Docker)
+
+1. **Backend**:
+```bash
+cd backend
+python -m venv .venv
+..venv\Scripts\activate   # Windows
+source .venv/bin/activate       # macOS/Linux
+pip install -r requirements.txt
+python run_local.py --seed
+```
+
+2. **Frontend**:
+```bash
+cd frontend
+python -m http.server 3000
+```
+
+Сервисы будут доступны:
+- Backend API: `http://localhost:8000`
+- Frontend: `http://localhost:3000`
+- Swagger: `http://localhost:8000/docs`
+- Metrics: `http://localhost:8000/metrics`
+
 ### Development (Docker Compose)
 
 1. **Клонирование репозитория**:
@@ -561,16 +585,10 @@ CORS_ORIGINS=["https://routox.company.com"]
 
 ## 🧪 Тестирование
 
-### Backend (to be implemented)
+### Backend
 ```bash
-# Unit tests
-pytest tests/unit/
-
-# Integration tests
-pytest tests/integration/
-
-# E2E tests
-pytest tests/e2e/
+cd backend
+pytest tests/ -v --tb=short
 ```
 
 ### Frontend (to be implemented)
@@ -698,6 +716,6 @@ Example: feat(vehicles): add real-time telemetry endpoint
 
 ---
 
-**Последнее обновление**: 21 декабря 2025 г.
+**Последнее обновление**: 17 января 2026 г.
 **Версия документации**: 1.0.0
 **Статус проекта**: Prototype / MVP Stage

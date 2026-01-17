@@ -19,6 +19,10 @@
     .progress-ring-circle { transition: stroke-dashoffset 0.5s ease; }
     .trans-row { transition: all 0.2s ease; border-radius: 8px; }
     .trans-row:hover { background: rgba(59, 130, 246, 0.08); }
+    .role-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+    .role-badge.admin { background: rgba(59, 130, 246, 0.15); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.3); }
+    .role-badge.owner { background: rgba(139, 92, 246, 0.15); color: #8b5cf6; border: 1px solid rgba(139, 92, 246, 0.3); }
+    .role-badge.dispatcher { background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); }
   </style>
 </head>
 <body class="min-h-screen">
@@ -33,21 +37,22 @@
         </div>
       </a>
       <nav id="mainNav" class="flex items-center gap-1 ml-8">
-        <!-- Navigation populated by JS -->
+        <!-- Навигация заполняется динамически -->
       </nav>
     </div>
     <div class="flex items-center gap-3">
-      <span class="role-badge admin" id="roleBadge">
-        <i class="fa-solid fa-user-gear"></i>
-        <span id="roleText">Администратор</span>
+      <span class="role-badge" id="roleBadge">
+        <i class="fa-solid fa-user-gear" id="roleIcon"></i>
+        <span id="roleText">Загрузка...</span>
       </span>
+      <button class="icon-btn" title="Настройки"><i class="fa-solid fa-gear text-muted"></i></button>
       <div class="theme-toggle-track" onclick="toggleTheme()">
         <div class="theme-toggle-thumb"></div>
       </div>
-      <button class="icon-btn" title="Уведомления">
+      <a href="./notifications.html" class="icon-btn relative" title="Уведомления">
         <i class="fa-solid fa-bell text-muted"></i>
         <span class="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center font-bold">2</span>
-      </button>
+      </a>
       <button class="icon-btn" title="Выход" onclick="logout()"><i class="fa-solid fa-right-from-bracket text-muted"></i></button>
     </div>
   </header>
@@ -446,46 +451,24 @@
       </tr>
     `).join('');
 
-    // Role management
-    document.addEventListener('DOMContentLoaded', () => {
-      initNavigation('fuel');
-      if (typeof updateRoleBadge === 'function') updateRoleBadge();
-    });
-
-    // Initialize navigation based on role
-    function initNavigation(currentPage) {
-      const role = localStorage.getItem('user_role') || 'admin';
-      const nav = document.getElementById('mainNav');
-      
-      let navItems = [];
-      
-      if (role === 'owner') {
-        navItems.push({ href: './owner.html', icon: 'fa-crown', text: 'Обзор', page: 'owner' });
-      }
-      
-      navItems = navItems.concat([
-        { href: './index.html', icon: 'fa-truck', text: 'Флот', page: 'index' },
-        { href: './trips.html', icon: 'fa-route', text: 'Рейсы', page: 'trips' },
-        { href: './geozones.html', icon: 'fa-map-location-dot', text: 'Геозоны', page: 'geozones' },
-        { href: './analytics.html', icon: 'fa-chart-line', text: 'Аналитика', page: 'analytics' },
-        { href: './fuel.html', icon: 'fa-gas-pump', text: 'Топливо', page: 'fuel' },
-        { href: './maintenance.html', icon: 'fa-wrench', text: 'ТО', page: 'maintenance' },
-        { href: './documents.html', icon: 'fa-file-lines', text: 'Документы', page: 'documents' }
-      ]);
-      
-      nav.innerHTML = navItems.map(item => 
-        `<a href="${item.href}" class="nav-pill ${item.page === currentPage ? 'active' : ''}"><i class="fa-solid ${item.icon}"></i><span>${item.text}</span></a>`
-      ).join('');
-    }
-
-    // Logout function
-    function logout() {
-      localStorage.removeItem('auth_token');
-      localStorage.removeItem('user_role');
-      localStorage.removeItem('demo_mode');
-      window.location.href = './login.html';
-    }
   </script>
+  <script src="./assets/js/routa-core.js"></script>
   <script src="./assets/js/routox-unified.js"></script>
+  <script src="./assets/js/routox-ai.js"></script>
+  <script>
+    // ========== ROUTA PLATFORM INITIALIZATION ==========
+    (async function() {
+      Routa.Theme.load();
+      const user = await Routa.App.init({
+        requireAuth: true,
+        currentPage: 'fuel.html'
+      });
+      if (!user) return;
+      console.log('Fuel page initialized for:', user.role, user.edition);
+    })();
+    
+    function logout() { Routa.Auth.logout(); }
+    function toggleTheme() { Routa.Theme.toggle(); }
+  </script>
 </body>
 </html>

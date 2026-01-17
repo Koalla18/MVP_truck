@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SaaS Admin — Routa Platform</title>
+  <link rel="stylesheet" href="./assets/css/routox-unified.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { font-family: 'Inter', sans-serif; }
+    
+    .sidebar {
+      width: 260px;
+      background: var(--bg-secondary);
+      border-right: 1px solid var(--border-color);
+      height: 100vh;
+      position: fixed;
+      left: 0;
+      top: 0;
+      display: flex;
+      flex-direction: column;
+      z-index: 50;
+    }
+
+    .main-content {
+      margin-left: 260px;
+      min-height: 100vh;
+      background: var(--bg-primary);
+    }
+
+    .sidebar-link {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 20px;
+      color: var(--text-secondary);
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.2s;
+      border-left: 3px solid transparent;
+    }
+
+    .sidebar-link:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+
+    .sidebar-link.active {
+      background: rgba(59, 130, 246, 0.1);
+      color: #3b82f6;
+      border-left-color: #3b82f6;
+    }
+
+    .sidebar-link i {
+      width: 20px;
+      text-align: center;
+    }
+
+    .metric-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 24px;
+      transition: all 0.3s;
+    }
+
+    .metric-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+
+    .metric-value {
+      font-size: 32px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #3b82f6, #10b981);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .tenant-row {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr 1fr 80px;
+      gap: 16px;
+      align-items: center;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border-color);
+      transition: all 0.2s;
+    }
+
+    .tenant-row:hover {
+      background: var(--bg-hover);
+    }
+
+    .edition-badge {
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .edition-routal { background: rgba(16, 185, 129, 0.15); color: #10b981; }
+    .edition-routat { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
+    .edition-routax { background: rgba(59, 130, 246, 0.15); color: #3b82f6; }
+    .edition-routaf { background: rgba(139, 92, 246, 0.15); color: #8b5cf6; }
+    .edition-routae { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+
+    .status-active { color: #10b981; }
+    .status-trial { color: #f59e0b; }
+    .status-suspended { color: #ef4444; }
+
+    .search-input {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 10px 16px 10px 40px;
+      width: 300px;
+      color: var(--text-primary);
+      transition: all 0.2s;
+    }
+
+    .search-input:focus {
+      outline: none;
+      border-color: var(--brand-blue);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    .tab-nav {
+      display: flex;
+      gap: 4px;
+      padding: 4px;
+      background: var(--bg-card);
+      border-radius: 12px;
+      border: 1px solid var(--border-color);
+    }
+
+    .tab-nav button {
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .tab-nav button:hover {
+      color: var(--text-primary);
+    }
+
+    .tab-nav button.active {
+      background: var(--gradient-primary);
+      color: white;
+    }
+  </style>
+  <script>
+    // Применяем тему до загрузки
+    (function() {
+      const theme = localStorage.getItem("routa_theme") || localStorage.getItem("routox_theme");
+      if (theme) {
+        try {
+          const parsed = JSON.parse(theme);
+          document.documentElement.setAttribute("data-theme", parsed);
+        } catch {
+          document.documentElement.setAttribute("data-theme", theme);
+        }
+      }
+    })();
+  </script>
+</head>
+<body>
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="p-6 border-b border-[var(--border-color)]">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-rose-500 to-rose-600 flex items-center justify-center text-white font-bold">
+          <i class="fa-solid fa-shield-halved"></i>
+        </div>
+        <div>
+          <div class="font-semibold">SaaS Admin</div>
+          <div class="text-xs text-[var(--text-muted)]">Routa Platform</div>
+        </div>
+      </div>
+    </div>
+
+    <nav class="flex-1 py-4">
+      <a href="./saas-tenants.html" class="sidebar-link active">
+        <i class="fa-solid fa-building"></i>
+        <span>Тенанты</span>
+      </a>
+      <a href="./saas-billing.html" class="sidebar-link">
+        <i class="fa-solid fa-credit-card"></i>
+        <span>Биллинг</span>
+      </a>
+      <a href="./saas-usage.html" class="sidebar-link">
+        <i class="fa-solid fa-chart-bar"></i>
+        <span>Usage</span>
+      </a>
+      <a href="./saas-audit.html" class="sidebar-link">
+        <i class="fa-solid fa-clipboard-list"></i>
+        <span>Audit Logs</span>
+      </a>
+      <a href="./saas-features.html" class="sidebar-link">
+        <i class="fa-solid fa-toggle-on"></i>
+        <span>Feature Flags</span>
+      </a>
+      <a href="./saas-support.html" class="sidebar-link">
+        <i class="fa-solid fa-headset"></i>
+        <span>Support Tools</span>
+      </a>
+    </nav>
+
+    <div class="p-4 border-t border-[var(--border-color)]">
+      <div class="flex items-center gap-3 px-4 py-3 rounded-xl bg-[var(--bg-card)]">
+        <div class="w-8 h-8 rounded-full bg-gradient-to-br from-rose-500 to-rose-600 flex items-center justify-center text-white text-sm">
+          <i class="fa-solid fa-user"></i>
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="text-sm font-medium truncate" id="adminName">Platform Admin</div>
+          <div class="text-xs text-[var(--text-muted)]">platform@example.com</div>
+        </div>
+        <button onclick="logout()" class="text-[var(--text-muted)] hover:text-[var(--text-primary)]">
+          <i class="fa-solid fa-right-from-bracket"></i>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <!-- Header -->
+    <header class="sticky top-0 z-40 bg-[var(--bg-primary)] border-b border-[var(--border-color)] px-8 py-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <h1 class="text-2xl font-bold">Тенанты</h1>
+          <p class="text-[var(--text-secondary)] text-sm">Управление компаниями на платформе</p>
+        </div>
+        <div class="flex items-center gap-4">
+          <div class="relative">
+            <i class="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]"></i>
+            <input type="text" placeholder="Поиск компаний..." class="search-input" id="searchInput">
+          </div>
+          <div class="theme-toggle-track" onclick="toggleTheme()">
+            <div class="theme-toggle-thumb"></div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Content -->
+    <div class="p-8">
+      <!-- Metrics -->
+      <div class="grid grid-cols-4 gap-6 mb-8">
+        <div class="metric-card">
+          <div class="flex items-center justify-between mb-4">
+            <div class="w-12 h-12 rounded-xl bg-blue-500/15 flex items-center justify-center">
+              <i class="fa-solid fa-building text-blue-500 text-xl"></i>
+            </div>
+            <span class="text-emerald-500 text-sm font-medium">+12%</span>
+          </div>
+          <div class="metric-value" id="totalTenants">47</div>
+          <div class="text-[var(--text-secondary)] text-sm mt-1">Всего тенантов</div>
+        </div>
+
+        <div class="metric-card">
+          <div class="flex items-center justify-between mb-4">
+            <div class="w-12 h-12 rounded-xl bg-emerald-500/15 flex items-center justify-center">
+              <i class="fa-solid fa-check-circle text-emerald-500 text-xl"></i>
+            </div>
+            <span class="text-emerald-500 text-sm font-medium">+8%</span>
+          </div>
+          <div class="metric-value" id="activeTenants">41</div>
+          <div class="text-[var(--text-secondary)] text-sm mt-1">Активных</div>
+        </div>
+
+        <div class="metric-card">
+          <div class="flex items-center justify-between mb-4">
+            <div class="w-12 h-12 rounded-xl bg-amber-500/15 flex items-center justify-center">
+              <i class="fa-solid fa-hourglass-half text-amber-500 text-xl"></i>
+            </div>
+          </div>
+          <div class="metric-value" id="trialTenants">6</div>
+          <div class="text-[var(--text-secondary)] text-sm mt-1">На триале</div>
+        </div>
+
+        <div class="metric-card">
+          <div class="flex items-center justify-between mb-4">
+            <div class="w-12 h-12 rounded-xl bg-purple-500/15 flex items-center justify-center">
+              <i class="fa-solid fa-ruble-sign text-purple-500 text-xl"></i>
+            </div>
+            <span class="text-emerald-500 text-sm font-medium">+15%</span>
+          </div>
+          <div class="metric-value" id="mrr">1.2M</div>
+          <div class="text-[var(--text-secondary)] text-sm mt-1">MRR (₽)</div>
+        </div>
+      </div>
+
+      <!-- Filters -->
+      <div class="flex items-center justify-between mb-6">
+        <div class="tab-nav">
+          <button class="active" data-filter="all">Все</button>
+          <button data-filter="active">Активные</button>
+          <button data-filter="trial">Триал</button>
+          <button data-filter="suspended">Приостановлены</button>
+        </div>
+        <button class="btn btn-primary">
+          <i class="fa-solid fa-plus"></i>
+          Добавить тенанта
+        </button>
+      </div>
+
+      <!-- Tenants Table -->
+      <div class="bg-[var(--bg-secondary)] rounded-2xl border border-[var(--border-color)] overflow-hidden">
+        <!-- Header -->
+        <div class="tenant-row bg-[var(--bg-card)] text-[var(--text-muted)] text-xs uppercase font-semibold tracking-wide">
+          <div>Компания</div>
+          <div>Продукт</div>
+          <div>План</div>
+          <div>ТС / Пользователей</div>
+          <div>Статус</div>
+          <div></div>
+        </div>
+
+        <!-- Rows -->
+        <div id="tenantsList">
+          <!-- Will be populated by JS -->
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="https://kit.fontawesome.com/a2e0e9e5a9.js" crossorigin="anonymous"></script>
+  <script src="./assets/js/routa-core.js"></script>
+  <script>
+    // Demo tenants data
+    const demoTenants = [
+      { id: 1, name: "ООО ТрансЛогистик", edition: "routax", plan: "business", vehicles: 45, users: 12, status: "active", registered: "2024-08-15" },
+      { id: 2, name: "ИП Петров А.С.", edition: "routal", plan: "pro", vehicles: 8, users: 3, status: "active", registered: "2024-10-22" },
+      { id: 3, name: "СтройТранс", edition: "routat", plan: "pro", vehicles: 22, users: 8, status: "active", registered: "2024-09-10" },
+      { id: 4, name: "ЭкспедиторПлюс", edition: "routaf", plan: "business", vehicles: 0, users: 5, status: "active", registered: "2024-11-01" },
+      { id: 5, name: "Новая Компания", edition: "routax", plan: "pro", vehicles: 3, users: 2, status: "trial", registered: "2025-01-02" },
+      { id: 6, name: "Грузоперевозки-Регион", edition: "routat", plan: "start", vehicles: 12, users: 4, status: "active", registered: "2024-07-20" },
+      { id: 7, name: "ООО Магистраль", edition: "routax", plan: "business", vehicles: 78, users: 25, status: "active", registered: "2024-05-11" },
+      { id: 8, name: "Тест Триал", edition: "routal", plan: "start", vehicles: 2, users: 1, status: "trial", registered: "2025-01-05" },
+      { id: 9, name: "Приостановлен", edition: "routax", plan: "pro", vehicles: 15, users: 5, status: "suspended", registered: "2024-06-18" },
+    ];
+
+    // Render tenants
+    function renderTenants(filter = 'all') {
+      const container = document.getElementById('tenantsList');
+      const filtered = filter === 'all' ? demoTenants : demoTenants.filter(t => t.status === filter);
+
+      container.innerHTML = filtered.map(tenant => `
+        <div class="tenant-row">
+          <div>
+            <div class="font-medium">${tenant.name}</div>
+            <div class="text-xs text-[var(--text-muted)]">ID: ${tenant.id} • Рег: ${tenant.registered}</div>
+          </div>
+          <div>
+            <span class="edition-badge edition-${tenant.edition}">
+              ${tenant.edition.toUpperCase().replace('ROUTA', '')}
+            </span>
+          </div>
+          <div class="font-medium capitalize">${tenant.plan}</div>
+          <div>
+            <span class="text-[var(--text-primary)]">${tenant.vehicles}</span>
+            <span class="text-[var(--text-muted)]"> / </span>
+            <span class="text-[var(--text-primary)]">${tenant.users}</span>
+          </div>
+          <div>
+            <span class="status-${tenant.status} font-medium capitalize">${getStatusLabel(tenant.status)}</span>
+          </div>
+          <div>
+            <button class="icon-btn w-8 h-8" onclick="openTenantDetails(${tenant.id})">
+              <i class="fa-solid fa-ellipsis-vertical text-sm"></i>
+            </button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function getStatusLabel(status) {
+      const labels = { active: 'Активен', trial: 'Триал', suspended: 'Приостановлен' };
+      return labels[status] || status;
+    }
+
+    function openTenantDetails(id) {
+      const tenant = demoTenants.find(t => t.id === id);
+      if (!tenant) return;
+      
+      Routa.UI.modal({
+        title: tenant.name,
+        size: 'md',
+        content: `
+          <div class="space-y-4">
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <div class="text-[var(--text-muted)] text-sm">Продукт</div>
+                <div class="font-medium">${tenant.edition.toUpperCase()}</div>
+              </div>
+              <div>
+                <div class="text-[var(--text-muted)] text-sm">План</div>
+                <div class="font-medium capitalize">${tenant.plan}</div>
+              </div>
+              <div>
+                <div class="text-[var(--text-muted)] text-sm">Транспорт</div>
+                <div class="font-medium">${tenant.vehicles} ТС</div>
+              </div>
+              <div>
+                <div class="text-[var(--text-muted)] text-sm">Пользователи</div>
+                <div class="font-medium">${tenant.users}</div>
+              </div>
+              <div>
+                <div class="text-[var(--text-muted)] text-sm">Статус</div>
+                <div class="status-${tenant.status} font-medium capitalize">${getStatusLabel(tenant.status)}</div>
+              </div>
+              <div>
+                <div class="text-[var(--text-muted)] text-sm">Регистрация</div>
+                <div class="font-medium">${tenant.registered}</div>
+              </div>
+            </div>
+            <hr class="border-[var(--border-color)]">
+            <div class="flex gap-2">
+              <button class="btn btn-outline flex-1" onclick="editFeatures(${tenant.id})">
+                <i class="fa-solid fa-toggle-on"></i> Features
+              </button>
+              <button class="btn btn-outline flex-1">
+                <i class="fa-solid fa-user"></i> Impersonate
+              </button>
+              <button class="btn btn-danger">
+                <i class="fa-solid fa-ban"></i>
+              </button>
+            </div>
+          </div>
+        `,
+      });
+    }
+
+    function editFeatures(id) {
+      Routa.UI.toast('Feature flags editing coming soon', 'info');
+    }
+
+    // Filter tabs
+    document.querySelectorAll('.tab-nav button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-nav button').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        renderTenants(btn.dataset.filter);
+      });
+    });
+
+    // Search
+    document.getElementById('searchInput').addEventListener('input', (e) => {
+      const query = e.target.value.toLowerCase();
+      const filtered = demoTenants.filter(t => t.name.toLowerCase().includes(query));
+      const container = document.getElementById('tenantsList');
+      container.innerHTML = filtered.map(tenant => `
+        <div class="tenant-row">
+          <div>
+            <div class="font-medium">${tenant.name}</div>
+            <div class="text-xs text-[var(--text-muted)]">ID: ${tenant.id}</div>
+          </div>
+          <div>
+            <span class="edition-badge edition-${tenant.edition}">
+              ${tenant.edition.toUpperCase().replace('ROUTA', '')}
+            </span>
+          </div>
+          <div class="font-medium capitalize">${tenant.plan}</div>
+          <div>${tenant.vehicles} / ${tenant.users}</div>
+          <div class="status-${tenant.status} font-medium capitalize">${getStatusLabel(tenant.status)}</div>
+          <div>
+            <button class="icon-btn w-8 h-8" onclick="openTenantDetails(${tenant.id})">
+              <i class="fa-solid fa-ellipsis-vertical text-sm"></i>
+            </button>
+          </div>
+        </div>
+      `).join('');
+    });
+
+    // Init
+    (async () => {
+      Routa.Theme.load();
+      
+      const user = await Routa.App.init({ 
+        requireAuth: true, 
+        allowRoles: ['platform_admin', 'support'],
+        currentPage: 'saas-tenants.html'
+      });
+
+      if (!user) return;
+
+      document.getElementById('adminName').textContent = user.email?.split('@')[0] || 'Admin';
+      renderTenants();
+    })();
+  </script>
+</body>
+</html>

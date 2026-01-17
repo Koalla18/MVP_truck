@@ -959,7 +959,7 @@
     // Logout
     document.getElementById('logoutBtn')?.addEventListener('click', () => {
       if (confirm('Вы уверены, что хотите выйти?')) {
-        localStorage.removeItem('token');
+        RoutoX.Auth.logout();
         window.location.href = './login.html';
       }
     });
@@ -981,6 +981,20 @@
       }
     }
     setInterval(updateETA, 60000);
+  </script>
+  <script src="./assets/js/routa-core.js"></script>
+  <script>
+    // Apply theme immediately
+    Routa.Theme.load();
+    
+    // Initialize with Routa
+    document.addEventListener('DOMContentLoaded', async () => {
+      const user = await Routa.App.init({
+        requireAuth: true,
+        currentPage: 'driver-new.html'
+      });
+      if (!user) return;
+    });
   </script>
 </body>
 </html>

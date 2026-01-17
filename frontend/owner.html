@@ -150,13 +150,16 @@
         <i class="fa-solid fa-crown"></i>
         <span id="roleText">Владелец</span>
       </span>
+      <a href="./notifications.html" class="icon-btn relative" title="Уведомления">
+        <i class="fa-solid fa-bell text-muted"></i>
+        <span class="badge-dot">7</span>
+      </a>
+      <button class="icon-btn" title="Настройки">
+        <i class="fa-solid fa-gear text-muted"></i>
+      </button>
       <div class="theme-toggle-track" onclick="toggleTheme()">
         <div class="theme-toggle-thumb"></div>
       </div>
-      <button class="icon-btn" title="Уведомления">
-        <i class="fa-solid fa-bell text-muted"></i>
-        <span class="badge-dot">7</span>
-      </button>
       <button class="icon-btn" title="Выход" onclick="logout()"><i class="fa-solid fa-right-from-bracket text-muted"></i></button>
     </div>
   </header>
@@ -860,39 +863,26 @@
     // Initial render
     renderEmployees();
     
-    // Init theme and navigation on load
-    document.addEventListener('DOMContentLoaded', () => {
+  </script>
+  <script src="./assets/js/routa-core.js"></script>
+  <script src="./assets/js/routox-ai.js"></script>
+  <script>
+    // Apply theme immediately
+    Routa.Theme.load();
+    
+    // Initialize with Routa
+    document.addEventListener('DOMContentLoaded', async () => {
+      const user = await Routa.App.init({
+        requireAuth: true,
+        currentPage: 'owner.html'
+      });
+      if (!user) return;
       if (typeof initTheme === 'function') initTheme();
-      initNavigation('owner');
     });
-
-    // Initialize navigation based on role
-    function initNavigation(currentPage) {
-      const role = localStorage.getItem('user_role') || 'owner';
-      const nav = document.getElementById('mainNav');
-      
-      let navItems = [
-        { href: './owner.html', icon: 'fa-crown', text: 'Обзор', page: 'owner' },
-        { href: './index.html', icon: 'fa-truck', text: 'Флот', page: 'index' },
-        { href: './trips.html', icon: 'fa-route', text: 'Рейсы', page: 'trips' },
-        { href: './geozones.html', icon: 'fa-map-location-dot', text: 'Геозоны', page: 'geozones' },
-        { href: './analytics.html', icon: 'fa-chart-line', text: 'Аналитика', page: 'analytics' },
-        { href: './fuel.html', icon: 'fa-gas-pump', text: 'Топливо', page: 'fuel' },
-        { href: './maintenance.html', icon: 'fa-wrench', text: 'ТО', page: 'maintenance' },
-        { href: './documents.html', icon: 'fa-file-lines', text: 'Документы', page: 'documents' }
-      ];
-      
-      nav.innerHTML = navItems.map(item => 
-        `<a href="${item.href}" class="nav-pill ${item.page === currentPage ? 'active' : ''}"><i class="fa-solid ${item.icon}"></i><span>${item.text}</span></a>`
-      ).join('');
-    }
 
     // Logout function
     function logout() {
-      localStorage.removeItem('auth_token');
-      localStorage.removeItem('user_role');
-      localStorage.removeItem('demo_mode');
-      window.location.href = './login.html';
+      Routa.Auth.logout();
     }
   </script>
   <script src="./assets/js/routox-unified.js"></script>

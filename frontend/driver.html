@@ -8,217 +8,112 @@
   <script src="https://kit.fontawesome.com/a2e0e9e5a9.js" crossorigin="anonymous"></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
   <link rel="stylesheet" href="./assets/css/routox-unified.css">
   <style>
-    /* Mobile-optimized driver panel */
-    body {
-      -webkit-tap-highlight-color: transparent;
+    body { -webkit-tap-highlight-color: transparent; }
+
+    /* Liquid Glass Effects */
+    .liquid-glass {
+      background: linear-gradient(135deg, rgba(255,255,255,0.25) 0%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.05) 100%);
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      border: 1px solid rgba(255,255,255,0.3);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.4);
+    }
+    [data-theme="dark"] .liquid-glass {
+      background: linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.03) 50%, rgba(255,255,255,0.01) 100%);
+      border: 1px solid rgba(255,255,255,0.1);
     }
 
-    /* Compact Tab Bar - Narrower */
-    .driver-tabs {
-      display: flex;
-      gap: 4px;
-      padding: 4px;
-      background: var(--bg-secondary);
-      border: 1px solid var(--border-color);
-      border-radius: 14px;
-      max-width: 280px;
-      margin: 0 auto;
-    }
-
-    .driver-tab {
-      flex: 1;
-      padding: 8px 4px;
-      border-radius: 10px;
-      font-size: 11px;
-      font-weight: 500;
-      color: var(--text-secondary);
-      transition: all 0.2s ease;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 2px;
-      background: transparent;
-      border: none;
-      cursor: pointer;
-    }
-
-    .driver-tab i {
-      font-size: 14px;
-    }
-
-    .driver-tab:hover {
-      color: var(--brand-blue);
-    }
-
-    .driver-tab.active {
-      background: linear-gradient(135deg, #3b82f6, #10b981);
-      color: white;
-      box-shadow: 0 2px 10px rgba(59, 130, 246, 0.3);
-    }
-
-    .tab-content {
-      display: none;
-      animation: fadeIn 0.3s ease;
-    }
-
-    .tab-content.active {
-      display: block;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(8px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
+    /* Tab Bar */
+    .driver-tabs { display: flex; gap: 4px; padding: 4px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 14px; max-width: 300px; margin: 0 auto; }
+    .driver-tab { flex: 1; padding: 10px 6px; border-radius: 10px; font-size: 11px; font-weight: 500; color: var(--text-secondary); transition: all 0.3s cubic-bezier(0.4,0,0.2,1); display: flex; flex-direction: column; align-items: center; gap: 3px; background: transparent; border: none; cursor: pointer; }
+    .driver-tab i { font-size: 16px; }
+    .driver-tab:hover { color: var(--brand-blue); }
+    .driver-tab.active { background: linear-gradient(135deg, #3b82f6, #10b981); color: white; box-shadow: 0 4px 15px rgba(59,130,246,0.4); }
+    .tab-content { display: none; animation: fadeSlideIn 0.4s ease; }
+    .tab-content.active { display: block; }
+    @keyframes fadeSlideIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
 
     /* SOS Button */
-    .btn-sos {
-      background: linear-gradient(135deg, #ef4444, #dc2626);
-      color: white;
-      animation: sosPulse 2s ease-in-out infinite;
-    }
-
-    @keyframes sosPulse {
-      0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
-      50% { box-shadow: 0 0 0 12px rgba(239, 68, 68, 0); }
-    }
+    .btn-sos { background: linear-gradient(135deg, #ef4444, #dc2626); color: white; animation: sosPulse 2s ease-in-out infinite; }
+    @keyframes sosPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.4); } 50% { box-shadow: 0 0 0 15px rgba(239,68,68,0); } }
 
     /* Map */
-    #driverMap {
-      border-radius: 16px;
-      z-index: 1;
-    }
+    #driverMap { border-radius: 20px; z-index: 1; }
+    .leaflet-control-zoom { border: none !important; border-radius: 12px !important; }
+    .leaflet-control-zoom a { background: var(--bg-secondary) !important; color: var(--text-primary) !important; }
 
-    .leaflet-control-zoom {
-      border: none !important;
-      border-radius: 10px !important;
-      overflow: hidden;
-    }
-
-    .leaflet-control-zoom a {
-      background: var(--bg-secondary) !important;
-      color: var(--text-primary) !important;
-      border: 1px solid var(--border-color) !important;
-    }
+    /* Camera Feed */
+    .camera-feed { position: relative; border-radius: 16px; overflow: hidden; background: #000; aspect-ratio: 16/9; }
+    .camera-feed img { width: 100%; height: 100%; object-fit: cover; }
+    .camera-overlay { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 50%); pointer-events: none; }
+    .camera-label { position: absolute; top: 12px; left: 12px; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); padding: 4px 10px; border-radius: 8px; font-size: 11px; color: white; display: flex; align-items: center; gap: 6px; }
+    .camera-live-dot { width: 8px; height: 8px; background: #ef4444; border-radius: 50%; animation: livePulse 1.5s infinite; }
+    @keyframes livePulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+    .camera-expand-btn { position: absolute; bottom: 12px; right: 12px; width: 36px; height: 36px; background: rgba(255,255,255,0.2); backdrop-filter: blur(8px); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: white; cursor: pointer; transition: all 0.2s; }
+    .camera-expand-btn:hover { background: rgba(255,255,255,0.3); transform: scale(1.1); }
 
     /* Timeline */
-    .timeline-item {
-      position: relative;
-      padding-left: 24px;
-    }
-
-    .timeline-item::before {
-      content: '';
-      position: absolute;
-      left: 5px;
-      top: 24px;
-      bottom: -12px;
-      width: 2px;
-      background: var(--border-color);
-    }
-
-    .timeline-item:last-child::before {
-      display: none;
-    }
-
-    .timeline-dot {
-      position: absolute;
-      left: 0;
-      top: 4px;
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-      border: 2px solid currentColor;
-      background: var(--bg-secondary);
-    }
+    .timeline-item { position: relative; padding-left: 28px; }
+    .timeline-item::before { content: ''; position: absolute; left: 6px; top: 20px; bottom: -16px; width: 2px; background: linear-gradient(to bottom, var(--border-color), transparent); }
+    .timeline-item:last-child::before { display: none; }
+    .timeline-dot { position: absolute; left: 0; top: 4px; width: 14px; height: 14px; border-radius: 50%; border: 3px solid currentColor; background: var(--bg-secondary); }
 
     /* Rest Warning */
-    .rest-warning {
-      background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(245, 158, 11, 0.05));
-      border: 1px solid rgba(245, 158, 11, 0.3);
-    }
+    .rest-warning { background: linear-gradient(135deg, rgba(245,158,11,0.15), rgba(245,158,11,0.05)); border: 1px solid rgba(245,158,11,0.3); border-radius: 16px; }
 
-    [data-theme="dark"] .rest-warning {
-      background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(245, 158, 11, 0.1));
-    }
+    /* QR Code */
+    .qr-container { background: white; padding: 16px; border-radius: 16px; display: inline-block; }
+    .doc-card { transition: all 0.3s ease; cursor: pointer; }
+    .doc-card:hover { transform: translateX(4px); border-color: rgba(59,130,246,0.4); }
+
+    /* Apple-style Profile */
+    .profile-hero { position: relative; background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%); border-radius: 24px; padding: 32px 24px; color: white; overflow: hidden; }
+    .profile-hero::before { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at 20% 80%, rgba(255,255,255,0.2) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(255,255,255,0.15) 0%, transparent 40%); }
+    .profile-avatar { width: 100px; height: 100px; border-radius: 50%; border: 4px solid rgba(255,255,255,0.5); box-shadow: 0 8px 32px rgba(0,0,0,0.3); object-fit: cover; }
+    .profile-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 24px; }
+    .profile-stat { text-align: center; background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); padding: 16px 8px; border-radius: 16px; }
+    .profile-stat-value { font-size: 24px; font-weight: 700; }
+    .profile-stat-label { font-size: 11px; opacity: 0.8; margin-top: 4px; }
+
+    /* 3D Vehicle */
+    .vehicle-3d { perspective: 1000px; }
+    .vehicle-3d-inner { transform-style: preserve-3d; animation: vehicleFloat 6s ease-in-out infinite; }
+    @keyframes vehicleFloat { 0%, 100% { transform: rotateY(-5deg) rotateX(3deg) translateY(0); } 50% { transform: rotateY(5deg) rotateX(-3deg) translateY(-8px); } }
 
     /* Fuel Gauge */
-    .fuel-gauge {
-      position: relative;
-      width: 100px;
-      height: 100px;
-    }
+    .fuel-gauge-container { position: relative; width: 140px; height: 140px; margin: 0 auto; }
+    .fuel-gauge-container svg { transform: rotate(-90deg); }
+    .fuel-gauge-bg { fill: none; stroke: var(--border-color); stroke-width: 12; }
+    .fuel-gauge-fill { fill: none; stroke-width: 12; stroke-linecap: round; }
+    .fuel-gauge-text { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
 
-    .fuel-gauge svg {
-      transform: rotate(-90deg);
-    }
+    /* Quick Actions */
+    .quick-action-btn { padding: 14px 10px; border-radius: 16px; display: flex; flex-direction: column; align-items: center; gap: 8px; transition: all 0.3s ease; background: var(--bg-card); border: 1px solid var(--border-color); cursor: pointer; }
+    .quick-action-btn:active { transform: scale(0.95); }
+    .quick-action-btn:hover { transform: translateY(-4px); box-shadow: 0 8px 20px rgba(0,0,0,0.1); }
 
-    .fuel-gauge-bg {
-      fill: none;
-      stroke: var(--border-color);
-      stroke-width: 8;
-    }
+    .spec-item { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border-color); }
+    .spec-item:last-child { border-bottom: none; }
 
-    .fuel-gauge-fill {
-      fill: none;
-      stroke-width: 8;
-      stroke-linecap: round;
-      transition: stroke-dashoffset 0.5s ease;
-    }
+    /* Modal */
+    .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 100; display: none; align-items: center; justify-content: center; padding: 16px; }
+    .modal-backdrop.active { display: flex; }
+    .modal-content { background: var(--bg-card); border-radius: 24px; padding: 24px; max-width: 400px; width: 100%; animation: modalSlideIn 0.3s ease; }
+    @keyframes modalSlideIn { from { opacity: 0; transform: scale(0.95) translateY(20px); } to { opacity: 1; transform: scale(1) translateY(0); } }
 
-    /* Driver Photo */
-    .driver-photo {
-      width: 72px;
-      height: 72px;
-      border-radius: 16px;
-      object-fit: cover;
-      border: 3px solid var(--border-color);
-    }
+    .badge { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+    .badge-success { background: rgba(16,185,129,0.15); color: #10b981; }
+    .badge-warning { background: rgba(245,158,11,0.15); color: #f59e0b; }
+    .badge-info { background: rgba(59,130,246,0.15); color: #3b82f6; }
+    .badge-dot { position: absolute; top: -4px; right: -4px; background: #ef4444; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
 
-    /* Quick Action Buttons */
-    .quick-action-btn {
-      padding: 12px 8px;
-      border-radius: 14px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 6px;
-      transition: all 0.2s ease;
-      background: var(--bg-card);
-      border: 1px solid var(--border-color);
-    }
-
-    .quick-action-btn:active {
-      transform: scale(0.95);
-    }
-
-    .quick-action-btn:hover {
-      border-color: var(--border-hover);
-      transform: translateY(-2px);
-    }
-
-    /* Live pulse */
-    .live-pulse {
-      animation: pulse 2s ease-in-out infinite;
-    }
-
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.5; }
-    }
-
-    /* 3D Truck Icon */
-    .truck-icon-3d {
-      position: relative;
-      transform-style: preserve-3d;
-      animation: truckFloat 4s ease-in-out infinite;
-    }
-
-    @keyframes truckFloat {
-      0%, 100% { transform: translateY(0) rotateY(0); }
-      50% { transform: translateY(-5px) rotateY(5deg); }
-    }
+    .progress-bar { height: 8px; background: var(--border-color); border-radius: 4px; overflow: hidden; }
+    .progress-fill { height: 100%; border-radius: 4px; }
+    .progress-fill-gradient { background: linear-gradient(90deg, #3b82f6, #10b981); }
+    .live-pulse { animation: livePulse 2s infinite; }
   </style>
 </head>
 <body class="min-h-screen pb-24">
@@ -236,12 +131,18 @@
         <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 live-pulse"></span>
         <span class="text-xs text-emerald-600 font-medium">Online</span>
       </div>
+      <a href="./notifications.html" class="icon-btn relative" style="width: 36px; height: 36px;" title="Уведомления">
+        <i class="fa-solid fa-bell text-muted text-sm"></i>
+        <span class="badge-dot" style="width: 16px; height: 16px; font-size: 10px;">2</span>
+      </a>
+      <button class="icon-btn" style="width: 36px; height: 36px;" title="Настройки">
+        <i class="fa-solid fa-gear text-muted text-sm"></i>
+      </button>
       <div class="theme-toggle-track" onclick="toggleTheme()">
         <div class="theme-toggle-thumb"></div>
       </div>
-      <button class="icon-btn" style="width: 36px; height: 36px;" onclick="showNotifications()">
-        <i class="fa-solid fa-bell text-muted text-sm"></i>
-        <span class="badge-dot" style="width: 16px; height: 16px; font-size: 10px;">2</span>
+      <button class="icon-btn" style="width: 36px; height: 36px;" title="Выход" onclick="logout()">
+        <i class="fa-solid fa-right-from-bracket text-muted text-sm"></i>
       </button>
     </div>
   </header>
@@ -317,6 +218,32 @@
         <div id="driverMap" class="h-44 rounded-xl"></div>
       </div>
 
+      <!-- Cameras Section -->
+      <div class="glass-panel p-4 mb-3">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="font-semibold text-sm">Камеры</h3>
+          <button class="text-xs text-blue-500 font-medium" onclick="expandAllCameras()">Развернуть</button>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div class="camera-feed">
+            <img src="https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=225&fit=crop" alt="Front">
+            <div class="camera-overlay"></div>
+            <div class="camera-label"><span class="camera-live-dot"></span>Передняя</div>
+            <button class="camera-expand-btn" onclick="expandCamera('front')"><i class="fa-solid fa-expand"></i></button>
+          </div>
+          <div class="camera-feed">
+            <img src="https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?w=400&h=225&fit=crop" alt="Cabin">
+            <div class="camera-overlay"></div>
+            <div class="camera-label"><span class="camera-live-dot"></span>Салон</div>
+            <button class="camera-expand-btn" onclick="expandCamera('cabin')"><i class="fa-solid fa-expand"></i></button>
+          </div>
+        </div>
+        <div class="mt-3 p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-between">
+          <span class="text-sm"><i class="fa-solid fa-video text-blue-500 mr-2"></i>DVR • 4K @ 30fps</span>
+          <button class="text-xs text-blue-500 font-medium" onclick="markIncident()"><i class="fa-solid fa-flag mr-1"></i>Инцидент</button>
+        </div>
+      </div>
+
       <!-- Route Timeline -->
       <div class="glass-panel p-4">
         <h3 class="font-semibold mb-4 text-sm">Точки маршрута</h3>
@@ -349,7 +276,7 @@
       <div class="glass-panel p-4 mb-3">
         <h3 class="font-semibold mb-3 text-sm">Документы рейса</h3>
         <div class="space-y-2">
-          <div class="glass-card p-3 flex items-center justify-between">
+          <div class="doc-card glass-card p-3 flex items-center justify-between" onclick="showDocument('ettn')">
             <div class="flex items-center gap-3">
               <div class="w-9 h-9 rounded-xl bg-cyan-500/15 flex items-center justify-center">
                 <i class="fa-solid fa-file-lines text-cyan-500"></i>
@@ -361,7 +288,7 @@
             </div>
             <span class="badge badge-success">Подписан</span>
           </div>
-          <div class="glass-card p-3 flex items-center justify-between">
+          <div class="doc-card glass-card p-3 flex items-center justify-between" onclick="showDocument('waybill')">
             <div class="flex items-center gap-3">
               <div class="w-9 h-9 rounded-xl bg-amber-500/15 flex items-center justify-center">
                 <i class="fa-solid fa-file-invoice text-amber-500"></i>
@@ -373,17 +300,17 @@
             </div>
             <span class="badge badge-success">Активен</span>
           </div>
-          <div class="glass-card p-3 flex items-center justify-between">
+          <div class="doc-card glass-card p-3 flex items-center justify-between" onclick="showDeliveryQR()">
             <div class="flex items-center gap-3">
-              <div class="w-9 h-9 rounded-xl bg-purple-500/15 flex items-center justify-center">
-                <i class="fa-solid fa-qrcode text-purple-500"></i>
+              <div class="w-9 h-9 rounded-xl bg-emerald-500/15 flex items-center justify-center">
+                <i class="fa-solid fa-qrcode text-emerald-500"></i>
               </div>
               <div>
                 <div class="font-medium text-sm">QR для клиента</div>
                 <div class="text-xs text-muted">Подтверждение доставки</div>
               </div>
             </div>
-            <button class="badge badge-info cursor-pointer">Показать</button>
+            <span class="badge badge-info">Показать</span>
           </div>
         </div>
       </div>
@@ -392,19 +319,19 @@
         <h3 class="font-semibold mb-3 text-sm">Груз</h3>
         <div class="grid grid-cols-2 gap-2">
           <div class="glass-card p-3">
-            <div class="text-xs text-muted">Вес</div>
+            <div class="flex items-center gap-2 mb-1"><i class="fa-solid fa-weight-hanging text-blue-500"></i><span class="text-xs text-muted">Вес</span></div>
             <div class="text-lg font-bold">18.5 т</div>
           </div>
           <div class="glass-card p-3">
-            <div class="text-xs text-muted">Палеты</div>
+            <div class="flex items-center gap-2 mb-1"><i class="fa-solid fa-pallet text-amber-500"></i><span class="text-xs text-muted">Палеты</span></div>
             <div class="text-lg font-bold">24 шт</div>
           </div>
           <div class="glass-card p-3">
-            <div class="text-xs text-muted">Тип</div>
+            <div class="flex items-center gap-2 mb-1"><i class="fa-solid fa-box text-purple-500"></i><span class="text-xs text-muted">Тип</span></div>
             <div class="text-lg font-bold">Продукты</div>
           </div>
           <div class="glass-card p-3">
-            <div class="text-xs text-muted">Температура</div>
+            <div class="flex items-center gap-2 mb-1"><i class="fa-solid fa-temperature-low text-cyan-500"></i><span class="text-xs text-muted">Температура</span></div>
             <div class="text-lg font-bold text-cyan-500">+4°C</div>
           </div>
         </div>
@@ -489,26 +416,32 @@
     </div>
 
     <div class="tab-content" id="tabProfile">
-      <div class="glass-panel p-4 mb-3">
-        <div class="flex items-center gap-4 mb-4">
-          <img src="https://randomuser.me/api/portraits/men/32.jpg" alt="Driver" class="driver-photo" id="driverPhoto">
-          <div>
-            <div class="text-lg font-bold">Иванов Алексей</div>
-            <div class="text-sm text-muted">Водитель категории CE</div>
-            <div class="flex items-center gap-2 mt-1">
-              <span class="badge badge-success">Активен</span>
-              <span class="text-xs text-muted">ID: DRV-1234</span>
-            </div>
+      <!-- Apple-style Profile Hero -->
+      <div class="profile-hero mb-3">
+        <div class="relative z-10 text-center">
+          <img src="https://randomuser.me/api/portraits/men/32.jpg" alt="Driver" class="profile-avatar mx-auto" id="driverPhoto">
+          <div class="text-xl font-bold mt-4">Иванов Алексей</div>
+          <div class="text-sm opacity-80">Водитель категории CE</div>
+          <div class="flex items-center justify-center gap-2 mt-2">
+            <span class="px-3 py-1 rounded-full bg-white/20 text-xs font-medium">ID: DRV-1234</span>
+            <span class="px-3 py-1 rounded-full bg-emerald-500/30 text-xs font-medium"><i class="fa-solid fa-circle text-emerald-400 text-[6px] mr-1"></i>Активен</span>
+          </div>
+          <div class="profile-stats">
+            <div class="profile-stat"><div class="profile-stat-value">156</div><div class="profile-stat-label">рейсов</div></div>
+            <div class="profile-stat"><div class="profile-stat-value">89K</div><div class="profile-stat-label">км</div></div>
+            <div class="profile-stat"><div class="profile-stat-value">4.9</div><div class="profile-stat-label">рейтинг</div></div>
           </div>
         </div>
-        
+      </div>
+
+      <div class="glass-panel p-4 mb-3">
+        <h3 class="font-semibold mb-3 text-sm">Контакты</h3>
         <div class="space-y-2">
           <div class="flex items-center justify-between p-3 glass-card">
             <div class="flex items-center gap-3">
               <i class="fa-solid fa-phone text-emerald-500"></i>
               <span class="text-sm">+7 (999) 123-45-67</span>
             </div>
-            <i class="fa-solid fa-chevron-right text-muted text-xs"></i>
           </div>
           <div class="flex items-center justify-between p-3 glass-card">
             <div class="flex items-center gap-3">
@@ -517,43 +450,21 @@
             </div>
             <span class="text-xs text-muted">до 2028</span>
           </div>
-          <div class="flex items-center justify-between p-3 glass-card">
-            <div class="flex items-center gap-3">
-              <i class="fa-solid fa-calendar text-purple-500"></i>
-              <span class="text-sm">Стаж: 8 лет</span>
-            </div>
-          </div>
         </div>
       </div>
 
       <div class="glass-panel p-4 mb-3">
-        <h3 class="font-semibold mb-3 text-sm">Статистика</h3>
-        <div class="grid grid-cols-2 gap-2">
-          <div class="glass-card p-3 text-center">
-            <div class="text-xl font-bold text-emerald-500">156</div>
-            <div class="text-xs text-muted">рейсов</div>
-          </div>
-          <div class="glass-card p-3 text-center">
-            <div class="text-xl font-bold text-blue-500">89,234</div>
-            <div class="text-xs text-muted">км пройдено</div>
-          </div>
-          <div class="glass-card p-3 text-center">
-            <div class="text-xl font-bold text-amber-500">4.9</div>
-            <div class="text-xs text-muted">рейтинг</div>
-          </div>
-          <div class="glass-card p-3 text-center">
-            <div class="text-xl font-bold text-purple-500">0</div>
-            <div class="text-xs text-muted">нарушений</div>
-          </div>
+        <h3 class="font-semibold mb-3 text-sm">Достижения</h3>
+        <div class="flex flex-wrap gap-2">
+          <span class="px-3 py-2 rounded-xl bg-amber-500/15 border border-amber-500/30 text-xs"><i class="fa-solid fa-medal text-amber-500 mr-1"></i>100 рейсов</span>
+          <span class="px-3 py-2 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-xs"><i class="fa-solid fa-leaf text-emerald-500 mr-1"></i>Эко-вождение</span>
+          <span class="px-3 py-2 rounded-xl bg-blue-500/15 border border-blue-500/30 text-xs"><i class="fa-solid fa-star text-blue-500 mr-1"></i>Топ-10</span>
         </div>
       </div>
 
-      <button class="w-full glass-card p-3 flex items-center justify-between text-red-500" onclick="logout()">
-        <div class="flex items-center gap-3">
-          <i class="fa-solid fa-right-from-bracket"></i>
-          <span class="text-sm font-medium">Выйти из аккаунта</span>
-        </div>
-        <i class="fa-solid fa-chevron-right text-xs"></i>
+      <button class="w-full glass-card p-4 flex items-center justify-center gap-2 text-red-500" onclick="logout()">
+        <i class="fa-solid fa-right-from-bracket"></i>
+        <span class="font-medium">Выйти</span>
       </button>
     </div>
 
@@ -565,7 +476,7 @@
     </div>
   </main>
 
-  <!-- Compact Bottom Tab Bar (Narrower) -->
+  <!-- Compact Bottom Tab Bar -->
   <nav class="fixed bottom-0 left-0 right-0 px-3 pb-2 pt-1 z-30">
     <div class="driver-tabs">
       <button class="driver-tab active" data-tab="tabTrip">
@@ -587,17 +498,45 @@
     </div>
   </nav>
 
+  <!-- Document Modal -->
+  <div id="docModal" class="modal-backdrop" onclick="closeDocModal()">
+    <div class="modal-content" onclick="event.stopPropagation()">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-bold" id="docModalTitle">Документ</h3>
+        <button onclick="closeDocModal()" class="icon-btn w-8 h-8"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div id="docModalContent"></div>
+    </div>
+  </div>
+
   <!-- SOS Modal -->
   <div id="sosModal" class="modal-backdrop">
-    <div class="modal-content glass-panel p-6 text-center max-w-sm mx-auto">
+    <div class="modal-content text-center">
       <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-red-500/20 flex items-center justify-center">
         <i class="fa-solid fa-phone-volume text-red-500 text-2xl"></i>
       </div>
       <h2 class="text-lg font-bold mb-2">Экстренный вызов</h2>
-      <p class="text-muted text-sm mb-6">Сигнал SOS будет отправлен диспетчеру и экстренным службам</p>
-      <div class="space-y-2">
-        <button class="w-full btn-sos py-3 rounded-xl font-bold" onclick="confirmSOS()">Подтвердить SOS</button>
-        <button class="w-full glass-card p-3 text-sm font-medium" onclick="closeSOS()">Отмена</button>
+      <p class="text-muted text-sm mb-6">Сигнал SOS будет отправлен диспетчеру</p>
+      <button class="w-full btn-sos py-3 rounded-xl font-bold mb-2" onclick="confirmSOS()">Подтвердить SOS</button>
+      <button class="w-full glass-card p-3 text-sm font-medium" onclick="closeSOS()">Отмена</button>
+    </div>
+  </div>
+
+  <!-- Camera Modal -->
+  <div id="cameraModal" class="modal-backdrop" onclick="closeCameraModal()">
+    <div class="modal-content" style="max-width: 500px;" onclick="event.stopPropagation()">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-bold" id="cameraModalTitle">Камера</h3>
+        <button onclick="closeCameraModal()" class="icon-btn w-8 h-8"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="camera-feed">
+        <img id="cameraModalImage" src="">
+        <div class="camera-overlay"></div>
+        <div class="camera-label"><span class="camera-live-dot"></span><span id="cameraModalLabel">Live</span></div>
+      </div>
+      <div class="mt-4 flex gap-2">
+        <button class="flex-1 glass-card py-3 text-sm"><i class="fa-solid fa-circle text-red-500 mr-2"></i>Записать</button>
+        <button class="flex-1 btn-primary py-3 text-sm" onclick="markIncident()"><i class="fa-solid fa-flag mr-2"></i>Инцидент</button>
       </div>
     </div>
   </div>
@@ -697,16 +636,224 @@
       closeSOS();
     }
 
+    // Camera functions
+    const cameraData = {
+      front: { title: 'Передняя камера', label: 'Передняя', img: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&h=400&fit=crop' },
+      cabin: { title: 'Камера салона', label: 'Салон', img: 'https://images.unsplash.com/photo-1449965408869-ebd3fee52a27?w=600&h=400&fit=crop' }
+    };
+
+    function expandCamera(cameraId) {
+      const cam = cameraData[cameraId];
+      if (!cam) return;
+      document.getElementById('cameraModalTitle').textContent = cam.title;
+      document.getElementById('cameraModalLabel').textContent = cam.label;
+      document.getElementById('cameraModalImage').src = cam.img;
+      document.getElementById('cameraModal').classList.add('active');
+    }
+
+    function expandAllCameras() {
+      // Show all cameras in a grid view
+      const content = `
+        <div class="grid grid-cols-2 gap-2">
+          ${Object.entries(cameraData).map(([id, cam]) => `
+            <div class="camera-feed cursor-pointer" onclick="expandCamera('${id}')">
+              <img src="${cam.img}" alt="${cam.label}">
+              <div class="camera-overlay"></div>
+              <div class="camera-label"><span class="camera-live-dot"></span>${cam.label}</div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+      document.getElementById('cameraModalTitle').textContent = 'Все камеры';
+      document.getElementById('cameraModalImage').parentElement.innerHTML = content;
+      document.getElementById('cameraModal').classList.add('active');
+    }
+
+    function closeCameraModal() {
+      document.getElementById('cameraModal').classList.remove('active');
+    }
+
+    function markIncident() {
+      const time = new Date().toLocaleTimeString('ru-RU');
+      if (confirm(`Отметить инцидент в ${time}? Метка будет добавлена в видеозапись DVR.`)) {
+        alert('Инцидент отмечен. Видеозапись сохранена.');
+        closeCameraModal();
+      }
+    }
+
+    // Document functions
+    const documentsData = {
+      license: { title: 'Водительское удостоверение', category: 'B, C, CE', valid: '15.03.2028', icon: 'fa-id-card', number: '77 12 345678' },
+      pts: { title: 'ПТС', category: 'Транспортное средство', valid: 'Бессрочно', icon: 'fa-file-lines', number: '77 УВ 123456' },
+      insurance: { title: 'ОСАГО', category: 'Страховой полис', valid: '01.06.2025', icon: 'fa-shield', number: 'ЕЕЕ 1234567890' },
+      waybill: { title: 'Путевой лист', category: 'Рейс №TR-2024-001', valid: 'Действителен', icon: 'fa-route', number: '№ 156/2024' }
+    };
+
+    function showDocument(docId) {
+      const doc = documentsData[docId];
+      if (!doc) return;
+      
+      document.getElementById('docModalTitle').textContent = doc.title;
+      document.getElementById('docModalContent').innerHTML = `
+        <div class="glass-card p-4 mb-4">
+          <div class="flex items-center gap-4 mb-4">
+            <div class="w-16 h-16 rounded-xl bg-blue-500/20 flex items-center justify-center">
+              <i class="fa-solid ${doc.icon} text-2xl text-blue-500"></i>
+            </div>
+            <div>
+              <div class="font-bold text-lg">${doc.number}</div>
+              <div class="text-muted text-sm">${doc.category}</div>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <div class="text-muted mb-1">Действителен до</div>
+              <div class="font-medium">${doc.valid}</div>
+            </div>
+            <div>
+              <div class="text-muted mb-1">Статус</div>
+              <div class="flex items-center gap-2 text-green-500">
+                <i class="fa-solid fa-check-circle"></i>
+                <span class="font-medium">Действует</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="qr-container mb-4">
+          <div id="qrCode${docId}" class="mx-auto mb-2"></div>
+          <div class="text-muted text-xs text-center">Сканируйте для проверки подлинности</div>
+        </div>
+        <button class="w-full btn-primary py-3 rounded-xl" onclick="shareDocument('${docId}')">
+          <i class="fa-solid fa-share mr-2"></i>Поделиться документом
+        </button>
+      `;
+      
+      // Generate QR code
+      setTimeout(() => {
+        const qrEl = document.getElementById('qrCode' + docId);
+        if (qrEl && typeof QRCode !== 'undefined') {
+          qrEl.innerHTML = '';
+          new QRCode(qrEl, {
+            text: `routa://doc/${docId}/${doc.number}`,
+            width: 128,
+            height: 128,
+            colorDark: getComputedStyle(document.documentElement).getPropertyValue('--text-color').trim() || '#000000',
+            colorLight: 'transparent'
+          });
+        }
+      }, 100);
+      
+      document.getElementById('docModal').classList.add('active');
+    }
+
+    function showDeliveryQR() {
+      document.getElementById('docModalTitle').textContent = 'QR-код доставки';
+      document.getElementById('docModalContent').innerHTML = `
+        <div class="text-center mb-4">
+          <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/15 text-emerald-500 text-sm mb-4">
+            <i class="fa-solid fa-truck"></i>
+            <span>Рейс TR-2024-001</span>
+          </div>
+        </div>
+        <div class="qr-container mb-4">
+          <div id="deliveryQR" class="mx-auto mb-2"></div>
+          <div class="text-muted text-xs text-center">Покажите QR-код получателю для подтверждения доставки</div>
+        </div>
+        <div class="glass-card p-3 mb-4">
+          <div class="flex items-center justify-between text-sm mb-2">
+            <span class="text-muted">Получатель:</span>
+            <span class="font-medium">ООО "ТехноМаркет"</span>
+          </div>
+          <div class="flex items-center justify-between text-sm mb-2">
+            <span class="text-muted">Адрес:</span>
+            <span class="font-medium">Санкт-Петербург, Невский пр. 28</span>
+          </div>
+          <div class="flex items-center justify-between text-sm">
+            <span class="text-muted">Груз:</span>
+            <span class="font-medium">Электроника, 8 мест</span>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <button class="glass-card py-3 text-sm" onclick="closeDocModal()">Закрыть</button>
+          <button class="btn-primary py-3 text-sm" onclick="confirmDelivery()">
+            <i class="fa-solid fa-check mr-2"></i>Доставлено
+          </button>
+        </div>
+      `;
+      
+      // Generate delivery QR
+      setTimeout(() => {
+        const qrEl = document.getElementById('deliveryQR');
+        if (qrEl && typeof QRCode !== 'undefined') {
+          qrEl.innerHTML = '';
+          new QRCode(qrEl, {
+            text: `routa://delivery/TR-2024-001/confirm`,
+            width: 160,
+            height: 160,
+            colorDark: getComputedStyle(document.documentElement).getPropertyValue('--text-color').trim() || '#000000',
+            colorLight: 'transparent'
+          });
+        }
+      }, 100);
+      
+      document.getElementById('docModal').classList.add('active');
+    }
+
+    function closeDocModal() {
+      document.getElementById('docModal').classList.remove('active');
+    }
+
+    function shareDocument(docId) {
+      const doc = documentsData[docId];
+      if (navigator.share) {
+        navigator.share({
+          title: doc.title,
+          text: `${doc.title}: ${doc.number}`,
+          url: window.location.href
+        });
+      } else {
+        navigator.clipboard.writeText(`${doc.title}: ${doc.number}`).then(() => {
+          alert('Данные документа скопированы в буфер обмена');
+        });
+      }
+    }
+
+    function confirmDelivery() {
+      if (confirm('Подтвердить доставку груза?')) {
+        alert('Доставка подтверждена! Данные отправлены диспетчеру.');
+        closeDocModal();
+      }
+    }
+
+  </script>
+  <script src="./assets/js/routa-core.js"></script>
+  <script src="./assets/js/routox-unified.js"></script>
+  <script src="./assets/js/routox-ai.js"></script>
+  <script>
+    // Apply theme immediately
+    Routa.Theme.load();
+    
     // Quick actions
     function reportFuel() { alert('Форма заправки откроется'); }
     function reportIssue() { alert('Форма отчёта о проблеме откроется'); }
     function startRest() { alert('Начало периода отдыха зафиксировано'); }
     function callDispatcher() { window.location.href = 'tel:+78001234567'; }
-    function logout() { if(confirm('Выйти из аккаунта?')) window.location.href = './login.html'; }
-    function showNotifications() { alert('Уведомления: 2 новых сообщения'); }
+    function logout() { 
+      if(confirm('Выйти из аккаунта?')) {
+        Routa.Auth.logout();
+      }
+    }
+    function showNotifications() { window.location.href = './notifications.html'; }
 
-    // Initialize map after DOM load
-    document.addEventListener('DOMContentLoaded', initMap);
+    // Initialize map and Routa after DOM load
+    document.addEventListener('DOMContentLoaded', async () => {
+      const user = await Routa.App.init({
+        requireAuth: true,
+        currentPage: 'driver.html'
+      });
+      if (!user) return;
+      initMap();
+    });
   </script>
 </body>
 </html>
