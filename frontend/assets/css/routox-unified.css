@@ -175,6 +175,14 @@ body {
   box-shadow: var(--shadow-glow-purple);
 }
 
+/* Nav Item Active - Header Navigation */
+.nav-item-active {
+  background: rgba(255, 255, 255, 0.9);
+  color: #007AFF !important;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+  font-weight: 600 !important;
+}
+
 /* ========== Buttons ========== */
 .btn {
   display: inline-flex;
@@ -192,13 +200,25 @@ body {
 }
 
 .btn-primary {
-  background: var(--gradient-primary);
+  background: linear-gradient(135deg, #007AFF 0%, #5856D6 100%);
   color: white;
 }
 
 .btn-primary:hover {
   transform: translateY(-2px);
-  box-shadow: var(--shadow-glow-blue);
+  box-shadow: 0 4px 20px rgba(0, 122, 255, 0.4);
+}
+
+.btn-gradient {
+  background: linear-gradient(135deg, #007AFF 0%, #5856D6 100%);
+  color: white;
+  transition: all 0.3s ease;
+}
+
+.btn-gradient:hover {
+  background: linear-gradient(135deg, #0056b3 0%, #4240a8 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 15px rgba(0, 122, 255, 0.4);
 }
 
 .btn-purple {

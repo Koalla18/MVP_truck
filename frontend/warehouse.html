@@ -1,0 +1,878 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RoutoX вЂ” РЎРєР»Р°Рґ</title>
+  <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+  <script src="https://kit.fontawesome.com/a2e0e9e5a9.js" crossorigin="anonymous"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="./assets/css/routox-unified.css">
+  <link rel="stylesheet" href="./assets/css/page-transitions.css">
+  <style>
+    body {
+        font-family: "Inter", sans-serif;
+        background-color: #FFF8F0;
+        background-image: 
+            radial-gradient(at 0% 0%, hsla(30,100%,96%,1) 0, transparent 50%), 
+            radial-gradient(at 100% 0%, hsla(35,100%,96%,1) 0, transparent 50%);
+    }
+    .glass-panel {
+        background: rgba(255, 255, 255, 0.75);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.9);
+        box-shadow: 0 8px 32px 0 rgba(245, 158, 11, 0.08);
+        border-radius: 16px;
+    }
+    .glass-card {
+        background: rgba(255, 255, 255, 0.85);
+        backdrop-filter: blur(16px);
+        border: 1px solid rgba(255, 255, 255, 0.7);
+        box-shadow: 0 4px 20px rgba(245, 158, 11, 0.05);
+        border-radius: 14px;
+        transition: all 0.2s ease;
+    }
+    .glass-card:hover {
+        background: rgba(255, 255, 255, 0.95);
+        box-shadow: 0 10px 30px rgba(245, 158, 11, 0.12);
+        transform: translateY(-2px);
+    }
+    .nav-item-active {
+        background: rgba(255, 255, 255, 0.9);
+        color: #f59e0b !important;
+        box-shadow: 0 2px 10px rgba(245, 158, 11, 0.15);
+        font-weight: 600 !important;
+    }
+    .btn-primary {
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+        color: white;
+        transition: all 0.2s ease;
+    }
+    .btn-primary:hover {
+        background: linear-gradient(135deg, #d97706, #b45309);
+        box-shadow: 0 8px 20px rgba(245, 158, 11, 0.25);
+        transform: translateY(-1px);
+    }
+    .stock-low { color: #ef4444; background: rgba(239, 68, 68, 0.1); }
+    .stock-medium { color: #f59e0b; background: rgba(245, 158, 11, 0.1); }
+    .stock-high { color: #10b981; background: rgba(16, 185, 129, 0.1); }
+    .tab-btn {
+        padding: 8px 16px;
+        border-radius: 10px;
+        font-size: 13px;
+        color: #64748b;
+        transition: all 0.2s ease;
+        font-weight: 500;
+    }
+    .tab-btn:hover {
+        color: #f59e0b;
+        background: rgba(245, 158, 11, 0.08);
+    }
+    .tab-btn.active {
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+        color: white;
+    }
+    .product-card {
+        cursor: pointer;
+        border-left: 4px solid transparent;
+    }
+    .product-card.selected {
+        border-left-color: #f59e0b;
+        background: rgba(245, 158, 11, 0.05);
+    }
+    .stat-card {
+        background: linear-gradient(135deg, #fef3c7, #fde68a);
+        border: 1px solid #fbbf24;
+    }
+    .modal-overlay { background: rgba(0,0,0,0.4); backdrop-filter: blur(4px); }
+    .btn-secondary { background: white; border: 1px solid #e2e8f0; color: #475569; transition: all 0.2s ease; }
+    .btn-secondary:hover { background: #f8fafc; border-color: #cbd5e1; }
+  </style>
+</head>
+<body class="bg-slate-50">
+
+  <!-- Header -->
+  <header class="sticky top-0 z-40 glass-panel border-b border-white/50 px-6 py-3">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-8">
+        <a href="logist.html" class="flex items-center gap-3 group">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow">
+            <i class="fa-solid fa-truck-fast text-white text-lg"></i>
+          </div>
+          <div class="flex flex-col leading-none">
+            <span class="text-lg font-bold bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">RoutoX</span>
+            <span class="text-[10px] text-slate-500 font-medium">LOGIST</span>
+          </div>
+        </a>
+
+        <nav class="hidden lg:flex items-center gap-1 bg-slate-100/50 p-1 rounded-xl">
+          <a class="px-4 py-1.5 rounded-lg text-sm font-medium text-slate-500 hover:text-amber-800 hover:bg-white/60 transition-colors" href="logist.html">Р—Р°РєР°Р·С‹</a>
+          <a class="px-4 py-1.5 rounded-lg text-sm font-medium text-slate-500 hover:text-amber-800 hover:bg-white/60 transition-colors" href="routes.html">РњР°СЂС€СЂСѓС‚С‹</a>
+          <a class="px-4 py-1.5 rounded-lg text-sm font-medium text-slate-500 hover:text-amber-800 hover:bg-white/60 transition-colors" href="trips.html">Р РµР№СЃС‹</a>
+          <a class="px-4 py-1.5 rounded-lg text-sm font-medium text-slate-500 hover:text-amber-800 hover:bg-white/60 transition-colors" href="drivers-manage.html">Р’РѕРґРёС‚РµР»Рё</a>
+          <a class="px-4 py-1.5 rounded-lg text-sm font-medium text-slate-500 hover:text-amber-800 hover:bg-white/60 transition-colors" href="clients.html">РљР»РёРµРЅС‚С‹</a>
+          <a class="px-4 py-1.5 rounded-lg text-sm font-semibold nav-item-active transition-all" href="warehouse.html">РЎРєР»Р°Рґ</a>
+          <a class="px-4 py-1.5 rounded-lg text-sm font-medium text-slate-500 hover:text-amber-800 hover:bg-white/60 transition-colors" href="loading-plan.html">РџР»Р°РЅРёСЂРѕРІР°РЅРёРµ</a>
+          <a class="px-4 py-1.5 rounded-lg text-sm font-medium text-slate-500 hover:text-amber-800 hover:bg-white/60 transition-colors" href="delivery-stats.html">РЎС‚Р°С‚РёСЃС‚РёРєР°</a>
+          <a class="px-4 py-1.5 rounded-lg text-sm font-medium text-slate-500 hover:text-amber-800 hover:bg-white/60 transition-colors" href="geozones.html">Р“РµРѕР·РѕРЅС‹</a>
+        </nav>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <span class="hidden lg:flex items-center gap-2 px-3 py-1.5 bg-amber-50 border border-amber-200 rounded-full text-xs">
+            <i class="fa-solid fa-warehouse text-amber-600"></i>
+            <span id="roleText" class="font-semibold text-amber-800">Р›РѕРіРёСЃС‚</span>
+        </span>
+        <div class="flex items-center gap-3 pl-1 pr-1 py-1 bg-white/50 border border-white rounded-full shadow-sm hover:shadow-md transition-shadow cursor-pointer">
+            <div class="w-8 h-8 rounded-full bg-slate-200 overflow-hidden ring-2 ring-white">
+                <img alt="User" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCTs9iN8pKS03W5I54u9FB4B-c8kh0-SvddoYiVdknvnn0XFQ_ScxzcOGMuvCw75ZDO7eej3OBFSUyW7YGzfIdw8bm2JVE2qYntX-6WFsuWZDXeCjqgvXyR-Lo9UnAE2bTQejiaicaZNqXTEEWzBEmoalZytqScbtdaXlk0i5laN5yjsqI3j457keHzESRrW4bLeWD2l5xuer1uZ4Zd_LMeP8p-XTEa4_wtLTcRyHGOncDuMQUJk788z8tvDII7r8UTdnahdzzaAtY"/>
+            </div>
+            <div class="pr-3 flex flex-col items-end leading-none">
+                <p class="text-xs font-bold text-slate-800" id="userName">Р›РѕРіРёСЃС‚</p>
+                <p class="text-[9px] text-amber-600 font-semibold mt-0.5" id="userRole">Pro</p>
+            </div>
+        </div>
+        <button class="w-10 h-10 flex items-center justify-center text-slate-400 hover:text-slate-700 bg-white/50 hover:bg-white rounded-full transition-all shadow-sm border border-white/50 relative" title="РЈРІРµРґРѕРјР»РµРЅРёСЏ" onclick="window.location.href='notifications.html'">
+            <span class="material-symbols-outlined text-[20px]">notifications</span>
+            <span class="absolute top-2.5 right-2.5 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white"></span>
+        </button>
+        <button class="w-10 h-10 flex items-center justify-center text-slate-400 hover:text-red-500 bg-white/50 hover:bg-white rounded-full transition-all shadow-sm border border-white/50" title="Р’С‹С…РѕРґ" onclick="logout()">
+            <span class="material-symbols-outlined text-[20px]">logout</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="p-4 grid grid-cols-12 gap-4" style="height: calc(100vh - 88px);">
+    <!-- Left Panel - Stats & Categories -->
+    <aside class="col-span-3 space-y-4 overflow-hidden flex flex-col">
+      <!-- Stats -->
+      <div class="grid grid-cols-2 gap-3">
+        <div class="stat-card p-3 rounded-xl">
+          <div class="text-2xl font-bold text-amber-800">156</div>
+          <div class="text-[10px] text-amber-700 font-medium mt-1">РўРѕРІР°СЂРѕРІ</div>
+        </div>
+        <div class="stat-card p-3 rounded-xl">
+          <div class="text-2xl font-bold text-amber-800">8.5С‚</div>
+          <div class="text-[10px] text-amber-700 font-medium mt-1">РќР° СЃРєР»Р°РґРµ</div>
+        </div>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="flex gap-2">
+        <button onclick="addProduct()" class="flex-1 btn-primary py-2.5 rounded-xl text-sm font-medium shadow-lg">
+          <i class="fa-solid fa-plus mr-2"></i>Р”РѕР±Р°РІРёС‚СЊ
+        </button>
+        <button onclick="reserveStock()" class="px-4 py-2.5 rounded-xl bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium shadow-lg transition">
+          <i class="fa-solid fa-lock"></i>
+        </button>
+      </div>
+
+      <!-- Categories -->
+      <div class="glass-panel p-4 flex-1 overflow-y-auto">
+        <h3 class="text-xs font-bold text-slate-500 mb-3 uppercase tracking-wide">РљР°С‚РµРіРѕСЂРёРё</h3>
+        <div class="space-y-1" id="categoriesList">
+          <button onclick="filterCategory('all')" class="tab-btn w-full text-left active">Р’СЃРµ С‚РѕРІР°СЂС‹</button>
+          <button onclick="filterCategory('building')" class="tab-btn w-full text-left">РЎС‚СЂРѕР№РјР°С‚РµСЂРёР°Р»С‹</button>
+          <button onclick="filterCategory('food')" class="tab-btn w-full text-left">РџСЂРѕРґСѓРєС‚С‹</button>
+          <button onclick="filterCategory('equipment')" class="tab-btn w-full text-left">РћР±РѕСЂСѓРґРѕРІР°РЅРёРµ</button>
+          <button onclick="filterCategory('auto')" class="tab-btn w-full text-left">РђРІС‚РѕР·Р°РїС‡Р°СЃС‚Рё</button>
+          <button onclick="filterCategory('chemicals')" class="tab-btn w-full text-left">РҐРёРјРёСЏ</button>
+        </div>
+
+        <div class="mt-6">
+          <h3 class="text-xs font-bold text-slate-500 mb-3 uppercase tracking-wide">РЎС‚Р°С‚СѓСЃ РѕСЃС‚Р°С‚РєРѕРІ</h3>
+          <div class="space-y-2">
+            <div class="flex items-center justify-between text-sm">
+              <span class="text-slate-600">РљСЂРёС‚РёС‡РЅС‹Р№</span>
+              <span class="text-red-600 font-bold">12</span>
+            </div>
+            <div class="flex items-center justify-between text-sm">
+              <span class="text-slate-600">РќРёР·РєРёР№</span>
+              <span class="text-amber-600 font-bold">24</span>
+            </div>
+            <div class="flex items-center justify-between text-sm">
+              <span class="text-slate-600">РќРѕСЂРјР°Р»СЊРЅС‹Р№</span>
+              <span class="text-green-600 font-bold">120</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Center - Products List -->
+    <section class="col-span-6 flex flex-col gap-4">
+      <!-- Search & Filters -->
+      <div class="glass-panel p-4">
+        <div class="flex gap-3">
+          <div class="flex-1 relative">
+            <i class="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+            <input type="text" id="searchInput" placeholder="РџРѕРёСЃРє РїРѕ РЅР°Р·РІР°РЅРёСЋ, Р°СЂС‚РёРєСѓР»Сѓ..."
+                   class="w-full pl-10 pr-4 py-2.5 rounded-lg border border-slate-200 focus:border-amber-400 focus:ring-2 focus:ring-amber-200 transition"
+                   oninput="searchProducts(this.value)">
+          </div>
+          <button class="px-4 py-2.5 rounded-lg bg-white border border-slate-200 hover:border-amber-400 transition">
+            <i class="fa-solid fa-filter text-slate-600"></i>
+          </button>
+          <button class="px-4 py-2.5 rounded-lg bg-white border border-slate-200 hover:border-amber-400 transition">
+            <i class="fa-solid fa-download text-slate-600"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Products Table -->
+      <div class="glass-panel p-4 flex-1 overflow-y-auto">
+        <table class="w-full">
+          <thead class="sticky top-0 bg-white/95 backdrop-blur-sm">
+            <tr class="border-b border-slate-200">
+              <th class="text-left text-xs font-bold text-slate-500 uppercase tracking-wide pb-3">РўРѕРІР°СЂ</th>
+              <th class="text-left text-xs font-bold text-slate-500 uppercase tracking-wide pb-3">РђСЂС‚РёРєСѓР»</th>
+              <th class="text-center text-xs font-bold text-slate-500 uppercase tracking-wide pb-3">РћСЃС‚Р°С‚РѕРє</th>
+              <th class="text-center text-xs font-bold text-slate-500 uppercase tracking-wide pb-3">Р РµР·РµСЂРІ</th>
+              <th class="text-center text-xs font-bold text-slate-500 uppercase tracking-wide pb-3">Р”РѕСЃС‚СѓРїРЅРѕ</th>
+              <th class="text-right text-xs font-bold text-slate-500 uppercase tracking-wide pb-3">РЎС‚Р°С‚СѓСЃ</th>
+            </tr>
+          </thead>
+          <tbody id="productsTable"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Right Panel - Product Details -->
+    <aside class="col-span-3 space-y-4 overflow-hidden flex flex-col">
+      <div class="glass-panel p-4 flex-1 overflow-y-auto">
+        <h3 class="text-sm font-bold text-slate-800 mb-4">Р”РµС‚Р°Р»Рё С‚РѕРІР°СЂР°</h3>
+        <div id="productDetails">
+          <div class="text-center text-slate-400 py-10">
+            <i class="fa-solid fa-box-open text-4xl mb-3 opacity-30"></i>
+            <p class="text-sm">Р’С‹Р±РµСЂРёС‚Рµ С‚РѕРІР°СЂ РёР· СЃРїРёСЃРєР°</p>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <!-- Add Product Modal -->
+  <div id="productModal" class="hidden fixed inset-0 modal-overlay z-50 flex items-center justify-center p-4">
+    <div class="glass-panel w-full max-w-lg rounded-2xl overflow-hidden shadow-2xl">
+      <div class="p-4 border-b border-white/30 flex items-center justify-between bg-gradient-to-r from-amber-500/10 to-orange-500/10">
+        <h3 class="font-bold text-slate-800 text-lg" id="productModalTitle">Р”РѕР±Р°РІРёС‚СЊ С‚РѕРІР°СЂ</h3>
+        <button onclick="closeProductModal()" class="w-8 h-8 rounded-full bg-white/50 hover:bg-white flex items-center justify-center">
+          <i class="fa-solid fa-times text-slate-500"></i>
+        </button>
+      </div>
+      <form id="productForm" class="p-4 space-y-4">
+        <input type="hidden" id="productId">
+        <div class="grid grid-cols-2 gap-4">
+          <div class="col-span-2">
+            <label class="text-xs font-semibold text-slate-600 mb-1 block">РќР°Р·РІР°РЅРёРµ С‚РѕРІР°СЂР° *</label>
+            <input type="text" id="productName" required class="w-full px-4 py-2 rounded-xl bg-white/60 border border-white/50 text-sm" placeholder="Р’РІРµРґРёС‚Рµ РЅР°Р·РІР°РЅРёРµ">
+          </div>
+          <div>
+            <label class="text-xs font-semibold text-slate-600 mb-1 block">РђСЂС‚РёРєСѓР» (SKU) *</label>
+            <input type="text" id="productSku" required class="w-full px-4 py-2 rounded-xl bg-white/60 border border-white/50 text-sm" placeholder="ABC-123">
+          </div>
+          <div>
+            <label class="text-xs font-semibold text-slate-600 mb-1 block">РљР°С‚РµРіРѕСЂРёСЏ</label>
+            <select id="productCategory" class="w-full px-4 py-2 rounded-xl bg-white/60 border border-white/50 text-sm">
+              <option value="building">РЎС‚СЂРѕР№РјР°С‚РµСЂРёР°Р»С‹</option>
+              <option value="auto">РђРІС‚РѕР·Р°РїС‡Р°СЃС‚Рё</option>
+              <option value="food">РџСЂРѕРґСѓРєС‚С‹ РїРёС‚Р°РЅРёСЏ</option>
+              <option value="chemicals">Р‘С‹С‚РѕРІР°СЏ С…РёРјРёСЏ</option>
+              <option value="equipment">РћР±РѕСЂСѓРґРѕРІР°РЅРёРµ</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-xs font-semibold text-slate-600 mb-1 block">Р•РґРёРЅРёС†Р° РёР·РјРµСЂРµРЅРёСЏ</label>
+            <select id="productUnit" class="w-full px-4 py-2 rounded-xl bg-white/60 border border-white/50 text-sm">
+              <option value="С€С‚">С€С‚СѓРєР°</option>
+              <option value="СѓРїР°Рє">СѓРїР°РєРѕРІРєР°</option>
+              <option value="РјРµС€РѕРє">РјРµС€РѕРє</option>
+              <option value="РєР°РЅРёСЃС‚СЂР°">РєР°РЅРёСЃС‚СЂР°</option>
+              <option value="РєРѕРјРїР»РµРєС‚">РєРѕРјРїР»РµРєС‚</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-xs font-semibold text-slate-600 mb-1 block">Р’РµСЃ (РєРі)</label>
+            <input type="number" id="productWeight" class="w-full px-4 py-2 rounded-xl bg-white/60 border border-white/50 text-sm" placeholder="0" step="0.1">
+          </div>
+          <div>
+            <label class="text-xs font-semibold text-slate-600 mb-1 block">РќР°С‡Р°Р»СЊРЅС‹Р№ РѕСЃС‚Р°С‚РѕРє</label>
+            <input type="number" id="productStock" class="w-full px-4 py-2 rounded-xl bg-white/60 border border-white/50 text-sm" placeholder="0">
+          </div>
+          <div>
+            <label class="text-xs font-semibold text-slate-600 mb-1 block">Р¦РµРЅР° (в‚Ѕ)</label>
+            <input type="number" id="productPrice" class="w-full px-4 py-2 rounded-xl bg-white/60 border border-white/50 text-sm" placeholder="0">
+          </div>
+        </div>
+      </form>
+      <div class="p-4 border-t border-white/30 flex gap-3">
+        <button onclick="closeProductModal()" class="flex-1 py-2.5 rounded-xl bg-slate-100 text-slate-600 font-semibold">РћС‚РјРµРЅР°</button>
+        <button onclick="saveProduct()" class="flex-1 py-2.5 rounded-xl btn-primary font-semibold">РЎРѕС…СЂР°РЅРёС‚СЊ</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reserve Modal -->
+  <div id="reserveModal" class="hidden fixed inset-0 modal-overlay z-50 flex items-center justify-center p-4">
+    <div class="glass-panel w-full max-w-md rounded-2xl overflow-hidden shadow-2xl">
+      <div class="p-4 border-b border-white/30 flex items-center justify-between bg-gradient-to-r from-blue-500/10 to-indigo-500/10">
+        <h3 class="font-bold text-slate-800 text-lg">Р РµР·РµСЂРІРёСЂРѕРІР°РЅРёРµ С‚РѕРІР°СЂР°</h3>
+        <button onclick="closeReserveModal()" class="w-8 h-8 rounded-full bg-white/50 hover:bg-white flex items-center justify-center">
+          <i class="fa-solid fa-times text-slate-500"></i>
+        </button>
+      </div>
+      <div class="p-4 space-y-4">
+        <div class="glass-card p-3">
+          <div class="text-xs text-slate-500 mb-1">РўРѕРІР°СЂ</div>
+          <div class="font-semibold text-slate-800" id="reserveProductName">-</div>
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-slate-600 mb-1 block">РљРѕР»РёС‡РµСЃС‚РІРѕ РґР»СЏ СЂРµР·РµСЂРІР° *</label>
+          <input type="number" id="reserveAmount" class="w-full px-4 py-2 rounded-xl bg-white/60 border border-white/50 text-sm" placeholder="0" min="1">
+          <div class="text-xs text-slate-500 mt-1">Р”РѕСЃС‚СѓРїРЅРѕ: <span id="reserveAvailable">0</span></div>
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-slate-600 mb-1 block">РќРѕРјРµСЂ Р·Р°РєР°Р·Р°</label>
+          <input type="text" id="reserveOrderId" class="w-full px-4 py-2 rounded-xl bg-white/60 border border-white/50 text-sm" placeholder="#1001">
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-slate-600 mb-1 block">РљРѕРјРјРµРЅС‚Р°СЂРёР№</label>
+          <textarea id="reserveComment" class="w-full px-4 py-2 rounded-xl bg-white/60 border border-white/50 text-sm h-16" placeholder="РџСЂРёРјРµС‡Р°РЅРёРµ"></textarea>
+        </div>
+      </div>
+      <div class="p-4 border-t border-white/30 flex gap-3">
+        <button onclick="closeReserveModal()" class="flex-1 py-2.5 rounded-xl bg-slate-100 text-slate-600 font-semibold">РћС‚РјРµРЅР°</button>
+        <button onclick="confirmReserve()" class="flex-1 py-2.5 rounded-xl btn-primary font-semibold">Р—Р°СЂРµР·РµСЂРІРёСЂРѕРІР°С‚СЊ</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Move Stock Modal -->
+  <div id="moveModal" class="hidden fixed inset-0 modal-overlay z-50 flex items-center justify-center p-4">
+    <div class="glass-panel w-full max-w-md rounded-2xl overflow-hidden shadow-2xl">
+      <div class="p-4 border-b border-white/30 flex items-center justify-between bg-gradient-to-r from-green-500/10 to-emerald-500/10">
+        <h3 class="font-bold text-slate-800 text-lg">РџРµСЂРµРјРµС‰РµРЅРёРµ С‚РѕРІР°СЂР°</h3>
+        <button onclick="closeMoveModal()" class="w-8 h-8 rounded-full bg-white/50 hover:bg-white flex items-center justify-center">
+          <i class="fa-solid fa-times text-slate-500"></i>
+        </button>
+      </div>
+      <div class="p-4 space-y-4">
+        <input type="hidden" id="moveProductId">
+        <div class="glass-card p-3">
+          <div class="text-xs text-slate-500 mb-1">РўРѕРІР°СЂ</div>
+          <div class="font-semibold text-slate-800" id="moveProductName">-</div>
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-slate-600 mb-1 block">РљРѕР»РёС‡РµСЃС‚РІРѕ *</label>
+          <input type="number" id="moveAmount" class="w-full px-4 py-2 rounded-xl bg-white/60 border border-white/50 text-sm" placeholder="0" min="1">
+          <div class="text-xs text-slate-500 mt-1">РќР° СЃРєР»Р°РґРµ: <span id="moveStock">0</span></div>
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-slate-600 mb-1 block">РЎРєР»Р°Рґ РЅР°Р·РЅР°С‡РµРЅРёСЏ *</label>
+          <select id="moveDestination" class="w-full px-4 py-2 rounded-xl bg-white/60 border border-white/50 text-sm">
+            <option value="warehouse2">РЎРєР»Р°Рґ в„–2 (РЎРџР±)</option>
+            <option value="warehouse3">РЎРєР»Р°Рґ в„–3 (РљР°Р·Р°РЅСЊ)</option>
+            <option value="warehouse4">РЎРєР»Р°Рґ в„–4 (Р•РєР°С‚РµСЂРёРЅР±СѓСЂРі)</option>
+          </select>
+        </div>
+      </div>
+      <div class="p-4 border-t border-white/30 flex gap-3">
+        <button onclick="closeMoveModal()" class="flex-1 py-2.5 rounded-xl bg-slate-100 text-slate-600 font-semibold">РћС‚РјРµРЅР°</button>
+        <button onclick="confirmMove()" class="flex-1 py-2.5 rounded-xl btn-primary font-semibold">РџРµСЂРµРјРµСЃС‚РёС‚СЊ</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Write-off Modal -->
+  <div id="writeOffModal" class="hidden fixed inset-0 modal-overlay z-50 flex items-center justify-center p-4">
+    <div class="glass-panel w-full max-w-md rounded-2xl overflow-hidden shadow-2xl">
+      <div class="p-4 border-b border-white/30 flex items-center justify-between bg-gradient-to-r from-red-500/10 to-rose-500/10">
+        <h3 class="font-bold text-slate-800 text-lg">РЎРїРёСЃР°РЅРёРµ С‚РѕРІР°СЂР°</h3>
+        <button onclick="closeWriteOffModal()" class="w-8 h-8 rounded-full bg-white/50 hover:bg-white flex items-center justify-center">
+          <i class="fa-solid fa-times text-slate-500"></i>
+        </button>
+      </div>
+      <div class="p-4 space-y-4">
+        <input type="hidden" id="writeOffProductId">
+        <div class="glass-card p-3">
+          <div class="text-xs text-slate-500 mb-1">РўРѕРІР°СЂ</div>
+          <div class="font-semibold text-slate-800" id="writeOffProductName">-</div>
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-slate-600 mb-1 block">РљРѕР»РёС‡РµСЃС‚РІРѕ РґР»СЏ СЃРїРёСЃР°РЅРёСЏ *</label>
+          <input type="number" id="writeOffAmount" class="w-full px-4 py-2 rounded-xl bg-white/60 border border-white/50 text-sm" placeholder="0" min="1">
+          <div class="text-xs text-slate-500 mt-1">РќР° СЃРєР»Р°РґРµ: <span id="writeOffStock">0</span></div>
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-slate-600 mb-1 block">РџСЂРёС‡РёРЅР° СЃРїРёСЃР°РЅРёСЏ *</label>
+          <select id="writeOffReason" class="w-full px-4 py-2 rounded-xl bg-white/60 border border-white/50 text-sm">
+            <option value="expired">РСЃС‚С‘Рє СЃСЂРѕРє РіРѕРґРЅРѕСЃС‚Рё</option>
+            <option value="damaged">РџРѕРІСЂРµР¶РґРµРЅРёРµ</option>
+            <option value="lost">РЈС‚РµСЂСЏ</option>
+            <option value="defect">Р‘СЂР°Рє</option>
+            <option value="other">Р”СЂСѓРіРѕРµ</option>
+          </select>
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-slate-600 mb-1 block">РљРѕРјРјРµРЅС‚Р°СЂРёР№</label>
+          <textarea id="writeOffComment" class="w-full px-4 py-2 rounded-xl bg-white/60 border border-white/50 text-sm h-16" placeholder="Р”РѕРїРѕР»РЅРёС‚РµР»СЊРЅР°СЏ РёРЅС„РѕСЂРјР°С†РёСЏ"></textarea>
+        </div>
+      </div>
+      <div class="p-4 border-t border-white/30 flex gap-3">
+        <button onclick="closeWriteOffModal()" class="flex-1 py-2.5 rounded-xl bg-slate-100 text-slate-600 font-semibold">РћС‚РјРµРЅР°</button>
+        <button onclick="confirmWriteOff()" class="flex-1 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white font-semibold transition">РЎРїРёСЃР°С‚СЊ</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="./assets/js/routa-core.js"></script>
+  <script>
+    Routa.Theme.load();
+
+    let products = [
+      { id: 1, name: 'Р¦РµРјРµРЅС‚ Рњ500', sku: 'CEM-500-50', category: 'building', stock: 240, reserved: 80, unit: 'РјРµС€РѕРє', weight: 50, price: 350 },
+      { id: 2, name: 'РљРёСЂРїРёС‡ РєСЂР°СЃРЅС‹Р№', sku: 'BRK-RED-001', category: 'building', stock: 5000, reserved: 2000, unit: 'С€С‚', weight: 3.5, price: 12 },
+      { id: 3, name: 'РњР°СЃР»Рѕ РјРѕС‚РѕСЂРЅРѕРµ 5W-40', sku: 'OIL-5W40-5L', category: 'auto', stock: 45, reserved: 15, unit: 'РєР°РЅРёСЃС‚СЂР°', weight: 5, price: 1200 },
+      { id: 4, name: 'РЎР°С…Р°СЂ-РїРµСЃРѕРє', sku: 'SUGAR-001', category: 'food', stock: 120, reserved: 60, unit: 'РјРµС€РѕРє', weight: 50, price: 2800 },
+      { id: 5, name: 'РЎРІРµС‡Р° Р·Р°Р¶РёРіР°РЅРёСЏ NGK', sku: 'NGK-SPARK-01', category: 'auto', stock: 8, reserved: 4, unit: 'С€С‚', weight: 0.05, price: 380 },
+      { id: 6, name: 'РЎС‚РёСЂР°Р»СЊРЅС‹Р№ РїРѕСЂРѕС€РѕРє Ariel', sku: 'ARIEL-3KG', category: 'chemicals', stock: 80, reserved: 30, unit: 'СѓРїР°Рє', weight: 3, price: 450 },
+      { id: 7, name: 'Р“РµРЅРµСЂР°С‚РѕСЂ Р±РµРЅР·РёРЅРѕРІС‹Р№', sku: 'GEN-5KW-01', category: 'equipment', stock: 3, reserved: 1, unit: 'С€С‚', weight: 85, price: 45000 },
+      { id: 8, name: 'РњСѓРєР° РїС€РµРЅРёС‡РЅР°СЏ РІ/СЃ', sku: 'FLOUR-HG-50', category: 'food', stock: 200, reserved: 100, unit: 'РјРµС€РѕРє', weight: 50, price: 1400 },
+      { id: 9, name: 'РўРѕСЂРјРѕР·РЅС‹Рµ РєРѕР»РѕРґРєРё', sku: 'BRAKE-PAD-F', category: 'auto', stock: 24, reserved: 8, unit: 'РєРѕРјРїР»РµРєС‚', weight: 2, price: 2500 },
+      { id: 10, name: 'РђРЅС‚РёС„СЂРёР· РєСЂР°СЃРЅС‹Р№', sku: 'AF-RED-10L', category: 'chemicals', stock: 60, reserved: 20, unit: 'РєР°РЅРёСЃС‚СЂР°', weight: 10, price: 850 }
+    ];
+
+    let selectedProductId = null;
+    let currentCategory = 'all';
+
+    const categoryNames = {
+      building: 'РЎС‚СЂРѕР№РјР°С‚РµСЂРёР°Р»С‹',
+      auto: 'РђРІС‚РѕР·Р°РїС‡Р°СЃС‚Рё',
+      food: 'РџСЂРѕРґСѓРєС‚С‹ РїРёС‚Р°РЅРёСЏ',
+      chemicals: 'Р‘С‹С‚РѕРІР°СЏ С…РёРјРёСЏ',
+      equipment: 'РћР±РѕСЂСѓРґРѕРІР°РЅРёРµ'
+    };
+
+    document.addEventListener('DOMContentLoaded', () => {
+      renderProducts();
+    });
+
+    function renderProducts() {
+      const filtered = currentCategory === 'all' 
+        ? products 
+        : products.filter(p => p.category === currentCategory);
+
+      const tbody = document.getElementById('productsTable');
+      tbody.innerHTML = filtered.map(p => {
+        const available = p.stock - p.reserved;
+        const stockStatus = available < 10 ? 'stock-low' : available < 50 ? 'stock-medium' : 'stock-high';
+        const isSelected = p.id === selectedProductId ? 'bg-amber-50' : '';
+
+        return `
+          <tr class="border-b border-slate-100 hover:bg-slate-50 cursor-pointer ${isSelected}" onclick="selectProduct(${p.id})">
+            <td class="py-3">
+              <div class="font-semibold text-sm text-slate-800">${p.name}</div>
+              <div class="text-xs text-slate-500">${p.unit}, ${p.weight}РєРі</div>
+            </td>
+            <td class="py-3 text-sm text-slate-600">${p.sku}</td>
+            <td class="py-3 text-center font-bold text-slate-800">${p.stock}</td>
+            <td class="py-3 text-center text-sm text-blue-600">${p.reserved}</td>
+            <td class="py-3 text-center font-bold ${stockStatus}">${available}</td>
+            <td class="py-3 text-right">
+              <span class="px-2 py-1 text-xs font-semibold rounded-full ${stockStatus}">
+                ${available < 10 ? 'РљСЂРёС‚РёС‡РЅРѕ' : available < 50 ? 'РќРёР·РєРёР№' : 'Р’ РЅР°Р»РёС‡РёРё'}
+              </span>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function selectProduct(id) {
+      selectedProductId = id;
+      renderProducts();
+      renderProductDetails();
+    }
+
+    function renderProductDetails() {
+      const product = products.find(p => p.id === selectedProductId);
+      if (!product) {
+        document.getElementById('productDetails').innerHTML = `
+          <div class="text-center text-slate-400 py-10">
+            <i class="fa-solid fa-box-open text-4xl mb-3 opacity-30"></i>
+            <p class="text-sm">Р’С‹Р±РµСЂРёС‚Рµ С‚РѕРІР°СЂ РёР· СЃРїРёСЃРєР°</p>
+          </div>
+        `;
+        return;
+      }
+
+      const available = product.stock - product.reserved;
+      const stockPercent = product.stock > 0 ? ((available / product.stock) * 100).toFixed(0) : 0;
+
+      document.getElementById('productDetails').innerHTML = `
+        <div class="space-y-4">
+          <div class="glass-card p-4">
+            <div class="flex items-start justify-between mb-2">
+              <div>
+                <div class="font-bold text-slate-800">${product.name}</div>
+                <div class="text-xs text-slate-500 mt-1">${product.sku}</div>
+              </div>
+              <button onclick="editProduct(${product.id})" class="text-amber-600 hover:text-amber-700">
+                <i class="fa-solid fa-edit"></i>
+              </button>
+            </div>
+            <div class="text-xs text-slate-500 mt-2">${categoryNames[product.category]}</div>
+            <div class="text-2xl font-bold text-amber-600 mt-3">${product.price.toLocaleString()} в‚Ѕ</div>
+          </div>
+
+          <div class="space-y-3">
+            <div class="flex items-center justify-between text-sm py-2 border-b border-slate-100">
+              <span class="text-slate-600">Р’СЃРµРіРѕ РЅР° СЃРєР»Р°РґРµ</span>
+              <span class="font-bold text-slate-800">${product.stock} ${product.unit}</span>
+            </div>
+            <div class="flex items-center justify-between text-sm py-2 border-b border-slate-100">
+              <span class="text-slate-600">Р’ СЂРµР·РµСЂРІРµ</span>
+              <span class="font-bold text-blue-600">${product.reserved} ${product.unit}</span>
+            </div>
+            <div class="flex items-center justify-between text-sm py-2 border-b border-slate-100">
+              <span class="text-slate-600">Р”РѕСЃС‚СѓРїРЅРѕ</span>
+              <span class="font-bold text-green-600">${available} ${product.unit}</span>
+            </div>
+            <div class="flex items-center justify-between text-sm py-2">
+              <span class="text-slate-600">Р’РµСЃ РµРґРёРЅРёС†С‹</span>
+              <span class="font-semibold">${product.weight} РєРі</span>
+            </div>
+          </div>
+
+          <div>
+            <div class="text-xs text-slate-500 mb-2">Р—Р°РіСЂСѓР·РєР° СЃРєР»Р°РґР°</div>
+            <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
+              <div class="h-full bg-gradient-to-r from-amber-500 to-orange-500 rounded-full" style="width: ${stockPercent}%"></div>
+            </div>
+            <div class="text-xs text-slate-500 mt-1 text-right">${stockPercent}%</div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2 mt-4">
+            <button onclick="moveStock(${product.id})" class="py-2 rounded-lg bg-blue-500 hover:bg-blue-600 text-white text-xs font-medium transition">
+              <i class="fa-solid fa-truck mr-1"></i>РџРµСЂРµРјРµСЃС‚РёС‚СЊ
+            </button>
+            <button onclick="writeOff(${product.id})" class="py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white text-xs font-medium transition">
+              <i class="fa-solid fa-trash mr-1"></i>РЎРїРёСЃР°С‚СЊ
+            </button>
+          </div>
+
+          <div class="glass-card p-3 mt-4">
+            <div class="text-xs font-bold text-slate-500 mb-2">РСЃС‚РѕСЂРёСЏ РґРІРёР¶РµРЅРёСЏ</div>
+            <div class="space-y-2 text-xs">
+              <div class="flex justify-between py-1">
+                <span class="text-slate-600">24.01 вЂў РџРѕСЃС‚СѓРїР»РµРЅРёРµ</span>
+                <span class="text-green-600 font-semibold">+50</span>
+              </div>
+              <div class="flex justify-between py-1">
+                <span class="text-slate-600">23.01 вЂў Р РµР·РµСЂРІ</span>
+                <span class="text-blue-600 font-semibold">-20</span>
+              </div>
+              <div class="flex justify-between py-1">
+                <span class="text-slate-600">22.01 вЂў РћС‚РіСЂСѓР·РєР°</span>
+                <span class="text-red-600 font-semibold">-30</span>
+              </div>
+            </div>
+          </div>
+          
+          <button onclick="deleteProduct(${product.id})" class="w-full py-2 rounded-xl text-xs font-medium text-red-500 hover:bg-red-50 transition mt-2">
+            <i class="fa-solid fa-trash-alt mr-1"></i>РЈРґР°Р»РёС‚СЊ С‚РѕРІР°СЂ
+          </button>
+        </div>
+      `;
+    }
+
+    function filterCategory(cat) {
+      currentCategory = cat;
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      event.target.classList.add('active');
+      renderProducts();
+    }
+
+    function searchProducts(query) {
+      const q = query.toLowerCase();
+      const filtered = products.filter(p => 
+        p.name.toLowerCase().includes(q) || 
+        p.sku.toLowerCase().includes(q)
+      );
+      
+      const tbody = document.getElementById('productsTable');
+      tbody.innerHTML = filtered.map(p => {
+        const available = p.stock - p.reserved;
+        const stockStatus = available < 10 ? 'stock-low' : available < 50 ? 'stock-medium' : 'stock-high';
+        const isSelected = p.id === selectedProductId ? 'bg-amber-50' : '';
+        return `
+          <tr class="border-b border-slate-100 hover:bg-slate-50 cursor-pointer ${isSelected}" onclick="selectProduct(${p.id})">
+            <td class="py-3">
+              <div class="font-semibold text-sm text-slate-800">${p.name}</div>
+              <div class="text-xs text-slate-500">${p.unit}, ${p.weight}РєРі</div>
+            </td>
+            <td class="py-3 text-sm text-slate-600">${p.sku}</td>
+            <td class="py-3 text-center font-bold text-slate-800">${p.stock}</td>
+            <td class="py-3 text-center text-sm text-blue-600">${p.reserved}</td>
+            <td class="py-3 text-center font-bold ${stockStatus}">${available}</td>
+            <td class="py-3 text-right">
+              <span class="px-2 py-1 text-xs font-semibold rounded-full ${stockStatus}">
+                ${available < 10 ? 'РљСЂРёС‚РёС‡РЅРѕ' : available < 50 ? 'РќРёР·РєРёР№' : 'Р’ РЅР°Р»РёС‡РёРё'}
+              </span>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // Product Modal
+    function addProduct() {
+      document.getElementById('productModalTitle').textContent = 'Р”РѕР±Р°РІРёС‚СЊ С‚РѕРІР°СЂ';
+      document.getElementById('productForm').reset();
+      document.getElementById('productId').value = '';
+      document.getElementById('productModal').classList.remove('hidden');
+    }
+
+    function editProduct(id) {
+      const product = products.find(p => p.id === id);
+      if (!product) return;
+      
+      document.getElementById('productModalTitle').textContent = 'Р РµРґР°РєС‚РёСЂРѕРІР°С‚СЊ С‚РѕРІР°СЂ';
+      document.getElementById('productId').value = product.id;
+      document.getElementById('productName').value = product.name;
+      document.getElementById('productSku').value = product.sku;
+      document.getElementById('productCategory').value = product.category;
+      document.getElementById('productUnit').value = product.unit;
+      document.getElementById('productWeight').value = product.weight;
+      document.getElementById('productStock').value = product.stock;
+      document.getElementById('productPrice').value = product.price;
+      document.getElementById('productModal').classList.remove('hidden');
+    }
+
+    function closeProductModal() {
+      document.getElementById('productModal').classList.add('hidden');
+    }
+
+    function saveProduct() {
+      const id = document.getElementById('productId').value;
+      const productData = {
+        name: document.getElementById('productName').value,
+        sku: document.getElementById('productSku').value,
+        category: document.getElementById('productCategory').value,
+        unit: document.getElementById('productUnit').value,
+        weight: parseFloat(document.getElementById('productWeight').value) || 0,
+        stock: parseInt(document.getElementById('productStock').value) || 0,
+        price: parseInt(document.getElementById('productPrice').value) || 0
+      };
+
+      if (!productData.name || !productData.sku) {
+        showToast('Р—Р°РїРѕР»РЅРёС‚Рµ РѕР±СЏР·Р°С‚РµР»СЊРЅС‹Рµ РїРѕР»СЏ', 'error');
+        return;
+      }
+
+      if (id) {
+        const idx = products.findIndex(p => p.id === parseInt(id));
+        if (idx !== -1) {
+          products[idx] = { ...products[idx], ...productData };
+        }
+      } else {
+        const newId = Math.max(...products.map(p => p.id)) + 1;
+        products.push({
+          id: newId,
+          ...productData,
+          reserved: 0
+        });
+      }
+
+      closeProductModal();
+      renderProducts();
+      if (selectedProductId) renderProductDetails();
+      showToast(id ? 'РўРѕРІР°СЂ РѕР±РЅРѕРІР»С‘РЅ' : 'РўРѕРІР°СЂ РґРѕР±Р°РІР»РµРЅ');
+    }
+
+    function deleteProduct(id) {
+      if (!confirm('РЈРґР°Р»РёС‚СЊ С‚РѕРІР°СЂ РёР· Р±Р°Р·С‹?')) return;
+      
+      products = products.filter(p => p.id !== id);
+      if (selectedProductId === id) {
+        selectedProductId = null;
+        renderProductDetails();
+      }
+      renderProducts();
+      showToast('РўРѕРІР°СЂ СѓРґР°Р»С‘РЅ');
+    }
+
+    // Reserve Modal
+    function reserveStock() {
+      if (!selectedProductId) {
+        showToast('РЎРЅР°С‡Р°Р»Р° РІС‹Р±РµСЂРёС‚Рµ С‚РѕРІР°СЂ', 'error');
+        return;
+      }
+      const product = products.find(p => p.id === selectedProductId);
+      if (!product) return;
+      
+      const available = product.stock - product.reserved;
+      document.getElementById('reserveProductName').textContent = product.name;
+      document.getElementById('reserveAvailable').textContent = available + ' ' + product.unit;
+      document.getElementById('reserveAmount').value = '';
+      document.getElementById('reserveAmount').max = available;
+      document.getElementById('reserveOrderId').value = '';
+      document.getElementById('reserveComment').value = '';
+      document.getElementById('reserveModal').classList.remove('hidden');
+    }
+
+    function closeReserveModal() {
+      document.getElementById('reserveModal').classList.add('hidden');
+    }
+
+    function confirmReserve() {
+      const amount = parseInt(document.getElementById('reserveAmount').value);
+      const product = products.find(p => p.id === selectedProductId);
+      if (!product) return;
+      
+      const available = product.stock - product.reserved;
+      if (!amount || amount <= 0 || amount > available) {
+        showToast('РЈРєР°Р¶РёС‚Рµ РєРѕСЂСЂРµРєС‚РЅРѕРµ РєРѕР»РёС‡РµСЃС‚РІРѕ', 'error');
+        return;
+      }
+
+      product.reserved += amount;
+      closeReserveModal();
+      renderProducts();
+      renderProductDetails();
+      showToast(`Р—Р°СЂРµР·РµСЂРІРёСЂРѕРІР°РЅРѕ ${amount} ${product.unit}`);
+    }
+
+    // Move Modal
+    function moveStock(id) {
+      const product = products.find(p => p.id === id);
+      if (!product) return;
+      
+      document.getElementById('moveProductId').value = id;
+      document.getElementById('moveProductName').textContent = product.name;
+      document.getElementById('moveStock').textContent = product.stock + ' ' + product.unit;
+      document.getElementById('moveAmount').value = '';
+      document.getElementById('moveAmount').max = product.stock;
+      document.getElementById('moveModal').classList.remove('hidden');
+    }
+
+    function closeMoveModal() {
+      document.getElementById('moveModal').classList.add('hidden');
+    }
+
+    function confirmMove() {
+      const productId = parseInt(document.getElementById('moveProductId').value);
+      const amount = parseInt(document.getElementById('moveAmount').value);
+      const destination = document.getElementById('moveDestination').options[document.getElementById('moveDestination').selectedIndex].text;
+      
+      const product = products.find(p => p.id === productId);
+      if (!product) return;
+      
+      if (!amount || amount <= 0 || amount > product.stock) {
+        showToast('РЈРєР°Р¶РёС‚Рµ РєРѕСЂСЂРµРєС‚РЅРѕРµ РєРѕР»РёС‡РµСЃС‚РІРѕ', 'error');
+        return;
+      }
+
+      product.stock -= amount;
+      closeMoveModal();
+      renderProducts();
+      renderProductDetails();
+      showToast(`${amount} ${product.unit} РїРµСЂРµРјРµС‰РµРЅРѕ РЅР° ${destination}`);
+    }
+
+    // Write-off Modal
+    function writeOff(id) {
+      const product = products.find(p => p.id === id);
+      if (!product) return;
+      
+      document.getElementById('writeOffProductId').value = id;
+      document.getElementById('writeOffProductName').textContent = product.name;
+      document.getElementById('writeOffStock').textContent = product.stock + ' ' + product.unit;
+      document.getElementById('writeOffAmount').value = '';
+      document.getElementById('writeOffAmount').max = product.stock;
+      document.getElementById('writeOffComment').value = '';
+      document.getElementById('writeOffModal').classList.remove('hidden');
+    }
+
+    function closeWriteOffModal() {
+      document.getElementById('writeOffModal').classList.add('hidden');
+    }
+
+    function confirmWriteOff() {
+      const productId = parseInt(document.getElementById('writeOffProductId').value);
+      const amount = parseInt(document.getElementById('writeOffAmount').value);
+      
+      const product = products.find(p => p.id === productId);
+      if (!product) return;
+      
+      if (!amount || amount <= 0 || amount > product.stock) {
+        showToast('РЈРєР°Р¶РёС‚Рµ РєРѕСЂСЂРµРєС‚РЅРѕРµ РєРѕР»РёС‡РµСЃС‚РІРѕ', 'error');
+        return;
+      }
+
+      product.stock -= amount;
+      if (product.reserved > product.stock) {
+        product.reserved = product.stock;
+      }
+      closeWriteOffModal();
+      renderProducts();
+      renderProductDetails();
+      showToast(`РЎРїРёСЃР°РЅРѕ ${amount} ${product.unit}`);
+    }
+
+    function showToast(message, type = 'success') {
+      const toast = document.createElement('div');
+      toast.className = 'fixed bottom-4 right-4 glass-panel px-6 py-3 flex items-center gap-3 z-50 shadow-lg';
+      const icon = type === 'error' ? 'fa-exclamation-circle' : 'fa-check';
+      const color = type === 'error' ? 'red' : 'green';
+      toast.innerHTML = `
+        <div class="w-8 h-8 rounded-lg bg-${color}-500/20 flex items-center justify-center">
+          <i class="fa-solid ${icon} text-${color}-500"></i>
+        </div>
+        <span class="font-medium text-slate-800">${message}</span>
+      `;
+      document.body.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transition = 'opacity 0.3s';
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+
+    function logout() {
+      if (typeof Routa !== 'undefined' && Routa.Auth) {
+        Routa.Auth.logout();
+      } else {
+        localStorage.removeItem('routox_token');
+        localStorage.removeItem('routox_role');
+        window.location.href = 'login.html';
+      }
+    }
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeProductModal();
+        closeReserveModal();
+        closeMoveModal();
+        closeWriteOffModal();
+      }
+    });
+
+    // Update user info
+    const role = localStorage.getItem('routox_role') || 'logist';
+    const roleData = {
+      logist: { name: 'Р›РѕРіРёСЃС‚', badge: 'Pro', color: 'text-amber-600' },
+      owner: { name: 'Р’Р»Р°РґРµР»РµС†', badge: 'Enterprise', color: 'text-purple-600' }
+    };
+    const data = roleData[role] || roleData.logist;
+    document.getElementById('userName').textContent = data.name;
+    document.getElementById('userRole').textContent = data.badge;
+    document.getElementById('userRole').className = 'text-[9px] ' + data.color + ' font-semibold mt-0.5';
+  </script>
+  <script src="./assets/js/smooth-navigation.js"></script>
+</body>
+</html>
+</html>

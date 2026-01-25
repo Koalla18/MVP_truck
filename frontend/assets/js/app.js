@@ -22,13 +22,19 @@ async function apiRequest(endpoint, options = {}) {
     });
     
     if (!response.ok) {
+      if (response.status === 401) {
+          // Token expired or invalid
+          localStorage.removeItem("auth_token");
+          authToken = null;
+          // Optionally redirect to login, but let the specific handler decide
+      }
       const error = await response.json().catch(() => ({ detail: response.statusText }));
       throw new Error(error.detail || `HTTP ${response.status}`);
     }
     
     return await response.json();
   } catch (error) {
-    console.error("API request failed:", error);
+    console.warn(`API request failed [${endpoint}]:`, error); // Warn instead of Error to allow fallback
     throw error;
   }
 }

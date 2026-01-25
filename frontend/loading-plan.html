@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RoutoX — Планирование загрузки</title>
+  <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+  <script src="https://kit.fontawesome.com/a2e0e9e5a9.js" crossorigin="anonymous"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="./assets/css/routox-unified.css">
+  <link rel="stylesheet" href="./assets/css/page-transitions.css">
+  <style>
+    body {
+        font-family: "Inter", sans-serif;
+        background-color: #FFF8F0;
+        background-image: 
+            radial-gradient(at 0% 0%, hsla(30,100%,96%,1) 0, transparent 50%), 
+            radial-gradient(at 100% 0%, hsla(35,100%,96%,1) 0, transparent 50%);
+    }
+    .glass-panel { background: rgba(255,255,255,0.75); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.9); box-shadow: 0 8px 32px 0 rgba(245,158,11,0.08); border-radius: 16px; }
+    .glass-card { background: rgba(255,255,255,0.85); backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.7); box-shadow: 0 4px 20px rgba(245,158,11,0.05); border-radius: 14px; transition: all 0.2s ease; }
+    .nav-item-active { background: rgba(255,255,255,0.9); color: #f59e0b !important; box-shadow: 0 2px 10px rgba(245,158,11,0.15); font-weight: 600 !important; }
+    .btn-primary { background: linear-gradient(135deg, #f59e0b, #d97706); color: white; transition: all 0.2s ease; }
+    .btn-primary:hover { background: linear-gradient(135deg, #d97706, #b45309); box-shadow: 0 8px 20px rgba(245,158,11,0.25); transform: translateY(-1px); }
+    .cargo-item { cursor: grab; padding: 8px; margin-bottom: 6px; border-radius: 8px; background: white; border: 1px solid #e5e7eb; }
+    .cargo-item:hover { box-shadow: 0 4px 12px rgba(245,158,11,0.15); }
+    .cargo-item.dragging { opacity: 0.5; cursor: grabbing; }
+    .vehicle-zone { min-height: 200px; border: 2px dashed #d1d5db; border-radius: 12px; padding: 12px; background: rgba(255,255,255,0.3); }
+    .vehicle-zone.active { border-color: #f59e0b; background: rgba(245,158,11,0.05); }
+    .stat-card { background: linear-gradient(135deg, #fef3c7, #fde68a); border: 1px solid #fbbf24; }
+    .cargo-box { position: relative; border: 2px solid #f59e0b; border-radius: 8px; padding: 8px; margin: 4px; font-size: 11px; }
+    #truck-canvas { width: 100%; height: 300px; border: 1px solid #e5e7eb; border-radius: 12px; background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%); }
+  </style>
+</head>
+<body>
+  <header class="sticky top-0 z-40 glass-panel border-b border-white/50 px-6 py-3">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-8">
+        <a href="logist.html" class="flex items-center gap-3 group">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg">
+            <i class="fa-solid fa-truck-fast text-white text-lg"></i>
+          </div>
+          <div class="flex flex-col leading-none">
+            <span class="text-lg font-bold bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">RoutoX</span>
+            <span class="text-[10px] text-slate-500 font-medium">LOGIST</span>
+          </div>
+        </a>
+        <nav class="hidden lg:flex items-center gap-1 bg-slate-100/50 p-1 rounded-xl">
+          <a class="px-4 py-1.5 rounded-lg text-sm font-medium text-slate-500 hover:text-amber-800 hover:bg-white/60 transition-colors" href="logist.html">Заказы</a>
+          <a class="px-4 py-1.5 rounded-lg text-sm font-medium text-slate-500 hover:text-amber-800 hover:bg-white/60 transition-colors" href="routes.html">Маршруты</a>
+          <a class="px-4 py-1.5 rounded-lg text-sm font-medium text-slate-500 hover:text-amber-800 hover:bg-white/60 transition-colors" href="trips.html">Рейсы</a>
+          <a class="px-4 py-1.5 rounded-lg text-sm font-medium text-slate-500 hover:text-amber-800 hover:bg-white/60 transition-colors" href="drivers-manage.html">Водители</a>
+          <a class="px-4 py-1.5 rounded-lg text-sm font-medium text-slate-500 hover:text-amber-800 hover:bg-white/60 transition-colors" href="clients.html">Клиенты</a>
+          <a class="px-4 py-1.5 rounded-lg text-sm font-medium text-slate-500 hover:text-amber-800 hover:bg-white/60 transition-colors" href="warehouse.html">Склад</a>
+          <a class="px-4 py-1.5 rounded-lg text-sm font-semibold nav-item-active transition-all" href="loading-plan.html">Планирование</a>
+          <a class="px-4 py-1.5 rounded-lg text-sm font-medium text-slate-500 hover:text-amber-800 hover:bg-white/60 transition-colors" href="delivery-stats.html">Статистика</a>
+          <a class="px-4 py-1.5 rounded-lg text-sm font-medium text-slate-500 hover:text-amber-800 hover:bg-white/60 transition-colors" href="geozones.html">Геозоны</a>
+        </nav>
+      </div>
+      <div class="flex items-center gap-3">
+        <span class="hidden lg:flex items-center gap-2 px-3 py-1.5 bg-amber-50 border border-amber-200 rounded-full text-xs">
+            <i class="fa-solid fa-id-card text-amber-600"></i>
+            <span class="font-semibold text-amber-800">Логист</span>
+        </span>
+        <div class="flex items-center gap-3 pl-1 pr-1 py-1 bg-white/50 border border-white rounded-full shadow-sm">
+            <div class="w-8 h-8 rounded-full bg-slate-200 overflow-hidden ring-2 ring-white">
+                <img alt="User" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCTs9iN8pKS03W5I54u9FB4B-c8kh0-SvddoYiVdknvnn0XFQ_ScxzcOGMuvCw75ZDO7eej3OBFSUyW7YGzfIdw8bm2JVE2qYntX-6WFsuWZDXeCjqgvXyR-Lo9UnAE2bTQejiaicaZNqXTEEWzBEmoalZytqScbtdaXlk0i5laN5yjsqI3j457keHzESRrW4bLeWD2l5xuer1uZ4Zd_LMeP8p-XTEa4_wtLTcRyHGOncDuMQUJk788z8tvDII7r8UTdnahdzzaAtY"/>
+            </div>
+            <div class="pr-3 flex flex-col items-end leading-none">
+                <p class="text-xs font-bold text-slate-800">Логист</p>
+                <p class="text-[9px] text-amber-600 font-semibold mt-0.5">Pro</p>
+            </div>
+        </div>
+        <button class="w-10 h-10 flex items-center justify-center text-slate-400 hover:text-slate-700 bg-white/50 hover:bg-white rounded-full transition-all shadow-sm border border-white/50 relative" onclick="window.location.href='notifications.html'">
+            <span class="material-symbols-outlined text-[20px]">notifications</span>
+            <span class="absolute top-2.5 right-2.5 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white"></span>
+        </button>
+        <button class="w-10 h-10 flex items-center justify-center text-slate-400 hover:text-red-500 bg-white/50 hover:bg-white rounded-full transition-all shadow-sm border border-white/50" onclick="logout()">
+            <span class="material-symbols-outlined text-[20px]">logout</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="p-4 grid grid-cols-12 gap-4" style="height: calc(100vh - 88px);">
+    <aside class="col-span-3 space-y-4 flex flex-col">
+      <div class="grid grid-cols-2 gap-3">
+        <div class="stat-card p-3 rounded-xl">
+          <div class="text-2xl font-bold text-amber-800">18</div>
+          <div class="text-[10px] text-amber-700 font-medium mt-1">Грузов</div>
+        </div>
+        <div class="stat-card p-3 rounded-xl">
+          <div class="text-2xl font-bold text-green-600">5.2т</div>
+          <div class="text-[10px] text-amber-700 font-medium mt-1">Масса</div>
+        </div>
+      </div>
+
+      <div class="glass-panel p-4 flex-1 overflow-y-auto">
+        <h3 class="text-xs font-bold text-slate-500 mb-3 uppercase">Грузы к распределению</h3>
+        <div id="cargoList"></div>
+      </div>
+
+      <button onclick="optimizeLoading()" class="btn-primary py-2.5 rounded-xl text-sm font-medium shadow-lg">
+        <i class="fa-solid fa-wand-magic-sparkles mr-2"></i>Авто-распределение
+      </button>
+    </aside>
+
+    <section class="col-span-6 space-y-4">
+      <div class="glass-panel p-4">
+        <h2 class="text-lg font-bold text-slate-800 mb-4">Кузов транспорта</h2>
+        <canvas id="truck-canvas"></canvas>
+        <div class="mt-3 grid grid-cols-3 gap-2 text-xs">
+          <div class="glass-card p-2 text-center">
+            <div class="font-bold text-amber-600" id="loadedWeight">0 кг</div>
+            <div class="text-slate-600">Загружено</div>
+          </div>
+          <div class="glass-card p-2 text-center">
+            <div class="font-bold text-blue-600" id="loadedVolume">0 м³</div>
+            <div class="text-slate-600">Объем</div>
+          </div>
+          <div class="glass-card p-2 text-center">
+            <div class="font-bold text-green-600" id="efficiency">0%</div>
+            <div class="text-slate-600">Заполнение</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="glass-panel p-4">
+        <h3 class="text-sm font-bold text-slate-800 mb-3">Транспорт в плане</h3>
+        <div class="space-y-3" id="vehiclesList"></div>
+      </div>
+    </section>
+
+    <aside class="col-span-3">
+      <div class="glass-panel p-4 h-full overflow-y-auto">
+        <h3 class="text-sm font-bold text-slate-800 mb-4">Рекомендации</h3>
+        <div class="space-y-3">
+          <div class="glass-card p-3 border-l-4 border-green-500">
+            <div class="text-xs font-semibold text-green-700 mb-1">✓ Оптимально</div>
+            <div class="text-xs text-slate-600">Распределение веса сбалансировано</div>
+          </div>
+          <div class="glass-card p-3 border-l-4 border-amber-500">
+            <div class="text-xs font-semibold text-amber-700 mb-1">⚠ Внимание</div>
+            <div class="text-xs text-slate-600">Хрупкие грузы размещать сверху</div>
+          </div>
+          <div class="glass-card p-3 border-l-4 border-blue-500">
+            <div class="text-xs font-semibold text-blue-700 mb-1">ℹ Совет</div>
+            <div class="text-xs text-slate-600">Тяжелые грузы ближе к кабине</div>
+          </div>
+        </div>
+
+        <div class="mt-6">
+          <h4 class="text-xs font-bold text-slate-500 mb-3 uppercase">Отчет</h4>
+          <div class="space-y-2 text-xs">
+            <div class="flex justify-between">
+              <span class="text-slate-600">Всего грузов</span>
+              <span class="font-semibold">18 шт</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-600">Общий вес</span>
+              <span class="font-semibold">5.2 т</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-600">Объем</span>
+              <span class="font-semibold">12.8 м³</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-600">Машин</span>
+              <span class="font-semibold">3</span>
+            </div>
+          </div>
+
+          <button onclick="exportPlan()" class="w-full mt-4 py-2 rounded-lg bg-blue-500 hover:bg-blue-600 text-white text-xs font-medium transition">
+            <i class="fa-solid fa-download mr-1"></i>Экспорт плана
+          </button>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <script src="./assets/js/routa-core.js"></script>
+  <script>
+    Routa.Theme.load();
+
+    const cargo = [
+      { id: 1, name: 'Кирпич', weight: 500, volume: 1.2, fragile: false },
+      { id: 2, name: 'Цемент', weight: 800, volume: 1.5, fragile: false },
+      { id: 3, name: 'Электроника', weight: 120, volume: 0.8, fragile: true },
+      { id: 4, name: 'Мебель', weight: 350, volume: 3.2, fragile: true },
+      { id: 5, name: 'Металл', weight: 1200, volume: 0.9, fragile: false },
+      { id: 6, name: 'Продукты', weight: 600, volume: 2.1, fragile: false },
+      { id: 7, name: 'Стекло', weight: 200, volume: 0.6, fragile: true },
+      { id: 8, name: 'Песок', weight: 950, volume: 1.8, fragile: false }
+    ];
+
+    const vehicles = [
+      { id: 1, name: 'Камаз #А123ВС', capacity: 20000, volume: 36, loaded: [] },
+      { id: 2, name: 'Газель #Т456УР', capacity: 3500, volume: 18, loaded: [] },
+      { id: 3, name: 'Фура #К789МО', capacity: 25000, volume: 82, loaded: [] }
+    ];
+
+    let selectedVehicle = vehicles[0];
+
+    document.addEventListener('DOMContentLoaded', () => {
+      renderCargo();
+      renderVehicles();
+      drawTruck();
+    });
+
+    function renderCargo() {
+      document.getElementById('cargoList').innerHTML = cargo.map(c => `
+        <div class="cargo-item" draggable="true" ondragstart="dragStart(event, ${c.id})">
+          <div class="font-semibold text-sm text-slate-800">${c.name}</div>
+          <div class="text-xs text-slate-600 mt-1">
+            <span class="mr-2">⚖ ${c.weight}кг</span>
+            <span>📦 ${c.volume}м³</span>
+          </div>
+          ${c.fragile ? '<div class="text-xs text-red-600 mt-1">⚠ Хрупкое</div>' : ''}
+        </div>
+      `).join('');
+    }
+
+    function renderVehicles() {
+      document.getElementById('vehiclesList').innerHTML = vehicles.map(v => {
+        const totalWeight = v.loaded.reduce((sum, id) => sum + cargo.find(c => c.id === id).weight, 0);
+        const totalVolume = v.loaded.reduce((sum, id) => sum + cargo.find(c => c.id === id).volume, 0);
+        const efficiency = Math.round((totalVolume / v.volume) * 100);
+
+        return `
+          <div class="glass-card p-3 cursor-pointer ${selectedVehicle.id === v.id ? 'ring-2 ring-amber-500' : ''}" onclick="selectVehicle(${v.id})">
+            <div class="font-semibold text-sm text-slate-800 mb-2">${v.name}</div>
+            <div class="text-xs text-slate-600">
+              <div>Загрузка: ${totalWeight}/${v.capacity}кг</div>
+              <div>Объем: ${totalVolume.toFixed(1)}/${v.volume}м³</div>
+              <div class="mt-1">
+                <div class="w-full bg-slate-200 rounded-full h-2">
+                  <div class="h-2 rounded-full bg-gradient-to-r from-amber-500 to-orange-500" style="width: ${efficiency}%"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function selectVehicle(id) {
+      selectedVehicle = vehicles.find(v => v.id === id);
+      renderVehicles();
+      drawTruck();
+    }
+
+    function dragStart(event, cargoId) {
+      event.dataTransfer.setData('cargoId', cargoId);
+    }
+
+    function drawTruck() {
+      const canvas = document.getElementById('truck-canvas');
+      const ctx = canvas.getContext('2d');
+      canvas.width = canvas.offsetWidth;
+      canvas.height = 300;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Truck outline
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(20, 20, canvas.width - 40, 260);
+
+      // Grid
+      ctx.strokeStyle = '#e5e7eb';
+      ctx.lineWidth = 1;
+      for (let i = 0; i < 5; i++) {
+        const y = 20 + (i * 52);
+        ctx.beginPath();
+        ctx.moveTo(20, y);
+        ctx.lineTo(canvas.width - 20, y);
+        ctx.stroke();
+      }
+
+      // Cargo boxes
+      selectedVehicle.loaded.forEach((cargoId, index) => {
+        const cargoItem = cargo.find(c => c.id === cargoId);
+        const x = 30 + (index % 5) * 80;
+        const y = 30 + Math.floor(index / 5) * 60;
+        const w = 70;
+        const h = 50;
+
+        ctx.fillStyle = cargoItem.fragile ? 'rgba(239,68,68,0.2)' : 'rgba(245,158,11,0.2)';
+        ctx.fillRect(x, y, w, h);
+        ctx.strokeStyle = cargoItem.fragile ? '#ef4444' : '#f59e0b';
+        ctx.strokeRect(x, y, w, h);
+
+        ctx.fillStyle = '#1e293b';
+        ctx.font = '10px Inter';
+        ctx.fillText(cargoItem.name, x + 5, y + 20);
+        ctx.fillText(`${cargoItem.weight}кг`, x + 5, y + 35);
+      });
+
+      updateStats();
+    }
+
+    function updateStats() {
+      const totalWeight = selectedVehicle.loaded.reduce((sum, id) => sum + cargo.find(c => c.id === id).weight, 0);
+      const totalVolume = selectedVehicle.loaded.reduce((sum, id) => sum + cargo.find(c => c.id === id).volume, 0);
+      const efficiency = Math.round((totalVolume / selectedVehicle.volume) * 100);
+
+      document.getElementById('loadedWeight').textContent = `${totalWeight} кг`;
+      document.getElementById('loadedVolume').textContent = `${totalVolume.toFixed(1)} м³`;
+      document.getElementById('efficiency').textContent = `${efficiency}%`;
+    }
+
+    function optimizeLoading() {
+      alert('Авто-распределение запущено! Используется алгоритм Bin Packing для оптимальной загрузки.');
+    }
+
+    function exportPlan() {
+      alert('Экспорт плана загрузки в PDF');
+    }
+
+    function logout() {
+      if (typeof Routa !== 'undefined' && Routa.Auth) {
+        Routa.Auth.logout();
+      } else {
+        localStorage.removeItem('routox_token');
+        localStorage.removeItem('routox_role');
+        window.location.href = 'login.html';
+      }
+    }
+  </script>
+  <script src="./assets/js/smooth-navigation.js"></script>
+</body>
+</html>

@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="./assets/css/routox-unified.css">
   <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
   <script src="https://kit.fontawesome.com/a2e0e9e5a9.js" crossorigin="anonymous"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
   <style>
     .doc-status { padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; }
     .doc-signed { background: rgba(16, 185, 129, 0.15); color: #059669; border: 1px solid rgba(16, 185, 129, 0.3); }
@@ -38,33 +39,51 @@
 </head>
 <body class="min-h-screen">
   <!-- Header -->
-  <header class="glass-panel mx-4 mt-4 px-6 py-4 flex items-center justify-between sticky top-4 z-30">
-    <div class="flex items-center gap-6">
-      <a href="./index.html" class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-emerald-500 flex items-center justify-center font-bold text-lg text-white">R</div>
-        <div>
-          <div class="font-semibold">RoutoX</div>
-          <div class="text-xs text-muted">Fleet Management</div>
+  <header class="h-16 glass-panel flex items-center justify-between px-6 z-40 shrink-0 border-b border-white/50 sticky top-0 mx-4 mt-4 rounded-2xl">
+    <div class="flex items-center gap-12">
+        <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-extrabold text-xl shadow-lg shadow-blue-500/20">
+                R
+            </div>
+            <div class="flex flex-col">
+                <span class="font-bold text-lg leading-none tracking-tight text-slate-800">RoutoX</span>
+                <span class="text-[10px] text-slate-400 font-semibold uppercase tracking-widest mt-0.5">Fleet OS</span>
+            </div>
         </div>
-      </a>
-      <nav id="mainNav" class="flex items-center gap-1 ml-8">
-        <!-- Навигация заполняется динамически -->
-      </nav>
+        <nav class="hidden lg:flex items-center gap-1 bg-slate-100/50 p-1 rounded-xl">
+            <a class="px-4 py-1.5 rounded-lg text-sm font-medium text-slate-500 hover:text-slate-800 hover:bg-white/60 transition-colors" href="fleet.html">Флот</a>
+            <a class="px-4 py-1.5 rounded-lg text-sm font-medium text-slate-500 hover:text-slate-800 hover:bg-white/60 transition-colors" href="trips.html">Рейсы</a>
+            <a class="px-4 py-1.5 rounded-lg text-sm font-medium text-slate-500 hover:text-slate-800 hover:bg-white/60 transition-colors" href="geozones.html">Геозоны</a>
+            <a class="px-4 py-1.5 rounded-lg text-sm font-medium text-slate-500 hover:text-slate-800 hover:bg-white/60 transition-colors" href="fuel.html">Топливо</a>
+            <a class="px-4 py-1.5 rounded-lg text-sm font-medium text-slate-500 hover:text-slate-800 hover:bg-white/60 transition-colors" href="maintenance.html">ТО</a>
+            <a class="px-4 py-1.5 rounded-lg text-sm font-semibold nav-item-active transition-all" href="documents.html">Документы</a>
+        </nav>
     </div>
-    <div class="flex items-center gap-3">
-      <span class="role-badge" id="roleBadge">
-        <i class="fa-solid fa-user-gear" id="roleIcon"></i>
-        <span id="roleText">Загрузка...</span>
-      </span>
-      <button class="icon-btn" title="Настройки"><i class="fa-solid fa-gear text-muted"></i></button>
-      <div class="theme-toggle-track" onclick="toggleTheme()">
-        <div class="theme-toggle-thumb"></div>
-      </div>
-      <a href="./notifications.html" class="icon-btn relative" title="Уведомления">
-        <i class="fa-solid fa-bell text-muted"></i>
-        <span class="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center font-bold">3</span>
-      </a>
-      <button class="icon-btn" title="Выход" onclick="logout()"><i class="fa-solid fa-right-from-bracket text-muted"></i></button>
+    <div class="flex items-center gap-5">
+        <div class="px-3 py-1.5 bg-white/60 backdrop-blur-md border border-white/60 rounded-full flex items-center gap-2 shadow-sm">
+            <span class="relative flex h-2.5 w-2.5">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+            </span>
+            <span class="text-xs font-bold text-slate-700 tracking-tight">LIVE</span>
+        </div>
+        <div class="h-6 w-px bg-slate-200"></div>
+        <div class="flex items-center gap-3 pl-1 pr-1 py-1 bg-white/50 border border-white rounded-full shadow-sm hover:shadow-md transition-shadow cursor-pointer">
+            <div class="w-8 h-8 rounded-full bg-slate-200 overflow-hidden ring-2 ring-white">
+                <img alt="User" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCTs9iN8pKS03W5I54u9FB4B-c8kh0-SvddoYiVdknvnn0XFQ_ScxzcOGMuvCw75ZDO7eej3OBFSUyW7YGzfIdw8bm2JVE2qYntX-6WFsuWZDXeCjqgvXyR-Lo9UnAE2bTQejiaicaZNqXTEEWzBEmoalZytqScbtdaXlk0i5laN5yjsqI3j457keHzESRrW4bLeWD2l5xuer1uZ4Zd_LMeP8p-XTEa4_wtLTcRyHGOncDuMQUJk788z8tvDII7r8UTdnahdzzaAtY"/>
+            </div>
+            <div class="pr-3 flex flex-col items-end leading-none">
+                <p class="text-xs font-bold text-slate-800" id="userName">Диспетчер</p>
+                <p class="text-[9px] text-blue-600 font-semibold mt-0.5" id="userRole">Pro</p>
+            </div>
+        </div>
+        <button class="w-10 h-10 flex items-center justify-center text-slate-400 hover:text-slate-700 bg-white/50 hover:bg-white rounded-full transition-all shadow-sm border border-white/50 relative" title="Уведомления" onclick="window.location.href='notifications.html'">
+            <span class="material-symbols-outlined text-[20px]">notifications</span>
+            <span class="absolute top-2.5 right-2.5 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white"></span>
+        </button>
+        <button class="w-10 h-10 flex items-center justify-center text-slate-400 hover:text-red-500 bg-white/50 hover:bg-white rounded-full transition-all shadow-sm border border-white/50" title="Выход" onclick="logout()">
+            <span class="material-symbols-outlined text-[20px]">logout</span>
+        </button>
     </div>
   </header>
 
@@ -517,13 +536,151 @@
 
     // Modal controls
     function showCreateModal() {
-      document.getElementById('createModal').classList.remove('hidden');
-      document.getElementById('createModal').classList.add('flex');
+      const modal = document.createElement('div');
+      modal.className = 'fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm';
+      modal.id = 'createTTNModal';
+      modal.innerHTML = `
+        <div class="glass-panel p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+          <div class="flex items-center justify-between mb-6">
+            <div class="flex items-center gap-3">
+              <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-emerald-500 flex items-center justify-center">
+                <i class="fa-solid fa-file-lines text-white text-lg"></i>
+              </div>
+              <div>
+                <h3 class="text-xl font-bold">Создание еТТН</h3>
+                <p class="text-sm text-muted">Электронная товарно-транспортная накладная</p>
+              </div>
+            </div>
+            <button onclick="document.getElementById('createTTNModal').remove()" class="icon-btn">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+          
+          <form id="createTTNForm" class="space-y-5">
+            <!-- Sender Section -->
+            <div class="p-4 rounded-xl bg-white/5 border border-white/10">
+              <h4 class="font-semibold mb-4 flex items-center gap-2">
+                <i class="fa-solid fa-building text-blue-500"></i>
+                Грузоотправитель
+              </h4>
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-medium mb-2">Компания</label>
+                  <input type="text" placeholder="ООО ТрансЛогистик" class="input-field w-full" required>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium mb-2">ИНН</label>
+                  <input type="text" placeholder="7707123456" class="input-field w-full">
+                </div>
+                <div class="col-span-2">
+                  <label class="block text-sm font-medium mb-2">Адрес отправления</label>
+                  <input type="text" placeholder="г. Москва, ул. Складская, д. 1" class="input-field w-full" required>
+                </div>
+              </div>
+            </div>
+
+            <!-- Receiver Section -->
+            <div class="p-4 rounded-xl bg-white/5 border border-white/10">
+              <h4 class="font-semibold mb-4 flex items-center gap-2">
+                <i class="fa-solid fa-location-dot text-emerald-500"></i>
+                Грузополучатель
+              </h4>
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-medium mb-2">Компания/ФИО</label>
+                  <input type="text" placeholder="ИП Петров А.С." class="input-field w-full" required>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium mb-2">Телефон</label>
+                  <input type="tel" placeholder="+7 (900) 123-45-67" class="input-field w-full">
+                </div>
+                <div class="col-span-2">
+                  <label class="block text-sm font-medium mb-2">Адрес доставки</label>
+                  <input type="text" placeholder="г. Санкт-Петербург, пр. Невский, д. 100" class="input-field w-full" required>
+                </div>
+              </div>
+            </div>
+
+            <!-- Cargo Section -->
+            <div class="p-4 rounded-xl bg-white/5 border border-white/10">
+              <h4 class="font-semibold mb-4 flex items-center gap-2">
+                <i class="fa-solid fa-box text-amber-500"></i>
+                Сведения о грузе
+              </h4>
+              <div class="grid grid-cols-3 gap-4">
+                <div class="col-span-2">
+                  <label class="block text-sm font-medium mb-2">Наименование груза</label>
+                  <input type="text" placeholder="Строительные материалы" class="input-field w-full" required>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium mb-2">Кол-во мест</label>
+                  <input type="number" placeholder="24" class="input-field w-full">
+                </div>
+                <div>
+                  <label class="block text-sm font-medium mb-2">Вес брутто (кг)</label>
+                  <input type="number" placeholder="5240" class="input-field w-full" required>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium mb-2">Объём (м³)</label>
+                  <input type="number" placeholder="28" class="input-field w-full">
+                </div>
+                <div>
+                  <label class="block text-sm font-medium mb-2">Объявленная стоимость</label>
+                  <input type="number" placeholder="125000" class="input-field w-full">
+                </div>
+              </div>
+            </div>
+
+            <!-- Transport Section -->
+            <div class="p-4 rounded-xl bg-white/5 border border-white/10">
+              <h4 class="font-semibold mb-4 flex items-center gap-2">
+                <i class="fa-solid fa-truck text-purple-500"></i>
+                Транспорт и водитель
+              </h4>
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-medium mb-2">Транспортное средство</label>
+                  <select class="input-field w-full">
+                    <option>Volvo FH16 #1 (А123ВС77)</option>
+                    <option>MAN TGX #2 (В456ОР77)</option>
+                    <option>Scania R500 #3 (Е789КМ77)</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium mb-2">Водитель</label>
+                  <select class="input-field w-full">
+                    <option>Иванов Алексей</option>
+                    <option>Петров Сергей</option>
+                    <option>Сидоров Михаил</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div class="flex gap-3 pt-4">
+              <button type="button" onclick="document.getElementById('createTTNModal').remove()" class="btn-secondary flex-1 py-3">
+                Отмена
+              </button>
+              <button type="submit" class="btn-primary flex-1 py-3">
+                <i class="fa-solid fa-check mr-2"></i>
+                Создать еТТН
+              </button>
+            </div>
+          </form>
+        </div>
+      `;
+      document.body.appendChild(modal);
+      modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+      
+      document.getElementById('createTTNForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        document.getElementById('createTTNModal').remove();
+        alert('еТТН успешно создана! Номер: eTTН-2026-' + Math.floor(Math.random() * 10000).toString().padStart(6, '0'));
+      });
     }
 
     function closeCreateModal() {
-      document.getElementById('createModal').classList.add('hidden');
-      document.getElementById('createModal').classList.remove('flex');
+      document.getElementById('createTTNModal')?.remove();
     }
 
     document.addEventListener('keydown', (e) => {
@@ -674,8 +831,6 @@
       console.log('Documents page initialized for:', user.role, user.edition);
     })();
     
-    function logout() { Routa.Auth.logout(); }
-    function toggleTheme() { Routa.Theme.toggle(); }
   </script>
 </body>
 </html>

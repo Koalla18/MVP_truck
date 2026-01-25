@@ -33,7 +33,7 @@
       capabilities: ['analytics', 'forecasting', 'optimization', 'reporting']
     },
     admin: {
-      systemPrompt: `Ты - AI-помощник RoutoX для администратора/диспетчера. 
+      systemPrompt: `Ты - AI-помощник RoutoX для диспетчера. 
         Помогай планировать рейсы, находить свободных водителей, контролировать документы.
         Предупреждай о проблемах и просрочках. Будь оперативным.`,
       suggestions: [

@@ -101,7 +101,7 @@ const PLANS = {
 const ROLES = {
   platform_admin: {
     name: "Platform Admin",
-    displayName: "Администратор платформы",
+    displayName: "Супер-админ",
     icon: "fa-shield-halved",
     color: "rose",
     level: 1000,
@@ -125,7 +125,7 @@ const ROLES = {
   },
   admin: {
     name: "Admin",
-    displayName: "Администратор",
+    displayName: "Диспетчер",
     icon: "fa-user-gear",
     color: "blue",
     level: 50,
@@ -139,12 +139,12 @@ const ROLES = {
     level: 30,
     platform: false,
   },
-  driver: {
-    name: "Driver",
-    displayName: "Водитель",
-    icon: "fa-id-card",
-    color: "green",
-    level: 10,
+  logist: {
+    name: "Logist",
+    displayName: "Логист",
+    icon: "fa-route",
+    color: "amber",
+    level: 25,
     platform: false,
   },
 };
@@ -183,10 +183,17 @@ const NAV_CONFIG = {
     { page: "trips.html", title: "Рейсы", icon: "fa-route", feature: "trips" },
     { page: "geozones.html", title: "Геозоны", icon: "fa-map-location-dot", feature: "geozones" },
   ],
-  // Водитель - отдельный интерфейс
-  driver: [
-    { page: "driver.html", title: "Мои рейсы", icon: "fa-route", feature: "driver_trips" },
-    { page: "driver-documents.html", title: "Мои документы", icon: "fa-file-lines", feature: "driver_documents" },
+  // Логист - планирование маршрутов
+  logist: [
+    { page: "logist.html", title: "Заказы", icon: "fa-boxes-stacked", feature: "logist_orders" },
+    { page: "routes.html", title: "Маршруты", icon: "fa-map-marked-alt", feature: "routes" },
+    { page: "trips.html", title: "Рейсы", icon: "fa-route", feature: "trips" },
+    { page: "drivers-manage.html", title: "Водители", icon: "fa-id-card", feature: "drivers_manage" },
+    { page: "clients.html", title: "Клиенты", icon: "fa-users", feature: "clients" },
+    { page: "warehouse.html", title: "Склад", icon: "fa-warehouse", feature: "warehouse" },
+    { page: "loading-plan.html", title: "Планирование", icon: "fa-boxes-packing", feature: "loading_plan" },
+    { page: "delivery-stats.html", title: "Статистика", icon: "fa-chart-line", feature: "delivery_stats" },
+    { page: "geozones.html", title: "Геозоны", icon: "fa-map-location-dot", feature: "geozones" },
   ],
   // Platform Admin - SaaS панель
   platform_admin: [
@@ -202,17 +209,22 @@ const NAV_CONFIG = {
 // Доступ к страницам (для проверки прав)
 const PAGE_ACCESS = {
   "staff.html": { roles: ["owner"], feature: "staff" },
-  "fleet.html": { roles: ["owner", "admin", "dispatcher"], feature: "fleet" },
-  "trips.html": { roles: ["owner", "admin", "dispatcher"], feature: "trips" },
-  "geozones.html": { roles: ["owner", "admin", "dispatcher"], feature: "geozones" },
+  "fleet.html": { roles: ["owner", "admin", "dispatcher", "logist"], feature: "fleet" },
+  "trips.html": { roles: ["owner", "admin", "dispatcher", "logist"], feature: "trips" },
+  "geozones.html": { roles: ["owner", "admin", "dispatcher", "logist"], feature: "geozones" },
   "analytics.html": { roles: ["owner", "admin"], feature: "analytics" },
   "fuel.html": { roles: ["owner", "admin"], feature: "fuel" },
   "maintenance.html": { roles: ["owner", "admin"], feature: "maintenance" },
-  "documents.html": { roles: ["owner", "admin", "driver"], feature: "documents" },
+  "documents.html": { roles: ["owner", "admin"], feature: "documents" },
   "inventory.html": { roles: ["owner", "admin"], feature: "inventory" },
-  "notifications.html": { roles: ["owner", "admin", "dispatcher", "driver"], feature: "notifications" },
-  "driver.html": { roles: ["driver"], feature: "driver_dashboard" },
-  "driver-documents.html": { roles: ["driver"], feature: "driver_documents" },
+  "notifications.html": { roles: ["owner", "admin", "dispatcher", "logist"], feature: "notifications" },
+  "logist.html": { roles: ["logist", "owner", "admin"], feature: "logist_orders" },
+  "routes.html": { roles: ["logist", "owner", "admin"], feature: "routes" },
+  "drivers-manage.html": { roles: ["logist", "owner", "admin"], feature: "drivers_manage" },
+  "clients.html": { roles: ["logist", "owner", "admin"], feature: "clients" },
+  "warehouse.html": { roles: ["logist", "owner", "admin"], feature: "warehouse" },
+  "loading-plan.html": { roles: ["logist", "owner", "admin"], feature: "loading_plan" },
+  "delivery-stats.html": { roles: ["logist", "owner", "admin"], feature: "delivery_stats" },
   // SaaS Admin pages
   "saas-tenants.html": { roles: ["platform_admin"], feature: "saas_tenants" },
   "saas-billing.html": { roles: ["platform_admin"], feature: "saas_billing" },
@@ -252,8 +264,8 @@ const EDITION_FEATURES = {
     business: ["fleet", "trips", "fuel", "maintenance", "documents", "notifications", "geozones", "analytics", "inventory", "ai_advanced", "fuel_anomalies", "trip_economics", "staff", "integrations_gps", "integrations_fuel", "integrations_1c", "sso", "audit_extended", "carriers"],
   },
   routas: {
-    start: ["driver_dashboard", "driver_trips", "driver_documents", "notifications"],
-    pro: ["driver_dashboard", "driver_trips", "driver_documents", "notifications", "ai_basic"],
+    start: ["logist_orders", "trips", "fleet", "notifications"],
+    pro: ["logist_orders", "trips", "fleet", "notifications", "ai_basic"],
   },
 };
 
@@ -372,6 +384,8 @@ const RoutaAuth = {
     RoutaStorage.remove(ROUTA_CONFIG.USER_KEY);
     RoutaStorage.remove(ROUTA_CONFIG.COMPANY_KEY);
     RoutaStorage.remove(ROUTA_CONFIG.FEATURES_KEY);
+    // Also remove role from localStorage
+    localStorage.removeItem('routox_role');
   },
 
   // Алиас для совместимости
@@ -385,6 +399,10 @@ const RoutaAuth = {
 
   setCachedUser(user) {
     RoutaStorage.set(ROUTA_CONFIG.USER_KEY, user);
+    // Also save role to localStorage for UI consistency
+    if (user && user.role) {
+      localStorage.setItem('routox_role', user.role);
+    }
   },
 
   getCachedFeatures() {
@@ -547,7 +565,7 @@ const RoutaAPI = {
     const demoCreds = {
       "owner@example.com": { password: "owner123", role: "owner", edition: "routax", plan: "pro" },
       "admin@example.com": { password: "admin123", role: "admin", edition: "routax", plan: "pro" },
-      "driver@example.com": { password: "driver123", role: "driver", edition: "routas", plan: "start" },
+      "logist@example.com": { password: "logist123", role: "logist", edition: "routax", plan: "pro" },
       "platform@example.com": { password: "platform123", role: "platform_admin", edition: null, plan: null },
     };
 
@@ -598,7 +616,20 @@ const RoutaAPI = {
 
   async getFeatures() {
     if (RoutaAuth.isDemoMode()) {
-      return RoutaAuth.getCachedFeatures();
+      // Try cached first
+      let features = RoutaAuth.getCachedFeatures();
+      if (features && features.length > 0) {
+        return features;
+      }
+      // Fallback: get edition/plan from token and lookup features
+      const token = RoutaAuth.getAccessToken();
+      const user = RoutaAuth.parseDemoToken(token);
+      if (user && user.edition && user.plan && EDITION_FEATURES[user.edition]?.[user.plan]) {
+        features = EDITION_FEATURES[user.edition][user.plan];
+        RoutaAuth.setCachedFeatures(features);
+        return features;
+      }
+      return [];
     }
     try {
       const response = await this.get("/features/me");
@@ -687,16 +718,18 @@ const RoutaNav = {
         return "./saas-tenants.html";
       case "support":
         return "./saas-support.html";
-      case "driver":
-        return "./driver.html";
       case "owner":
-        return "./staff.html";
+        return "./owner.html";
+      case "logist":
+        return "./logist.html";
       default:
         return "./fleet.html";
     }
   },
 
   redirectByRole(role) {
+    // Save role to localStorage for consistent UI across pages
+    localStorage.setItem('routox_role', role);
     window.location.href = this.getDefaultPage(role);
   },
 };

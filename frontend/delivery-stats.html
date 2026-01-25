@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RoutoX — Статистика доставок</title>
+  <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+  <script src="https://kit.fontawesome.com/a2e0e9e5a9.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="./assets/css/routox-unified.css">
+  <link rel="stylesheet" href="./assets/css/page-transitions.css">
+  <style>
+    body {
+        font-family: "Inter", sans-serif;
+        background-color: #FFF8F0;
+        background-image: 
+            radial-gradient(at 0% 0%, hsla(30,100%,96%,1) 0, transparent 50%), 
+            radial-gradient(at 100% 0%, hsla(35,100%,96%,1) 0, transparent 50%);
+    }
+    .glass-panel { background: rgba(255,255,255,0.75); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.9); box-shadow: 0 8px 32px 0 rgba(245,158,11,0.08); border-radius: 16px; }
+    .glass-card { background: rgba(255,255,255,0.85); backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.7); box-shadow: 0 4px 20px rgba(245,158,11,0.05); border-radius: 14px; }
+    .nav-item-active { background: rgba(255,255,255,0.9); color: #f59e0b !important; box-shadow: 0 2px 10px rgba(245,158,11,0.15); font-weight: 600 !important; }
+    .btn-primary { background: linear-gradient(135deg, #f59e0b, #d97706); color: white; transition: all 0.2s ease; }
+    .btn-primary:hover { background: linear-gradient(135deg, #d97706, #b45309); box-shadow: 0 8px 20px rgba(245,158,11,0.25); transform: translateY(-1px); }
+    .stat-card { background: linear-gradient(135deg, #fef3c7, #fde68a); border: 1px solid #fbbf24; }
+    .metric-big { background: linear-gradient(135deg, rgba(245,158,11,0.1), rgba(251,191,36,0.1)); border-left: 4px solid #f59e0b; }
+  </style>
+</head>
+<body>
+  <header class="sticky top-0 z-40 glass-panel border-b border-white/50 px-6 py-3">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-8">
+        <a href="logist.html" class="flex items-center gap-3 group">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg">
+            <i class="fa-solid fa-truck-fast text-white text-lg"></i>
+          </div>
+          <div class="flex flex-col leading-none">
+            <span class="text-lg font-bold bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">RoutoX</span>
+            <span class="text-[10px] text-slate-500 font-medium">LOGIST</span>
+          </div>
+        </a>
+        <nav class="hidden lg:flex items-center gap-1 bg-slate-100/50 p-1 rounded-xl">
+          <a class="px-4 py-1.5 rounded-lg text-sm font-medium text-slate-500 hover:text-amber-800 hover:bg-white/60 transition-colors" href="logist.html">Заказы</a>
+          <a class="px-4 py-1.5 rounded-lg text-sm font-medium text-slate-500 hover:text-amber-800 hover:bg-white/60 transition-colors" href="routes.html">Маршруты</a>
+          <a class="px-4 py-1.5 rounded-lg text-sm font-medium text-slate-500 hover:text-amber-800 hover:bg-white/60 transition-colors" href="trips.html">Рейсы</a>
+          <a class="px-4 py-1.5 rounded-lg text-sm font-medium text-slate-500 hover:text-amber-800 hover:bg-white/60 transition-colors" href="drivers-manage.html">Водители</a>
+          <a class="px-4 py-1.5 rounded-lg text-sm font-medium text-slate-500 hover:text-amber-800 hover:bg-white/60 transition-colors" href="clients.html">Клиенты</a>
+          <a class="px-4 py-1.5 rounded-lg text-sm font-medium text-slate-500 hover:text-amber-800 hover:bg-white/60 transition-colors" href="warehouse.html">Склад</a>
+          <a class="px-4 py-1.5 rounded-lg text-sm font-medium text-slate-500 hover:text-amber-800 hover:bg-white/60 transition-colors" href="loading-plan.html">Планирование</a>
+          <a class="px-4 py-1.5 rounded-lg text-sm font-semibold nav-item-active transition-all" href="delivery-stats.html">Статистика</a>
+          <a class="px-4 py-1.5 rounded-lg text-sm font-medium text-slate-500 hover:text-amber-800 hover:bg-white/60 transition-colors" href="geozones.html">Геозоны</a>
+        </nav>
+      </div>
+      <div class="flex items-center gap-3">
+        <span class="hidden lg:flex items-center gap-2 px-3 py-1.5 bg-amber-50 border border-amber-200 rounded-full text-xs">
+            <i class="fa-solid fa-id-card text-amber-600"></i>
+            <span class="font-semibold text-amber-800">Логист</span>
+        </span>
+        <div class="flex items-center gap-3 pl-1 pr-1 py-1 bg-white/50 border border-white rounded-full shadow-sm">
+            <div class="w-8 h-8 rounded-full bg-slate-200 overflow-hidden ring-2 ring-white">
+                <img alt="User" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCTs9iN8pKS03W5I54u9FB4B-c8kh0-SvddoYiVdknvnn0XFQ_ScxzcOGMuvCw75ZDO7eej3OBFSUyW7YGzfIdw8bm2JVE2qYntX-6WFsuWZDXeCjqgvXyR-Lo9UnAE2bTQejiaicaZNqXTEEWzBEmoalZytqScbtdaXlk0i5laN5yjsqI3j457keHzESRrW4bLeWD2l5xuer1uZ4Zd_LMeP8p-XTEa4_wtLTcRyHGOncDuMQUJk788z8tvDII7r8UTdnahdzzaAtY"/>
+            </div>
+            <div class="pr-3 flex flex-col items-end leading-none">
+                <p class="text-xs font-bold text-slate-800">Логист</p>
+                <p class="text-[9px] text-amber-600 font-semibold mt-0.5">Pro</p>
+            </div>
+        </div>
+        <button class="w-10 h-10 flex items-center justify-center text-slate-400 hover:text-slate-700 bg-white/50 hover:bg-white rounded-full transition-all shadow-sm border border-white/50 relative" onclick="window.location.href='notifications.html'">
+            <span class="material-symbols-outlined text-[20px]">notifications</span>
+            <span class="absolute top-2.5 right-2.5 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white"></span>
+        </button>
+        <button class="w-10 h-10 flex items-center justify-center text-slate-400 hover:text-red-500 bg-white/50 hover:bg-white rounded-full transition-all shadow-sm border border-white/50" onclick="logout()">
+            <span class="material-symbols-outlined text-[20px]">logout</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="p-4 space-y-4" style="height: calc(100vh - 88px); overflow-y: auto;">
+    <div class="grid grid-cols-4 gap-4">
+      <div class="glass-card p-4 metric-big">
+        <div class="text-xs text-slate-600 mb-1">Доставлено</div>
+        <div class="text-3xl font-bold text-amber-700">342</div>
+        <div class="text-xs text-green-600 mt-2">+18% за месяц</div>
+      </div>
+      <div class="glass-card p-4 metric-big">
+        <div class="text-xs text-slate-600 mb-1">В пути</div>
+        <div class="text-3xl font-bold text-blue-600">28</div>
+        <div class="text-xs text-slate-500 mt-2">Активных рейсов</div>
+      </div>
+      <div class="glass-card p-4 metric-big">
+        <div class="text-xs text-slate-600 mb-1">Успешность</div>
+        <div class="text-3xl font-bold text-green-600">96.8%</div>
+        <div class="text-xs text-green-600 mt-2">+2.3% за месяц</div>
+      </div>
+      <div class="glass-card p-4 metric-big">
+        <div class="text-xs text-slate-600 mb-1">Среднее время</div>
+        <div class="text-3xl font-bold text-purple-600">4.2ч</div>
+        <div class="text-xs text-red-500 mt-2">+0.3ч за месяц</div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-2 gap-4">
+      <div class="glass-panel p-4">
+        <h3 class="text-sm font-bold text-slate-800 mb-4">Доставки по месяцам</h3>
+        <canvas id="deliveryChart" width="400" height="200"></canvas>
+      </div>
+
+      <div class="glass-panel p-4">
+        <h3 class="text-sm font-bold text-slate-800 mb-4">Распределение по маршрутам</h3>
+        <canvas id="routeChart" width="400" height="200"></canvas>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-3 gap-4">
+      <div class="glass-panel p-4 col-span-2">
+        <h3 class="text-sm font-bold text-slate-800 mb-4">Топ маршруты</h3>
+        <div class="space-y-3">
+          <div class="glass-card p-3 flex items-center justify-between">
+            <div>
+              <div class="font-semibold text-sm text-slate-800">Москва → Санкт-Петербург</div>
+              <div class="text-xs text-slate-600">89 рейсов</div>
+            </div>
+            <div class="text-right">
+              <div class="text-sm font-bold text-amber-600">7.2М ₽</div>
+              <div class="text-xs text-green-600">+12%</div>
+            </div>
+          </div>
+          <div class="glass-card p-3 flex items-center justify-between">
+            <div>
+              <div class="font-semibold text-sm text-slate-800">Москва → Казань</div>
+              <div class="text-xs text-slate-600">67 рейсов</div>
+            </div>
+            <div class="text-right">
+              <div class="text-sm font-bold text-amber-600">4.8М ₽</div>
+              <div class="text-xs text-green-600">+8%</div>
+            </div>
+          </div>
+          <div class="glass-card p-3 flex items-center justify-between">
+            <div>
+              <div class="font-semibold text-sm text-slate-800">Санкт-Петербург → Нижний Новгород</div>
+              <div class="text-xs text-slate-600">52 рейса</div>
+            </div>
+            <div class="text-right">
+              <div class="text-sm font-bold text-amber-600">3.9М ₽</div>
+              <div class="text-xs text-green-600">+15%</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="glass-panel p-4">
+        <h3 class="text-sm font-bold text-slate-800 mb-4">Статусы</h3>
+        <canvas id="statusChart" width="200" height="200"></canvas>
+      </div>
+    </div>
+
+    <div class="glass-panel p-4">
+      <h3 class="text-sm font-bold text-slate-800 mb-4">Эффективность водителей</h3>
+      <div class="grid grid-cols-5 gap-3">
+        <div class="glass-card p-3 text-center">
+          <div class="w-12 h-12 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white font-bold text-lg mx-auto mb-2">АМ</div>
+          <div class="font-semibold text-sm text-slate-800">А. Малышев</div>
+          <div class="text-xs text-amber-600 mt-1">156 рейсов</div>
+          <div class="text-xs text-green-600">98% успех</div>
+        </div>
+        <div class="glass-card p-3 text-center">
+          <div class="w-12 h-12 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white font-bold text-lg mx-auto mb-2">СИ</div>
+          <div class="font-semibold text-sm text-slate-800">С. Иванов</div>
+          <div class="text-xs text-amber-600 mt-1">89 рейсов</div>
+          <div class="text-xs text-green-600">95% успех</div>
+        </div>
+        <div class="glass-card p-3 text-center">
+          <div class="w-12 h-12 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white font-bold text-lg mx-auto mb-2">МП</div>
+          <div class="font-semibold text-sm text-slate-800">М. Петров</div>
+          <div class="text-xs text-amber-600 mt-1">234 рейса</div>
+          <div class="text-xs text-green-600">97% успех</div>
+        </div>
+        <div class="glass-card p-3 text-center">
+          <div class="w-12 h-12 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white font-bold text-lg mx-auto mb-2">АК</div>
+          <div class="font-semibold text-sm text-slate-800">А. Козлов</div>
+          <div class="text-xs text-amber-600 mt-1">45 рейсов</div>
+          <div class="text-xs text-green-600">92% успех</div>
+        </div>
+        <div class="glass-card p-3 text-center">
+          <div class="w-12 h-12 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white font-bold text-lg mx-auto mb-2">ДН</div>
+          <div class="font-semibold text-sm text-slate-800">Д. Новиков</div>
+          <div class="text-xs text-amber-600 mt-1">123 рейса</div>
+          <div class="text-xs text-green-600">96% успех</div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="./assets/js/routa-core.js"></script>
+  <script>
+    Routa.Theme.load();
+
+    document.addEventListener('DOMContentLoaded', () => {
+      renderDeliveryChart();
+      renderRouteChart();
+      renderStatusChart();
+    });
+
+    function renderDeliveryChart() {
+      const ctx = document.getElementById('deliveryChart').getContext('2d');
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'],
+          datasets: [{
+            label: 'Доставки',
+            data: [120, 135, 145, 160, 175, 190, 210, 225, 240, 280, 310, 342],
+            borderColor: '#f59e0b',
+            backgroundColor: 'rgba(245,158,11,0.1)',
+            tension: 0.4,
+            fill: true
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' } },
+            x: { grid: { display: false } }
+          }
+        }
+      });
+    }
+
+    function renderRouteChart() {
+      const ctx = document.getElementById('routeChart').getContext('2d');
+      new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: ['МСК-СПб', 'МСК-Казань', 'СПб-НН', 'МСК-Екб', 'Казань-Самара'],
+          datasets: [{
+            label: 'Рейсы',
+            data: [89, 67, 52, 45, 38],
+            backgroundColor: ['#f59e0b', '#fb923c', '#fdba74', '#fed7aa', '#ffedd5']
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' } },
+            x: { grid: { display: false } }
+          }
+        }
+      });
+    }
+
+    function renderStatusChart() {
+      const ctx = document.getElementById('statusChart').getContext('2d');
+      new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: ['Доставлено', 'В пути', 'Ожидание', 'Отмена'],
+          datasets: [{
+            data: [342, 28, 12, 8],
+            backgroundColor: ['#10b981', '#3b82f6', '#f59e0b', '#ef4444']
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { position: 'bottom', labels: { font: { size: 10 } } }
+          }
+        }
+      });
+    }
+
+    function logout() {
+      if (typeof Routa !== 'undefined' && Routa.Auth) {
+        Routa.Auth.logout();
+      } else {
+        localStorage.removeItem('routox_token');
+        localStorage.removeItem('routox_role');
+        window.location.href = 'login.html';
+      }
+    }
+  </script>
+  <script src="./assets/js/smooth-navigation.js"></script>
+</body>
+</html>

@@ -29,7 +29,7 @@ const ROLES = {
     level: 100,
   },
   admin: {
-    name: "Администратор",
+    name: "Диспетчер",
     icon: "fa-user-gear",
     color: "blue",
     level: 50,

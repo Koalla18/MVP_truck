@@ -41,7 +41,7 @@ def seed_demo():
         demo_users = [
             ('owner@example.com', 'owner123', UserRole.owner),
             ('admin@example.com', 'admin123', UserRole.admin),
-            ('driver@example.com', 'driver123', UserRole.driver),
+            ('logist@example.com', 'logist123', UserRole.logist),
         ]
 
         created_users = {}
@@ -74,13 +74,11 @@ def seed_demo():
             ).first()
             
             if not existing:
-                # Link first driver to the driver user
-                user_id = created_users.get(UserRole.driver).id if i == 0 and UserRole.driver in created_users else None
-                
+                # Driver profiles are now standalone (no user link - drivers use mobile app)
                 driver_profile = DriverProfile(
                     id=str(uuid.uuid4()),
                     company_id=company.id,
-                    user_id=user_id,
+                    user_id=None,
                     name=drv_data['name'],
                     phone=drv_data['phone'],
                     home_base=drv_data['home_base'],

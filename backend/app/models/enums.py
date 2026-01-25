@@ -4,7 +4,8 @@ import enum
 class UserRole(str, enum.Enum):
     owner = "owner"
     admin = "admin"
-    driver = "driver"
+    dispatcher = "dispatcher"
+    logist = "logist"
 
 
 class GeozoneType(str, enum.Enum):
