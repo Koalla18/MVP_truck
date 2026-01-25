@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>RoutoX — Панель водителя</title>
   <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
   <script src="https://kit.fontawesome.com/a2e0e9e5a9.js" crossorigin="anonymous"></script>
@@ -10,703 +10,799 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <link rel="stylesheet" href="./assets/css/routox-unified.css">
   <style>
-    /* Mobile-optimized driver panel */
-    body {
-      -webkit-tap-highlight-color: transparent;
+    :root {
+      --card-bg: #ffffff;
+      --page-bg: #f0f4f8;
+      --text-primary: #1e293b;
+      --text-secondary: #64748b;
+      --border: rgba(0,0,0,0.06);
     }
-
-    /* Compact Tab Bar - Narrower */
-    .driver-tabs {
-      display: flex;
-      gap: 4px;
-      padding: 4px;
-      background: var(--bg-secondary);
-      border: 1px solid var(--border-color);
-      border-radius: 14px;
-      max-width: 280px;
-      margin: 0 auto;
+    [data-theme="dark"] {
+      --card-bg: #1e293b;
+      --page-bg: #0f172a;
+      --text-primary: #f1f5f9;
+      --text-secondary: #94a3b8;
+      --border: rgba(255,255,255,0.1);
     }
-
-    .driver-tab {
-      flex: 1;
-      padding: 8px 4px;
-      border-radius: 10px;
-      font-size: 11px;
+    
+    body { 
+      background: var(--page-bg); 
+      color: var(--text-primary);
+      min-height: 100vh;
+    }
+    
+    /* Light Glass Card */
+    .glass-card {
+      background: var(--card-bg);
+      border-radius: 20px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+      border: 1px solid var(--border);
+    }
+    
+    /* Info Badge */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
       font-weight: 500;
-      color: var(--text-secondary);
-      transition: all 0.2s ease;
+    }
+    .badge-active { background: rgba(16, 185, 129, 0.12); color: #10b981; }
+    .badge-route { background: rgba(59, 130, 246, 0.12); color: #3b82f6; }
+    .badge-live { background: #ef4444; color: white; }
+    
+    /* Cargo Grid - 3D Truck View */
+    .cargo-container {
+      background: linear-gradient(145deg, #f8fafc 0%, #e2e8f0 100%);
+      border-radius: 24px;
+      padding: 24px;
+      position: relative;
+    }
+    [data-theme="dark"] .cargo-container {
+      background: linear-gradient(145deg, #1e293b 0%, #0f172a 100%);
+    }
+    
+    .cargo-grid {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 6px;
+      padding: 16px;
+      background: rgba(59, 130, 246, 0.08);
+      border-radius: 16px;
+      border: 2px dashed rgba(59, 130, 246, 0.3);
+    }
+    
+    .cargo-cell {
+      aspect-ratio: 1;
+      border-radius: 8px;
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 2px;
-      background: transparent;
-      border: none;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: 600;
+      transition: all 0.2s ease;
       cursor: pointer;
     }
-
-    .driver-tab i {
-      font-size: 14px;
-    }
-
-    .driver-tab:hover {
-      color: var(--brand-blue);
-    }
-
-    .driver-tab.active {
-      background: linear-gradient(135deg, #3b82f6, #10b981);
+    .cargo-cell:hover { transform: scale(1.08); }
+    
+    .cargo-cell.filled {
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
       color: white;
-      box-shadow: 0 2px 10px rgba(59, 130, 246, 0.3);
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
     }
-
-    .tab-content {
-      display: none;
-      animation: fadeIn 0.3s ease;
+    .cargo-cell.filled.heavy {
+      background: linear-gradient(135deg, #1d4ed8, #1e40af);
     }
-
-    .tab-content.active {
-      display: block;
+    .cargo-cell.empty {
+      background: rgba(255,255,255,0.6);
+      border: 2px dashed rgba(0,0,0,0.15);
+      color: var(--text-secondary);
     }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(8px); }
-      to { opacity: 1; transform: translateY(0); }
+    [data-theme="dark"] .cargo-cell.empty {
+      background: rgba(255,255,255,0.05);
+      border-color: rgba(255,255,255,0.1);
     }
-
+    
+    .cargo-cell .weight {
+      font-size: 8px;
+      opacity: 0.8;
+      margin-top: 2px;
+    }
+    
+    /* Camera with Live */
+    .camera-box {
+      position: relative;
+      border-radius: 16px;
+      overflow: hidden;
+      background: #000;
+    }
+    .camera-box img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .camera-live-badge {
+      position: absolute;
+      bottom: 12px;
+      left: 12px;
+      background: #ef4444;
+      color: white;
+      padding: 5px 12px;
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .camera-live-badge::before {
+      content: '';
+      width: 8px;
+      height: 8px;
+      background: white;
+      border-radius: 50%;
+      animation: pulse-live 1.5s infinite;
+    }
+    @keyframes pulse-live {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.8); }
+    }
+    
+    /* Mechanical Bars */
+    .mech-bars {
+      display: flex;
+      gap: 4px;
+      align-items: flex-end;
+      height: 50px;
+    }
+    .mech-bar {
+      width: 32px;
+      border-radius: 4px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      padding-bottom: 4px;
+      font-size: 9px;
+      font-weight: 700;
+      color: white;
+      transition: all 0.3s;
+    }
+    .mech-bar.good { background: linear-gradient(to top, #3b82f6, #60a5fa); }
+    .mech-bar.warning { background: linear-gradient(to top, #f59e0b, #fbbf24); }
+    
+    /* Speed Bars */
+    .speed-bars {
+      display: flex;
+      gap: 3px;
+      align-items: flex-end;
+      height: 32px;
+    }
+    .speed-bar {
+      width: 14px;
+      border-radius: 3px;
+      transition: all 0.3s;
+    }
+    
+    /* Progress Ring */
+    .progress-ring-container {
+      position: relative;
+      width: 90px;
+      height: 90px;
+    }
+    .progress-ring-container svg { transform: rotate(-90deg); }
+    .progress-ring-bg { fill: none; stroke: #e2e8f0; stroke-width: 8; }
+    [data-theme="dark"] .progress-ring-bg { stroke: #334155; }
+    .progress-ring-fill { fill: none; stroke: #3b82f6; stroke-width: 8; stroke-linecap: round; }
+    .progress-ring-text {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    /* Fuel Gauge */
+    .fuel-gauge {
+      width: 50px;
+      height: 70px;
+      border-radius: 8px;
+      border: 2px solid #e2e8f0;
+      position: relative;
+      overflow: hidden;
+    }
+    [data-theme="dark"] .fuel-gauge { border-color: #334155; }
+    .fuel-gauge-fill {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: linear-gradient(to top, #3b82f6, #60a5fa);
+      transition: height 0.5s;
+    }
+    .fuel-gauge-value {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      color: white;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+    }
+    
+    /* Map */
+    #driverMap {
+      border-radius: 16px;
+      height: 100%;
+      min-height: 180px;
+    }
+    .leaflet-control-zoom { display: none; }
+    
+    /* Action Buttons */
+    .action-circle {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      color: white;
+      box-shadow: 0 4px 14px rgba(59, 130, 246, 0.35);
+      transition: all 0.2s;
+    }
+    .action-circle:hover { transform: scale(1.1); }
+    
+    /* Quick Action Grid */
+    .quick-action {
+      padding: 14px;
+      border-radius: 14px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      font-weight: 500;
+      transition: all 0.2s;
+      cursor: pointer;
+    }
+    .quick-action:hover { transform: translateY(-2px); }
+    .quick-action i { font-size: 20px; }
+    .quick-action.blue { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
+    .quick-action.amber { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
+    .quick-action.purple { background: rgba(139, 92, 246, 0.1); color: #8b5cf6; }
+    .quick-action.emerald { background: rgba(16, 185, 129, 0.1); color: #10b981; }
+    
     /* SOS Button */
     .btn-sos {
       background: linear-gradient(135deg, #ef4444, #dc2626);
       color: white;
-      animation: sosPulse 2s ease-in-out infinite;
+      padding: 14px 28px;
+      border-radius: 14px;
+      font-weight: 600;
+      font-size: 15px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      animation: sos-pulse 2s infinite;
     }
-
-    @keyframes sosPulse {
-      0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+    @keyframes sos-pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5); }
       50% { box-shadow: 0 0 0 12px rgba(239, 68, 68, 0); }
     }
-
-    /* Map */
-    #driverMap {
-      border-radius: 16px;
-      z-index: 1;
+    
+    /* Section Title */
+    .section-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 12px;
     }
-
-    .leaflet-control-zoom {
-      border: none !important;
-      border-radius: 10px !important;
-      overflow: hidden;
-    }
-
-    .leaflet-control-zoom a {
-      background: var(--bg-secondary) !important;
-      color: var(--text-primary) !important;
-      border: 1px solid var(--border-color) !important;
-    }
-
-    /* Timeline */
-    .timeline-item {
-      position: relative;
-      padding-left: 24px;
-    }
-
-    .timeline-item::before {
-      content: '';
-      position: absolute;
-      left: 5px;
-      top: 24px;
-      bottom: -12px;
-      width: 2px;
-      background: var(--border-color);
-    }
-
-    .timeline-item:last-child::before {
-      display: none;
-    }
-
-    .timeline-dot {
-      position: absolute;
-      left: 0;
-      top: 4px;
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-      border: 2px solid currentColor;
-      background: var(--bg-secondary);
-    }
-
-    /* Rest Warning */
-    .rest-warning {
-      background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(245, 158, 11, 0.05));
-      border: 1px solid rgba(245, 158, 11, 0.3);
-    }
-
-    [data-theme="dark"] .rest-warning {
-      background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(245, 158, 11, 0.1));
-    }
-
-    /* Fuel Gauge */
-    .fuel-gauge {
-      position: relative;
-      width: 100px;
-      height: 100px;
-    }
-
-    .fuel-gauge svg {
-      transform: rotate(-90deg);
-    }
-
-    .fuel-gauge-bg {
-      fill: none;
-      stroke: var(--border-color);
-      stroke-width: 8;
-    }
-
-    .fuel-gauge-fill {
-      fill: none;
-      stroke-width: 8;
-      stroke-linecap: round;
-      transition: stroke-dashoffset 0.5s ease;
-    }
-
-    /* Driver Photo */
-    .driver-photo {
-      width: 72px;
-      height: 72px;
-      border-radius: 16px;
-      object-fit: cover;
-      border: 3px solid var(--border-color);
-    }
-
-    /* Quick Action Buttons */
-    .quick-action-btn {
-      padding: 12px 8px;
-      border-radius: 14px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 6px;
-      transition: all 0.2s ease;
-      background: var(--bg-card);
-      border: 1px solid var(--border-color);
-    }
-
-    .quick-action-btn:active {
-      transform: scale(0.95);
-    }
-
-    .quick-action-btn:hover {
-      border-color: var(--border-hover);
-      transform: translateY(-2px);
-    }
-
-    /* Live pulse */
-    .live-pulse {
-      animation: pulse 2s ease-in-out infinite;
-    }
-
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.5; }
-    }
-
-    /* 3D Truck Icon */
-    .truck-icon-3d {
-      position: relative;
-      transform-style: preserve-3d;
-      animation: truckFloat 4s ease-in-out infinite;
-    }
-
-    @keyframes truckFloat {
-      0%, 100% { transform: translateY(0) rotateY(0); }
-      50% { transform: translateY(-5px) rotateY(5deg); }
+    
+    /* Responsive */
+    @media (max-width: 1024px) {
+      .main-grid { grid-template-columns: 1fr !important; }
+      .sidebar-left, .sidebar-right { display: none; }
     }
   </style>
 </head>
-<body class="min-h-screen pb-24">
+<body>
   <!-- Header -->
-  <header class="glass-panel mx-3 mt-3 px-4 py-3 flex items-center justify-between sticky top-3 z-30">
-    <div class="flex items-center gap-3">
-      <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-emerald-500 flex items-center justify-center font-bold text-white text-sm shadow-lg">R</div>
-      <div>
-        <div class="font-semibold text-sm">RoutoX Driver</div>
-        <div class="text-xs text-muted">Панель водителя</div>
+  <header class="glass-card mx-4 mt-4 px-5 py-3 flex items-center justify-between sticky top-4 z-50">
+    <div class="flex items-center gap-4">
+      <a href="./fleet.html" class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-emerald-500 flex items-center justify-center text-white font-bold shadow-lg">
+          <i class="fa-solid fa-truck"></i>
+        </div>
+        <div class="hidden sm:block">
+          <div class="font-semibold text-sm">RoutoX</div>
+          <div class="text-xs text-[var(--text-secondary)]">Панель водителя</div>
+        </div>
+      </a>
+      
+      <div class="hidden lg:flex items-center gap-6 ml-6">
+        <div class="flex items-center gap-2 text-sm">
+          <span class="text-[var(--text-secondary)]">Daily active:</span>
+          <span class="font-bold">8h 40min</span>
+          <span class="text-[var(--text-secondary)]">/ 10h</span>
+        </div>
       </div>
     </div>
-    <div class="flex items-center gap-2">
-      <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/15 border border-emerald-500/30">
-        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 live-pulse"></span>
-        <span class="text-xs text-emerald-600 font-medium">Online</span>
-      </div>
-      <div class="theme-toggle-track" onclick="toggleTheme()">
+    
+    <div class="flex items-center gap-3">
+      <span class="badge badge-active">
+        <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+        Active
+      </span>
+      
+      <a href="./notifications.html" class="icon-btn relative" title="Уведомления">
+        <i class="fa-solid fa-bell"></i>
+        <span class="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-[10px] text-white flex items-center justify-center font-bold">2</span>
+      </a>
+      
+      <button onclick="openSettingsModal()" class="icon-btn" title="Настройки">
+        <i class="fa-solid fa-gear"></i>
+      </button>
+      
+      <div class="theme-toggle-track" onclick="toggleTheme()" title="Сменить тему">
         <div class="theme-toggle-thumb"></div>
       </div>
-      <button class="icon-btn" style="width: 36px; height: 36px;" onclick="showNotifications()">
-        <i class="fa-solid fa-bell text-muted text-sm"></i>
-        <span class="badge-dot" style="width: 16px; height: 16px; font-size: 10px;">2</span>
-      </button>
+      
+      <img src="https://randomuser.me/api/portraits/men/32.jpg" class="w-10 h-10 rounded-full border-2 border-white shadow-md object-cover" alt="Driver">
     </div>
   </header>
 
   <!-- Main Content -->
-  <main class="p-3 space-y-3">
-    <!-- Current Trip Card -->
-    <div class="glass-panel p-4">
-      <div class="flex items-center justify-between mb-4">
-        <div class="flex items-center gap-3">
-          <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-blue-500/20 to-emerald-500/20 border border-blue-500/30 flex items-center justify-center truck-icon-3d">
-            <i class="fa-solid fa-route text-blue-500 text-lg"></i>
-          </div>
-          <div>
-            <div class="text-xs text-muted">Текущий рейс</div>
-            <div class="font-bold">Москва → СПб</div>
-          </div>
+  <main class="p-4 main-grid grid grid-cols-12 gap-4" style="min-height: calc(100vh - 100px);">
+    
+    <!-- Left Sidebar -->
+    <aside class="sidebar-left col-span-3 space-y-4">
+      <!-- Vehicle Info Card -->
+      <div class="glass-card p-5">
+        <div class="flex items-center justify-between mb-4">
+          <span class="text-xs text-[var(--text-secondary)]">Vehicle</span>
+          <span class="badge badge-active">Active</span>
         </div>
-        <div class="text-right">
-          <div class="text-xs text-muted">Прибытие</div>
-          <div class="text-emerald-500 font-semibold">~14:30</div>
-        </div>
-      </div>
-
-      <!-- Progress -->
-      <div class="mb-4">
-        <div class="flex justify-between text-sm mb-2">
-          <span class="text-muted">Прогресс</span>
-          <span class="font-semibold">456 км / 680 км</span>
-        </div>
-        <div class="progress-bar">
-          <div class="progress-fill progress-fill-gradient" style="width: 67%"></div>
-        </div>
-      </div>
-
-      <!-- Stats Grid -->
-      <div class="grid grid-cols-3 gap-2">
-        <div class="glass-card p-3 text-center">
-          <div class="text-xl font-bold text-blue-500">224</div>
-          <div class="text-xs text-muted">км осталось</div>
-        </div>
-        <div class="glass-card p-3 text-center">
-          <div class="text-xl font-bold text-emerald-500">4ч 15м</div>
-          <div class="text-xs text-muted">в пути</div>
-        </div>
-        <div class="glass-card p-3 text-center">
-          <div class="text-xl font-bold text-amber-500">72%</div>
-          <div class="text-xs text-muted">топливо</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Rest Time Warning (ФЗ-196) -->
-    <div class="rest-warning glass-panel p-3 flex items-center gap-3">
-      <div class="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center flex-shrink-0">
-        <i class="fa-solid fa-clock text-amber-500 text-lg"></i>
-      </div>
-      <div class="flex-1">
-        <div class="font-semibold text-amber-600 text-sm">Режим труда и отдыха</div>
-        <div class="text-sm">До перерыва: <span class="font-bold">1ч 45м</span></div>
-        <div class="text-xs text-muted mt-0.5">ФЗ-196: макс. 4.5ч вождения</div>
-      </div>
-    </div>
-
-    <!-- Tab Content -->
-    <div class="tab-content active" id="tabTrip">
-      <!-- Map Section -->
-      <div class="glass-panel p-4 mb-3">
-        <div class="flex items-center justify-between mb-3">
-          <h3 class="font-semibold text-sm">Маршрут</h3>
-          <button class="text-xs text-blue-500 font-medium">Навигация →</button>
-        </div>
-        <div id="driverMap" class="h-44 rounded-xl"></div>
-      </div>
-
-      <!-- Route Timeline -->
-      <div class="glass-panel p-4">
-        <h3 class="font-semibold mb-4 text-sm">Точки маршрута</h3>
+        
+        <h2 class="text-2xl font-bold mb-4">MAN TGX</h2>
+        
         <div class="space-y-4">
-          <div class="timeline-item">
-            <div class="timeline-dot bg-emerald-500 border-emerald-500"></div>
-            <div class="text-sm font-medium">Москва, Склад-1</div>
-            <div class="text-xs text-emerald-500">Выезд 06:00 ✓</div>
-          </div>
-          <div class="timeline-item">
-            <div class="timeline-dot bg-blue-500 border-blue-500"></div>
-            <div class="text-sm font-medium">Тверь (транзит)</div>
-            <div class="text-xs text-blue-500">Сейчас здесь • 10:15</div>
-          </div>
-          <div class="timeline-item">
-            <div class="timeline-dot border-gray-400"></div>
-            <div class="text-sm font-medium text-muted">В. Волочёк</div>
-            <div class="text-xs text-muted">~11:30</div>
-          </div>
-          <div class="timeline-item">
-            <div class="timeline-dot border-gray-400"></div>
-            <div class="text-sm font-medium text-muted">СПб, Клиент "Нева"</div>
-            <div class="text-xs text-muted">ETA: 14:30</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="tab-content" id="tabDocs">
-      <div class="glass-panel p-4 mb-3">
-        <h3 class="font-semibold mb-3 text-sm">Документы рейса</h3>
-        <div class="space-y-2">
-          <div class="glass-card p-3 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-              <div class="w-9 h-9 rounded-xl bg-cyan-500/15 flex items-center justify-center">
-                <i class="fa-solid fa-file-lines text-cyan-500"></i>
-              </div>
-              <div>
-                <div class="font-medium text-sm">eTTН #45892</div>
-                <div class="text-xs text-muted">Электронная накладная</div>
-              </div>
-            </div>
-            <span class="badge badge-success">Подписан</span>
-          </div>
-          <div class="glass-card p-3 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-              <div class="w-9 h-9 rounded-xl bg-amber-500/15 flex items-center justify-center">
-                <i class="fa-solid fa-file-invoice text-amber-500"></i>
-              </div>
-              <div>
-                <div class="font-medium text-sm">Путевой лист</div>
-                <div class="text-xs text-muted">№ PL-2024-1234</div>
-              </div>
-            </div>
-            <span class="badge badge-success">Активен</span>
-          </div>
-          <div class="glass-card p-3 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-              <div class="w-9 h-9 rounded-xl bg-purple-500/15 flex items-center justify-center">
-                <i class="fa-solid fa-qrcode text-purple-500"></i>
-              </div>
-              <div>
-                <div class="font-medium text-sm">QR для клиента</div>
-                <div class="text-xs text-muted">Подтверждение доставки</div>
-              </div>
-            </div>
-            <button class="badge badge-info cursor-pointer">Показать</button>
-          </div>
-        </div>
-      </div>
-
-      <div class="glass-panel p-4">
-        <h3 class="font-semibold mb-3 text-sm">Груз</h3>
-        <div class="grid grid-cols-2 gap-2">
-          <div class="glass-card p-3">
-            <div class="text-xs text-muted">Вес</div>
-            <div class="text-lg font-bold">18.5 т</div>
-          </div>
-          <div class="glass-card p-3">
-            <div class="text-xs text-muted">Палеты</div>
-            <div class="text-lg font-bold">24 шт</div>
-          </div>
-          <div class="glass-card p-3">
-            <div class="text-xs text-muted">Тип</div>
-            <div class="text-lg font-bold">Продукты</div>
-          </div>
-          <div class="glass-card p-3">
-            <div class="text-xs text-muted">Температура</div>
-            <div class="text-lg font-bold text-cyan-500">+4°C</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="tab-content" id="tabVehicle">
-      <div class="glass-panel p-4 mb-3">
-        <div class="flex items-center gap-4 mb-4">
-          <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-500/20 to-emerald-500/20 border border-blue-500/30 flex items-center justify-center truck-icon-3d">
-            <i class="fa-solid fa-truck text-blue-500 text-xl"></i>
-          </div>
           <div>
-            <div class="text-lg font-bold">Е123МВ 777</div>
-            <div class="text-sm text-muted">Volvo FH 2021 • Рефрижератор</div>
-          </div>
-        </div>
-
-        <!-- Fuel Gauge -->
-        <div class="flex items-center justify-center mb-4">
-          <div class="fuel-gauge">
-            <svg viewBox="0 0 100 100" width="100" height="100">
-              <circle class="fuel-gauge-bg" cx="50" cy="50" r="42"/>
-              <circle class="fuel-gauge-fill" cx="50" cy="50" r="42" stroke="url(#fuelGrad)" stroke-dasharray="264" stroke-dashoffset="74"/>
-              <defs>
-                <linearGradient id="fuelGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stop-color="#3b82f6"/>
-                  <stop offset="100%" stop-color="#10b981"/>
-                </linearGradient>
-              </defs>
-            </svg>
-            <div class="absolute inset-0 flex flex-col items-center justify-center">
-              <i class="fa-solid fa-gas-pump text-blue-500 text-sm mb-1"></i>
-              <span class="text-xl font-bold">72%</span>
-              <span class="text-xs text-muted">~520 км</span>
+            <div class="flex justify-between text-sm mb-1">
+              <span class="text-[var(--text-secondary)]">Burden</span>
+              <span class="font-semibold">5,000 / 10,000 kg</span>
             </div>
           </div>
-        </div>
-
-        <div class="grid grid-cols-2 gap-2">
-          <div class="glass-card p-3">
-            <div class="text-xs text-muted">Пробег</div>
-            <div class="text-base font-bold">234,567 км</div>
-          </div>
-          <div class="glass-card p-3">
-            <div class="text-xs text-muted">ТО через</div>
-            <div class="text-base font-bold text-amber-500">12,433 км</div>
-          </div>
-          <div class="glass-card p-3">
-            <div class="text-xs text-muted">Давление шин</div>
-            <div class="text-base font-bold text-emerald-500">OK</div>
-          </div>
-          <div class="glass-card p-3">
-            <div class="text-xs text-muted">Темп. рефр.</div>
-            <div class="text-base font-bold text-cyan-500">+4°C</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Quick Actions -->
-      <div class="glass-panel p-4">
-        <h3 class="font-semibold mb-3 text-sm">Быстрые действия</h3>
-        <div class="grid grid-cols-4 gap-2">
-          <button class="quick-action-btn" onclick="reportFuel()">
-            <i class="fa-solid fa-gas-pump text-amber-500 text-lg"></i>
-            <span class="text-xs">Заправка</span>
-          </button>
-          <button class="quick-action-btn" onclick="reportIssue()">
-            <i class="fa-solid fa-triangle-exclamation text-red-500 text-lg"></i>
-            <span class="text-xs">Проблема</span>
-          </button>
-          <button class="quick-action-btn" onclick="startRest()">
-            <i class="fa-solid fa-bed text-purple-500 text-lg"></i>
-            <span class="text-xs">Отдых</span>
-          </button>
-          <button class="quick-action-btn" onclick="callDispatcher()">
-            <i class="fa-solid fa-headset text-blue-500 text-lg"></i>
-            <span class="text-xs">Диспетчер</span>
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <div class="tab-content" id="tabProfile">
-      <div class="glass-panel p-4 mb-3">
-        <div class="flex items-center gap-4 mb-4">
-          <img src="https://randomuser.me/api/portraits/men/32.jpg" alt="Driver" class="driver-photo" id="driverPhoto">
+          
           <div>
-            <div class="text-lg font-bold">Иванов Алексей</div>
-            <div class="text-sm text-muted">Водитель категории CE</div>
-            <div class="flex items-center gap-2 mt-1">
-              <span class="badge badge-success">Активен</span>
-              <span class="text-xs text-muted">ID: DRV-1234</span>
+            <div class="flex justify-between text-sm mb-1">
+              <span class="text-[var(--text-secondary)]">Used volume</span>
+              <span class="font-semibold">23 / 45 m³</span>
+            </div>
+          </div>
+          
+          <div>
+            <div class="flex justify-between text-sm mb-1">
+              <span class="text-[var(--text-secondary)]">Used capacity</span>
+              <span class="font-semibold">50%</span>
+            </div>
+            <div class="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+              <div class="h-full bg-blue-500 rounded-full" style="width: 50%;"></div>
             </div>
           </div>
         </div>
         
-        <div class="space-y-2">
-          <div class="flex items-center justify-between p-3 glass-card">
-            <div class="flex items-center gap-3">
-              <i class="fa-solid fa-phone text-emerald-500"></i>
-              <span class="text-sm">+7 (999) 123-45-67</span>
-            </div>
-            <i class="fa-solid fa-chevron-right text-muted text-xs"></i>
+        <!-- Driver -->
+        <div class="flex items-center gap-3 mt-5 pt-4 border-t border-[var(--border)]">
+          <img src="https://randomuser.me/api/portraits/men/32.jpg" class="w-10 h-10 rounded-full" alt="Driver">
+          <div class="flex-1 min-w-0">
+            <div class="text-xs text-[var(--text-secondary)]">Driver</div>
+            <div class="font-medium truncate">Иван Петров</div>
           </div>
-          <div class="flex items-center justify-between p-3 glass-card">
-            <div class="flex items-center gap-3">
-              <i class="fa-solid fa-id-card text-blue-500"></i>
-              <span class="text-sm">ВУ: 77 АА 123456</span>
+          <button class="action-circle w-9 h-9">
+            <i class="fa-solid fa-phone text-sm"></i>
+          </button>
+        </div>
+        
+        <!-- Fuel & Temp -->
+        <div class="grid grid-cols-2 gap-4 mt-5 pt-4 border-t border-[var(--border)]">
+          <div class="text-center">
+            <div class="text-xs text-[var(--text-secondary)] mb-2">Fuel</div>
+            <div class="fuel-gauge mx-auto">
+              <div class="fuel-gauge-fill" style="height: 60%;"></div>
+              <div class="fuel-gauge-value">60%</div>
             </div>
-            <span class="text-xs text-muted">до 2028</span>
           </div>
-          <div class="flex items-center justify-between p-3 glass-card">
-            <div class="flex items-center gap-3">
-              <i class="fa-solid fa-calendar text-purple-500"></i>
-              <span class="text-sm">Стаж: 8 лет</span>
-            </div>
+          <div class="text-center">
+            <div class="text-xs text-[var(--text-secondary)] mb-2">Temperature</div>
+            <div class="text-3xl font-light mt-3">24°<span class="text-lg">c</span></div>
           </div>
         </div>
       </div>
+      
+      <!-- Map Card -->
+      <div class="glass-card p-4">
+        <div class="flex items-center gap-2 mb-3">
+          <button class="px-4 py-2 rounded-lg bg-blue-500 text-white text-sm font-medium">
+            <i class="fa-solid fa-map mr-2"></i>Map
+          </button>
+          <button class="px-4 py-2 rounded-lg text-[var(--text-secondary)] text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-800">
+            <i class="fa-solid fa-triangle-exclamation mr-1"></i>
+            Alerts
+            <span class="ml-1 w-5 h-5 inline-flex items-center justify-center rounded-full bg-amber-500 text-white text-xs">2</span>
+          </button>
+        </div>
+        
+        <div id="driverMap" style="height: 180px;"></div>
+        
+        <div class="mt-3">
+          <span class="badge badge-route">
+            <i class="fa-solid fa-circle text-[6px]"></i>
+            In route
+          </span>
+        </div>
+      </div>
+    </aside>
 
-      <div class="glass-panel p-4 mb-3">
-        <h3 class="font-semibold mb-3 text-sm">Статистика</h3>
-        <div class="grid grid-cols-2 gap-2">
-          <div class="glass-card p-3 text-center">
-            <div class="text-xl font-bold text-emerald-500">156</div>
-            <div class="text-xs text-muted">рейсов</div>
-          </div>
-          <div class="glass-card p-3 text-center">
-            <div class="text-xl font-bold text-blue-500">89,234</div>
-            <div class="text-xs text-muted">км пройдено</div>
-          </div>
-          <div class="glass-card p-3 text-center">
-            <div class="text-xl font-bold text-amber-500">4.9</div>
-            <div class="text-xs text-muted">рейтинг</div>
-          </div>
-          <div class="glass-card p-3 text-center">
-            <div class="text-xl font-bold text-purple-500">0</div>
-            <div class="text-xs text-muted">нарушений</div>
-          </div>
+    <!-- Center - Main View -->
+    <section class="col-span-6 space-y-4">
+      <!-- Action Bar -->
+      <div class="flex items-center justify-center gap-3">
+        <button class="px-5 py-2.5 rounded-xl bg-blue-500 text-white text-sm font-medium flex items-center gap-2 hover:bg-blue-600 transition">
+          <i class="fa-solid fa-plus"></i>
+          Add cargo
+        </button>
+        <button class="px-3 py-2.5 rounded-xl bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 text-sm border border-gray-200 dark:border-gray-700 hover:border-blue-400 transition">
+          <i class="fa-solid fa-qrcode"></i>
+        </button>
+        <button class="px-3 py-2.5 rounded-xl bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 text-sm border border-gray-200 dark:border-gray-700 hover:border-blue-400 transition">
+          <i class="fa-solid fa-file-lines"></i>
+        </button>
+        <button class="px-3 py-2.5 rounded-xl bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 text-sm border border-gray-200 dark:border-gray-700 hover:border-blue-400 transition">
+          <i class="fa-solid fa-pen"></i>
+        </button>
+      </div>
+
+      <!-- Cargo Visualization -->
+      <div class="cargo-container">
+        <div class="cargo-grid">
+          <!-- Row 1 -->
+          <div class="cargo-cell empty"><i class="fa-solid fa-plus text-xs"></i></div>
+          <div class="cargo-cell filled"><span>BX-05</span><span class="weight">400 kg</span></div>
+          <div class="cargo-cell filled"><span>BX-06</span><span class="weight">400 kg</span></div>
+          <div class="cargo-cell empty"><i class="fa-solid fa-plus text-xs"></i></div>
+          <div class="cargo-cell filled"><span>BX-08</span><span class="weight">400 kg</span></div>
+          <div class="cargo-cell empty"><i class="fa-solid fa-plus text-xs"></i></div>
+          
+          <!-- Row 2 -->
+          <div class="cargo-cell filled"><span>BX-03</span><span class="weight">400 kg</span></div>
+          <div class="cargo-cell filled heavy"><span>BX-04</span><span class="weight">1550 kg</span></div>
+          <div class="cargo-cell filled"><span>BX-07</span><span class="weight">400 kg</span></div>
+          <div class="cargo-cell empty"><i class="fa-solid fa-plus text-xs"></i></div>
+          <div class="cargo-cell filled"><span>BX-11</span><span class="weight">400 kg</span></div>
+          <div class="cargo-cell filled"><span>BX-12</span><span class="weight">700 kg</span></div>
+          
+          <!-- Row 3 -->
+          <div class="cargo-cell filled heavy"><span>BX-01</span><span class="weight">400 kg</span></div>
+          <div class="cargo-cell filled heavy"><span>BX-02</span><span class="weight">400 kg</span></div>
+          <div class="cargo-cell filled"><span>BX-09</span><span class="weight">800 kg</span></div>
+          <div class="cargo-cell filled"><span>BX-10</span><span class="weight">400 kg</span></div>
+          <div class="cargo-cell filled"><span>BX-13</span><span class="weight">700 kg</span></div>
+          <div class="cargo-cell filled"><span>BX-14</span><span class="weight">700 kg</span></div>
+        </div>
+        
+        <!-- Truck Image -->
+        <div class="flex justify-center mt-4">
+          <img src="./assets/images/trucks/truck-side.png" alt="Truck" class="h-28 object-contain opacity-70" 
+               onerror="this.src='https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?w=400&h=120&fit=crop&auto=format'">
         </div>
       </div>
 
-      <button class="w-full glass-card p-3 flex items-center justify-between text-red-500" onclick="logout()">
+      <!-- Stats Row -->
+      <div class="grid grid-cols-3 gap-4">
+        <!-- Daily Active Time -->
+        <div class="glass-card p-4">
+          <div class="section-title">Daily active time</div>
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-xl font-bold">8h 40min</span>
+            <span class="text-sm text-[var(--text-secondary)]">/ 10h max</span>
+          </div>
+          <div class="h-2.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+            <div class="h-full bg-gradient-to-r from-blue-500 to-emerald-500 rounded-full" style="width: 86%;"></div>
+          </div>
+          <div class="flex items-center gap-2 mt-3">
+            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+            <span class="text-xs text-[var(--text-secondary)]">Normal day</span>
+          </div>
+        </div>
+        
+        <!-- Average Speed -->
+        <div class="glass-card p-4">
+          <div class="section-title">Average speed</div>
+          <div class="text-sm text-[var(--text-secondary)] mb-2">60-80 km/h</div>
+          <div class="speed-bars">
+            <div class="speed-bar" style="height: 60%; background: #fcd34d;"></div>
+            <div class="speed-bar" style="height: 80%; background: #fbbf24;"></div>
+            <div class="speed-bar" style="height: 100%; background: #f59e0b;"></div>
+            <div class="speed-bar" style="height: 85%; background: #10b981;"></div>
+            <div class="speed-bar" style="height: 70%; background: #10b981;"></div>
+            <div class="speed-bar" style="height: 55%; background: #34d399;"></div>
+          </div>
+          <div class="flex items-center gap-2 mt-3">
+            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+            <span class="text-xs text-[var(--text-secondary)]">Optimal</span>
+          </div>
+        </div>
+        
+        <!-- Mechanical Condition -->
+        <div class="glass-card p-4">
+          <div class="section-title">Mechanical condition</div>
+          <div class="flex items-center gap-4">
+            <div class="mech-bars">
+              <div class="mech-bar good" style="height: 45px;">90%</div>
+              <div class="mech-bar good" style="height: 45px;">90%</div>
+              <div class="mech-bar warning" style="height: 40px;">80%</div>
+              <div class="mech-bar good" style="height: 44px;">89%</div>
+              <div class="mech-bar good" style="height: 46px;">92%</div>
+            </div>
+            <div class="text-right">
+              <div class="text-2xl font-bold">91%</div>
+              <div class="flex items-center gap-1 justify-end">
+                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                <span class="text-xs text-[var(--text-secondary)]">Optimal</span>
+              </div>
+            </div>
+          </div>
+          <div class="grid grid-cols-5 gap-1 text-[9px] text-[var(--text-secondary)] text-center mt-2">
+            <span>Engine</span>
+            <span>Brakes</span>
+            <span>Tires</span>
+            <span>Oil</span>
+            <span>Susp.</span>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Camera Feed -->
+      <div class="glass-card p-4">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="font-semibold">Camera</h3>
+          <span class="text-sm text-[var(--text-secondary)]">TR-001</span>
+        </div>
+        <div class="camera-box" style="height: 200px;">
+          <img src="https://images.unsplash.com/photo-1449965408869-ebd3fee52a27?w=800&h=350&fit=crop&auto=format" alt="Camera feed">
+          <div class="camera-live-badge">Live</div>
+          <div class="absolute bottom-3 right-3 text-white text-xs bg-black/50 px-2 py-1 rounded">04:39:16</div>
+          <button class="absolute top-3 right-3 w-9 h-9 bg-white/20 backdrop-blur rounded-lg flex items-center justify-center text-white hover:bg-white/30 transition">
+            <i class="fa-solid fa-expand"></i>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Right Sidebar -->
+    <aside class="sidebar-right col-span-3 space-y-4">
+      <!-- Current Trip -->
+      <div class="glass-card p-5">
+        <h3 class="font-semibold mb-4">Текущий рейс</h3>
+        
+        <div class="space-y-3">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-emerald-500/15 flex items-center justify-center">
+              <i class="fa-solid fa-location-dot text-emerald-500"></i>
+            </div>
+            <div>
+              <div class="text-xs text-[var(--text-secondary)]">Откуда</div>
+              <div class="font-medium">Москва, Склад-1</div>
+            </div>
+          </div>
+          
+          <div class="border-l-2 border-dashed border-gray-200 dark:border-gray-700 h-5 ml-5"></div>
+          
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-blue-500/15 flex items-center justify-center">
+              <i class="fa-solid fa-flag-checkered text-blue-500"></i>
+            </div>
+            <div>
+              <div class="text-xs text-[var(--text-secondary)]">Куда</div>
+              <div class="font-medium">СПб, ООО "Нева"</div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="grid grid-cols-2 gap-3 mt-5 pt-4 border-t border-[var(--border)]">
+          <div class="text-center">
+            <div class="text-2xl font-bold text-blue-500">224</div>
+            <div class="text-xs text-[var(--text-secondary)]">км осталось</div>
+          </div>
+          <div class="text-center">
+            <div class="text-2xl font-bold text-emerald-500">~14:30</div>
+            <div class="text-xs text-[var(--text-secondary)]">ETA</div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Quick Actions -->
+      <div class="glass-card p-5">
+        <h3 class="font-semibold mb-4">Быстрые действия</h3>
+        <div class="grid grid-cols-2 gap-3">
+          <button class="quick-action blue">
+            <i class="fa-solid fa-gas-pump"></i>
+            <span>Заправка</span>
+          </button>
+          <button class="quick-action amber">
+            <i class="fa-solid fa-bed"></i>
+            <span>Отдых</span>
+          </button>
+          <button class="quick-action purple">
+            <i class="fa-solid fa-headset"></i>
+            <span>Диспетчер</span>
+          </button>
+          <button class="quick-action emerald">
+            <i class="fa-solid fa-file-lines"></i>
+            <span>Документы</span>
+          </button>
+        </div>
+        
+        <button class="btn-sos w-full mt-4">
+          <i class="fa-solid fa-phone-volume"></i>
+          SOS
+        </button>
+      </div>
+      
+      <!-- RTO Warning -->
+      <div class="glass-card p-4 border-l-4 border-amber-500">
         <div class="flex items-center gap-3">
-          <i class="fa-solid fa-right-from-bracket"></i>
-          <span class="text-sm font-medium">Выйти из аккаунта</span>
+          <div class="w-10 h-10 rounded-xl bg-amber-500/15 flex items-center justify-center">
+            <i class="fa-solid fa-clock text-amber-500"></i>
+          </div>
+          <div>
+            <div class="font-semibold text-amber-600 dark:text-amber-400">Режим РТО</div>
+            <div class="text-sm">До перерыва: <span class="font-bold">1ч 20м</span></div>
+          </div>
         </div>
-        <i class="fa-solid fa-chevron-right text-xs"></i>
-      </button>
-    </div>
-
-    <!-- SOS Button -->
-    <div class="fixed bottom-24 right-3 z-20">
-      <button class="btn-sos w-14 h-14 rounded-full flex items-center justify-center shadow-lg" onclick="triggerSOS()">
-        <span class="text-base font-bold">SOS</span>
-      </button>
-    </div>
+      </div>
+      
+      <!-- Trip Progress -->
+      <div class="glass-card p-4">
+        <div class="flex items-center justify-between mb-3">
+          <span class="section-title mb-0">Trip Progress</span>
+          <span class="text-sm font-bold text-blue-500">68%</span>
+        </div>
+        <div class="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+          <div class="h-full bg-gradient-to-r from-blue-500 to-emerald-500 rounded-full" style="width: 68%;"></div>
+        </div>
+        <div class="flex justify-between text-xs text-[var(--text-secondary)] mt-2">
+          <span>Москва</span>
+          <span>СПб</span>
+        </div>
+      </div>
+    </aside>
   </main>
 
-  <!-- Compact Bottom Tab Bar (Narrower) -->
-  <nav class="fixed bottom-0 left-0 right-0 px-3 pb-2 pt-1 z-30">
-    <div class="driver-tabs">
-      <button class="driver-tab active" data-tab="tabTrip">
-        <i class="fa-solid fa-route"></i>
-        <span>Рейс</span>
-      </button>
-      <button class="driver-tab" data-tab="tabDocs">
-        <i class="fa-solid fa-file-lines"></i>
-        <span>Доки</span>
-      </button>
-      <button class="driver-tab" data-tab="tabVehicle">
-        <i class="fa-solid fa-truck"></i>
-        <span>ТС</span>
-      </button>
-      <button class="driver-tab" data-tab="tabProfile">
-        <i class="fa-solid fa-user"></i>
-        <span>Я</span>
-      </button>
-    </div>
-  </nav>
-
-  <!-- SOS Modal -->
-  <div id="sosModal" class="modal-backdrop">
-    <div class="modal-content glass-panel p-6 text-center max-w-sm mx-auto">
-      <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-red-500/20 flex items-center justify-center">
-        <i class="fa-solid fa-phone-volume text-red-500 text-2xl"></i>
-      </div>
-      <h2 class="text-lg font-bold mb-2">Экстренный вызов</h2>
-      <p class="text-muted text-sm mb-6">Сигнал SOS будет отправлен диспетчеру и экстренным службам</p>
-      <div class="space-y-2">
-        <button class="w-full btn-sos py-3 rounded-xl font-bold" onclick="confirmSOS()">Подтвердить SOS</button>
-        <button class="w-full glass-card p-3 text-sm font-medium" onclick="closeSOS()">Отмена</button>
-      </div>
-    </div>
-  </div>
-
   <script>
-    // Theme toggle
-    const savedTheme = localStorage.getItem('routoxTheme') || 'light';
+    // Theme initialization
+    const savedTheme = localStorage.getItem('routox_theme') || 'light';
     document.documentElement.setAttribute('data-theme', savedTheme);
-
+    
     function toggleTheme() {
       const current = document.documentElement.getAttribute('data-theme');
       const next = current === 'dark' ? 'light' : 'dark';
       document.documentElement.setAttribute('data-theme', next);
-      localStorage.setItem('routoxTheme', next);
+      localStorage.setItem('routox_theme', next);
+      
+      // Update toggle visual
+      const toggle = document.querySelector('.theme-toggle-track');
+      if (toggle) {
+        toggle.classList.toggle('light', next === 'light');
+      }
       
       // Update map tiles
-      if (tileLayer) {
-        if (next === 'dark') {
-          tileLayer.setUrl('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png');
-        } else {
-          tileLayer.setUrl('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png');
-        }
+      if (window.driverMap && window.tileLayer) {
+        const tileUrl = next === 'dark' 
+          ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+          : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
+        window.tileLayer.setUrl(tileUrl);
       }
     }
-
-    // Random driver photos
-    const driverPhotos = [
-      'https://randomuser.me/api/portraits/men/32.jpg',
-      'https://randomuser.me/api/portraits/men/45.jpg',
-      'https://randomuser.me/api/portraits/men/67.jpg',
-      'https://randomuser.me/api/portraits/men/22.jpg',
-      'https://randomuser.me/api/portraits/men/55.jpg',
-      'https://randomuser.me/api/portraits/men/78.jpg'
-    ];
     
-    const photoEl = document.getElementById('driverPhoto');
-    if (photoEl) {
-      photoEl.src = driverPhotos[Math.floor(Math.random() * driverPhotos.length)];
-    }
-
     // Initialize map
-    let map, tileLayer;
-    
-    function initMap() {
+    document.addEventListener('DOMContentLoaded', () => {
       const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-      map = L.map('driverMap', { zoomControl: false }).setView([56.8584, 35.9176], 10);
-      tileLayer = L.tileLayer(
+      
+      window.driverMap = L.map('driverMap', {
+        zoomControl: false,
+        attributionControl: false
+      }).setView([56.8584, 35.9176], 6);
+      
+      window.tileLayer = L.tileLayer(
         isDark 
           ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
           : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
-        { attribution: '© OSM' }
-      ).addTo(map);
+        { attribution: '' }
+      ).addTo(window.driverMap);
       
       // Route line
-      const routeCoords = [[55.7558, 37.6173], [56.8584, 35.9176], [59.9343, 30.3351]];
-      L.polyline(routeCoords, { color: '#3b82f6', weight: 4, opacity: 0.8 }).addTo(map);
+      const routeCoords = [
+        [55.7558, 37.6173], // Moscow
+        [56.8584, 35.9176], // Current position
+        [59.9343, 30.3351]  // SPb
+      ];
+      
+      L.polyline(routeCoords, {
+        color: '#3b82f6',
+        weight: 4,
+        dashArray: '10, 10',
+        opacity: 0.8
+      }).addTo(window.driverMap);
       
       // Current position marker
       L.marker([56.8584, 35.9176], {
         icon: L.divIcon({
-          className: 'custom-marker',
-          html: '<div style="width:20px;height:20px;background:#10b981;border-radius:50%;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.3);"></div>',
-          iconSize: [20, 20],
-          iconAnchor: [10, 10]
+          className: '',
+          html: `<div style="width:18px;height:18px;background:#3b82f6;border-radius:50%;border:3px solid white;box-shadow:0 2px 8px rgba(59,130,246,0.5);"></div>`,
+          iconSize: [18, 18],
+          iconAnchor: [9, 9]
         })
-      }).addTo(map);
-    }
-
-    // Tab switching
-    document.querySelectorAll('.driver-tab').forEach(btn => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('.driver-tab').forEach(b => b.classList.remove('active'));
-        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-        btn.classList.add('active');
-        document.getElementById(btn.dataset.tab).classList.add('active');
-        
-        // Refresh map when trip tab is shown
-        if (btn.dataset.tab === 'tabTrip') {
-          setTimeout(() => {
-            if (map) map.invalidateSize();
-          }, 100);
-        }
-      });
+      }).addTo(window.driverMap);
+      
+      // Start marker
+      L.marker([55.7558, 37.6173], {
+        icon: L.divIcon({
+          className: '',
+          html: `<div style="width:12px;height:12px;background:#10b981;border-radius:50%;border:2px solid white;"></div>`,
+          iconSize: [12, 12],
+          iconAnchor: [6, 6]
+        })
+      }).addTo(window.driverMap);
+      
+      // End marker
+      L.marker([59.9343, 30.3351], {
+        icon: L.divIcon({
+          className: '',
+          html: `<div style="width:12px;height:12px;background:#f59e0b;border-radius:50%;border:2px solid white;"></div>`,
+          iconSize: [12, 12],
+          iconAnchor: [6, 6]
+        })
+      }).addTo(window.driverMap);
     });
-
-    // SOS functions
-    function triggerSOS() {
-      document.getElementById('sosModal').classList.add('active');
+    
+    // Logout function - use standard Routa Auth
+    function logout() {
+      if (confirm('Выйти из аккаунта?')) {
+        // Use Routa.Auth.logout if available (clears all auth data properly)
+        if (typeof Routa !== 'undefined' && Routa.Auth && Routa.Auth.logout) {
+          Routa.Auth.logout();
+        } else {
+          // Fallback: clear all auth data manually
+          localStorage.removeItem('routa_access_token');
+          localStorage.removeItem('routa_user');
+          localStorage.removeItem('routa_features');
+          localStorage.removeItem('user_role');
+          window.location.href = './login.html';
+        }
+      }
     }
-
-    function closeSOS() {
-      document.getElementById('sosModal').classList.remove('active');
-    }
-
-    function confirmSOS() {
-      alert('SOS сигнал отправлен! Диспетчер свяжется с вами.');
-      closeSOS();
-    }
-
-    // Quick actions
-    function reportFuel() { alert('Форма заправки откроется'); }
-    function reportIssue() { alert('Форма отчёта о проблеме откроется'); }
-    function startRest() { alert('Начало периода отдыха зафиксировано'); }
-    function callDispatcher() { window.location.href = 'tel:+78001234567'; }
-    function logout() { if(confirm('Выйти из аккаунта?')) window.location.href = './login.html'; }
-    function showNotifications() { alert('Уведомления: 2 новых сообщения'); }
-
-    // Initialize map after DOM load
-    document.addEventListener('DOMContentLoaded', initMap);
+  </script>
+  
+  <script src="./assets/js/routa-core.js"></script>
+  <script src="./assets/js/routox-unified.js"></script>
+  <script>
+    // ========== ROUTA PLATFORM INITIALIZATION ==========
+    (async function() {
+      Routa.Theme.load();
+      const user = await Routa.App.init({
+        requireAuth: true,
+        currentPage: 'driver.html'
+      });
+      if (!user) return;
+      console.log('Driver page initialized for:', user.role, user.edition);
+    })();
   </script>
 </body>
 </html>

@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Уведомления — RoutoX</title>
+  <link rel="stylesheet" href="./assets/css/routox-unified.css">
+  <link rel="stylesheet" href="./assets/css/page-transitions.css">
+  <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+  <script src="https://kit.fontawesome.com/a2e0e9e5a9.js" crossorigin="anonymous"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    .notification-item {
+      display: flex;
+      gap: 16px;
+      padding: 16px 20px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      transition: all 0.3s ease;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+    }
+    .notification-item::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 4px;
+      border-radius: 4px 0 0 4px;
+    }
+    .notification-item.urgent::before { background: linear-gradient(180deg, #ef4444, #dc2626); }
+    .notification-item.warning::before { background: linear-gradient(180deg, #f59e0b, #d97706); }
+    .notification-item.info::before { background: linear-gradient(180deg, #3b82f6, #2563eb); }
+    .notification-item.success::before { background: linear-gradient(180deg, #10b981, #059669); }
+    .notification-item:hover {
+      transform: translateX(4px);
+      border-color: rgba(59, 130, 246, 0.4);
+      box-shadow: 0 4px 20px rgba(59, 130, 246, 0.1);
+    }
+    .notification-item.unread {
+      background: rgba(59, 130, 246, 0.03);
+    }
+    .notification-icon {
+      flex-shrink: 0;
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
+    .notification-icon.urgent { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+    .notification-icon.warning { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
+    .notification-icon.info { background: rgba(59, 130, 246, 0.15); color: #3b82f6; }
+    .notification-icon.success { background: rgba(16, 185, 129, 0.15); color: #10b981; }
+    .notification-content { flex: 1; min-width: 0; }
+    .notification-title { 
+      font-weight: 600; 
+      color: var(--text-primary); 
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .notification-title .unread-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #3b82f6;
+      flex-shrink: 0;
+    }
+    .notification-text { 
+      color: var(--text-secondary); 
+      font-size: 14px; 
+      line-height: 1.5;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .notification-meta {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 10px;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .notification-meta span {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .notification-time {
+      font-size: 12px;
+      color: var(--text-muted);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .notification-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .btn-action {
+      padding: 8px 14px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: none;
+    }
+    .btn-action.primary {
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      color: white;
+    }
+    .btn-action.primary:hover { background: linear-gradient(135deg, #2563eb, #1d4ed8); }
+    .btn-action.secondary {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      color: var(--text-primary);
+    }
+    .btn-action.secondary:hover { border-color: var(--brand-blue); color: var(--brand-blue); }
+    
+    .filter-chip {
+      padding: 8px 16px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 24px;
+      color: var(--text-secondary);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .filter-chip:hover {
+      background: rgba(59, 130, 246, 0.08);
+      border-color: rgba(59, 130, 246, 0.3);
+      color: #3b82f6;
+    }
+    .filter-chip.active {
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      border-color: transparent;
+      color: white;
+    }
+    .filter-chip .count {
+      background: rgba(255,255,255,0.2);
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 11px;
+    }
+    .filter-chip.active .count {
+      background: rgba(255,255,255,0.25);
+    }
+    
+    .stat-card-mini {
+      padding: 16px;
+      border-radius: 14px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      text-align: center;
+      transition: all 0.3s;
+    }
+    .stat-card-mini:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+    .stat-number {
+      font-size: 28px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #3b82f6, #10b981);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .stat-label {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+    
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-muted);
+    }
+    .empty-state i {
+      font-size: 64px;
+      margin-bottom: 20px;
+      opacity: 0.3;
+    }
+    
+    .live-pulse { animation: pulse 2s ease-in-out infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+    .role-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+    .role-badge.admin { background: rgba(59, 130, 246, 0.15); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.3); }
+    .role-badge.owner { background: rgba(139, 92, 246, 0.15); color: #8b5cf6; border: 1px solid rgba(139, 92, 246, 0.3); }
+    .role-badge.dispatcher { background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); }
+  </style>
+</head>
+<body class="min-h-screen">
+  <!-- Header -->
+  <header class="sticky top-0 z-40 glass-panel border-b border-white/50 px-6 py-3">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-8">
+        <a href="logist.html" class="flex items-center gap-3 group" id="logoLink">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg" id="logoIcon">
+            <i class="fa-solid fa-truck-fast text-white text-lg"></i>
+          </div>
+          <div class="flex flex-col leading-none">
+            <span class="text-lg font-bold bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent" id="logoTitle">RoutoX</span>
+            <span class="text-[10px] text-slate-500 font-medium" id="logoSubtitle">LOGIST</span>
+          </div>
+        </a>
+        <nav class="hidden lg:flex items-center gap-1 bg-slate-100/50 p-1 rounded-xl" id="mainNav">
+          <a class="px-3 py-1.5 rounded-lg text-sm font-medium text-slate-500 hover:text-amber-800 hover:bg-white/60 transition-colors" href="logist.html">Заказы</a>
+          <a class="px-3 py-1.5 rounded-lg text-sm font-medium text-slate-500 hover:text-amber-800 hover:bg-white/60 transition-colors" href="routes.html">Маршруты</a>
+          <a class="px-3 py-1.5 rounded-lg text-sm font-medium text-slate-500 hover:text-amber-800 hover:bg-white/60 transition-colors" href="trips.html">Рейсы</a>
+          <a class="px-3 py-1.5 rounded-lg text-sm font-medium text-slate-500 hover:text-amber-800 hover:bg-white/60 transition-colors" href="drivers-manage.html">Водители</a>
+          <a class="px-3 py-1.5 rounded-lg text-sm font-medium text-slate-500 hover:text-amber-800 hover:bg-white/60 transition-colors" href="clients.html">Клиенты</a>
+          <a class="px-3 py-1.5 rounded-lg text-sm font-medium text-slate-500 hover:text-amber-800 hover:bg-white/60 transition-colors" href="warehouse.html">Склад</a>
+          <a class="px-3 py-1.5 rounded-lg text-sm font-medium text-slate-500 hover:text-amber-800 hover:bg-white/60 transition-colors" href="loading-plan.html">Планирование</a>
+          <a class="px-3 py-1.5 rounded-lg text-sm font-medium text-slate-500 hover:text-amber-800 hover:bg-white/60 transition-colors" href="delivery-stats.html">Статистика</a>
+          <a class="px-3 py-1.5 rounded-lg text-sm font-medium text-slate-500 hover:text-amber-800 hover:bg-white/60 transition-colors" href="geozones.html">Геозоны</a>
+        </nav>
+      </div>
+      <div class="flex items-center gap-3">
+        <span class="hidden lg:flex items-center gap-2 px-3 py-1.5 bg-amber-50 border border-amber-200 rounded-full text-xs" id="roleBadge">
+            <i class="fa-solid fa-route text-amber-600" id="roleIcon"></i>
+            <span class="font-semibold text-amber-800" id="roleText">Логист</span>
+        </span>
+        <div class="flex items-center gap-3 pl-1 pr-1 py-1 bg-white/50 border border-white rounded-full shadow-sm">
+            <div class="w-8 h-8 rounded-full bg-slate-200 overflow-hidden ring-2 ring-white">
+                <img alt="User" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCTs9iN8pKS03W5I54u9FB4B-c8kh0-SvddoYiVdknvnn0XFQ_ScxzcOGMuvCw75ZDO7eej3OBFSUyW7YGzfIdw8bm2JVE2qYntX-6WFsuWZDXeCjqgvXyR-Lo9UnAE2bTQejiaicaZNqXTEEWzBEmoalZytqScbtdaXlk0i5laN5yjsqI3j457keHzESRrW4bLeWD2l5xuer1uZ4Zd_LMeP8p-XTEa4_wtLTcRyHGOncDuMQUJk788z8tvDII7r8UTdnahdzzaAtY"/>
+            </div>
+            <div class="pr-3 flex flex-col items-end leading-none">
+                <p class="text-xs font-bold text-slate-800" id="userName">Пользователь</p>
+                <p class="text-[9px] text-blue-600 font-semibold mt-0.5" id="userRole">Pro</p>
+            </div>
+        </div>
+        <button class="w-10 h-10 flex items-center justify-center text-slate-400 hover:text-slate-700 bg-white/50 hover:bg-white rounded-full transition-all shadow-sm border border-white/50 relative" onclick="window.location.href='notifications.html'">
+            <span class="material-symbols-outlined text-[20px]">notifications</span>
+            <span class="absolute top-2.5 right-2.5 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white"></span>
+        </button>
+        <button class="w-10 h-10 flex items-center justify-center text-slate-400 hover:text-red-500 bg-white/50 hover:bg-white rounded-full transition-all shadow-sm border border-white/50" onclick="logout()">
+            <span class="material-symbols-outlined text-[20px]">logout</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="p-4 max-w-5xl mx-auto">
+    <!-- Page Header -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+      <div>
+        <h1 class="text-2xl font-bold flex items-center gap-3">
+          <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-emerald-500 flex items-center justify-center">
+            <i class="fa-solid fa-bell text-white text-lg"></i>
+          </div>
+          Уведомления
+        </h1>
+        <p class="text-muted text-sm mt-2 ml-15">Важные события и оповещения системы</p>
+      </div>
+      <div class="flex gap-3">
+        <button onclick="markAllRead()" class="btn-secondary">
+          <i class="fa-solid fa-check-double"></i>
+          Прочитать все
+        </button>
+        <button onclick="clearAll()" class="btn-secondary text-red-500 hover:bg-red-50 hover:border-red-200">
+          <i class="fa-solid fa-trash"></i>
+          Очистить
+        </button>
+      </div>
+    </div>
+
+    <!-- Stats Row -->
+    <div class="grid grid-cols-4 gap-4 mb-6">
+      <div class="stat-card-mini">
+        <div class="stat-number" id="stat-unread">5</div>
+        <div class="stat-label">Непрочитано</div>
+      </div>
+      <div class="stat-card-mini">
+        <div class="stat-number" id="stat-urgent">2</div>
+        <div class="stat-label">Срочные</div>
+      </div>
+      <div class="stat-card-mini">
+        <div class="stat-number" id="stat-today">8</div>
+        <div class="stat-label">Сегодня</div>
+      </div>
+      <div class="stat-card-mini">
+        <div class="stat-number" id="stat-total">47</div>
+        <div class="stat-label">Всего</div>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="flex flex-wrap gap-2 mb-6">
+      <button class="filter-chip active" data-filter="all">
+        <i class="fa-solid fa-inbox"></i>
+        Все
+        <span class="count">47</span>
+      </button>
+      <button class="filter-chip" data-filter="unread">
+        <i class="fa-solid fa-circle text-xs text-blue-500"></i>
+        Непрочитанные
+        <span class="count">5</span>
+      </button>
+      <button class="filter-chip" data-filter="urgent">
+        <i class="fa-solid fa-fire text-red-500"></i>
+        Срочные
+        <span class="count">2</span>
+      </button>
+      <button class="filter-chip" data-filter="vehicle">
+        <i class="fa-solid fa-truck text-emerald-500"></i>
+        Транспорт
+      </button>
+      <button class="filter-chip" data-filter="driver">
+        <i class="fa-solid fa-user text-purple-500"></i>
+        Водители
+      </button>
+      <button class="filter-chip" data-filter="system">
+        <i class="fa-solid fa-cog text-slate-500"></i>
+        Система
+      </button>
+    </div>
+
+    <!-- Notifications List -->
+    <div class="space-y-3" id="notificationsList">
+      <!-- Notifications will be rendered here -->
+    </div>
+
+    <!-- Empty State (hidden by default) -->
+    <div class="empty-state hidden" id="emptyState">
+      <i class="fa-solid fa-bell-slash"></i>
+      <h3 class="text-lg font-semibold mb-2">Нет уведомлений</h3>
+      <p>Все уведомления прочитаны или удалены</p>
+    </div>
+  </main>
+
+  <script src="./assets/js/routa-core.js"></script>
+  <script src="./assets/js/routox-unified.js"></script>
+  <script src="./assets/js/routox-ai.js"></script>
+  <script>
+    // Get current user role from localStorage (set during login via Routa.Auth)
+    function getCurrentRole() {
+      // Try to get from routa_user object (standard storage)
+      try {
+        const userData = localStorage.getItem('routa_user');
+        if (userData) {
+          const user = JSON.parse(userData);
+          if (user && user.role) {
+            return user.role;
+          }
+        }
+      } catch (e) {
+        console.warn('Failed to parse routa_user:', e);
+      }
+      
+      // Fallback to legacy user_role key
+      const legacyRole = localStorage.getItem('user_role');
+      if (legacyRole) return legacyRole;
+      
+      // Default to admin
+      return 'admin';
+    }
+    
+    const currentRole = getCurrentRole();
+    console.log('Notifications page - current role:', currentRole);
+    
+    // Sample notifications data with role restrictions
+    // forRoles: array of roles that can see this notification
+    // empty forRoles = visible to all
+    const notifications = [
+      {
+        id: 1,
+        type: 'urgent',
+        icon: 'fa-triangle-exclamation',
+        title: 'Критический уровень топлива',
+        text: 'Volvo FH16 #1 — осталось менее 10% топлива. Водитель Иванов А. Рекомендуется срочная заправка.',
+        time: '5 мин назад',
+        category: 'vehicle',
+        unread: true,
+        forRoles: ['owner', 'admin', 'dispatcher'], // Not for drivers
+        actions: ['Показать на карте', 'Связаться с водителем']
+      },
+      {
+        id: 2,
+        type: 'warning',
+        icon: 'fa-clock',
+        title: 'Просрочено ТО',
+        text: 'MAN TGX #2 — плановое ТО просрочено на 3 дня. Необходимо запланировать обслуживание.',
+        time: '23 мин назад',
+        category: 'vehicle',
+        unread: true,
+        forRoles: ['owner', 'admin'], // Management only
+        actions: ['Запланировать ТО']
+      },
+      {
+        id: 3,
+        type: 'info',
+        icon: 'fa-route',
+        title: 'Рейс завершён',
+        text: 'Рейс МСК-СПБ #1247 успешно завершён. Водитель Петров С. Время в пути: 8ч 45мин.',
+        time: '1 час назад',
+        category: 'driver',
+        unread: true,
+        forRoles: [], // Visible to all
+        actions: ['Детали рейса']
+      },
+      {
+        id: 4,
+        type: 'urgent',
+        icon: 'fa-shield-halved',
+        title: 'Истекает ОСАГО',
+        text: 'Scania R500 #3 — страховка ОСАГО истекает через 5 дней. Требуется продление.',
+        time: '2 часа назад',
+        category: 'vehicle',
+        unread: true,
+        forRoles: ['owner', 'admin'], // Management only
+        actions: ['Продлить страховку', 'Напомнить позже']
+      },
+      {
+        id: 5,
+        type: 'success',
+        icon: 'fa-check-circle',
+        title: 'Документы обновлены',
+        text: 'Водительское удостоверение Сидорова М. успешно обновлено в системе.',
+        time: '3 часа назад',
+        category: 'driver',
+        unread: true,
+        forRoles: ['owner', 'admin', 'driver'], // All except dispatcher
+        actions: []
+      },
+      {
+        id: 6,
+        type: 'info',
+        icon: 'fa-map-marker-alt',
+        title: 'Въезд в геозону',
+        text: 'Mercedes Actros #4 въехал в геозону "Склад Москва-Юг". Ожидаемое время разгрузки: 2 часа.',
+        time: '4 часа назад',
+        category: 'vehicle',
+        unread: false,
+        forRoles: ['owner', 'admin', 'dispatcher'],
+        actions: ['Открыть геозону']
+      },
+      {
+        id: 7,
+        type: 'warning',
+        icon: 'fa-gas-pump',
+        title: 'Перерасход топлива',
+        text: 'DAF XF #5 — зафиксирован перерасход топлива 15% от нормы за последние 100 км.',
+        time: '5 часов назад',
+        category: 'vehicle',
+        unread: false,
+        forRoles: ['owner', 'admin'],
+        actions: ['Анализ расхода']
+      },
+      {
+        id: 8,
+        type: 'info',
+        icon: 'fa-user-plus',
+        title: 'Новый водитель',
+        text: 'В систему добавлен новый водитель: Козлов Дмитрий. Ожидает назначения на ТС.',
+        time: 'Вчера',
+        category: 'system',
+        unread: false,
+        forRoles: ['owner', 'admin'],
+        actions: ['Назначить ТС']
+      },
+      // Driver-specific notifications
+      {
+        id: 9,
+        type: 'info',
+        icon: 'fa-route',
+        title: 'Новый рейс назначен',
+        text: 'Вам назначен рейс МСК-Казань #1289. Выезд запланирован на завтра 06:00.',
+        time: '30 мин назад',
+        category: 'driver',
+        unread: true,
+        forRoles: ['driver'],
+        actions: ['Посмотреть маршрут', 'Подтвердить']
+      },
+      {
+        id: 10,
+        type: 'warning',
+        icon: 'fa-clock',
+        title: 'Время отдыха',
+        text: 'По нормам РТО вам необходимо сделать перерыв через 1 час 20 минут.',
+        time: '10 мин назад',
+        category: 'driver',
+        unread: true,
+        forRoles: ['driver'],
+        actions: ['Отметить перерыв']
+      }
+    ];
+
+    let currentFilter = 'all';
+
+    // Filter notifications by role
+    function getVisibleNotifications() {
+      return notifications.filter(n => {
+        // If forRoles is empty or undefined, visible to all
+        if (!n.forRoles || n.forRoles.length === 0) return true;
+        // Otherwise check if current role is in the list
+        return n.forRoles.includes(currentRole);
+      });
+    }
+
+    function renderNotifications(filter = 'all') {
+      const container = document.getElementById('notificationsList');
+      const emptyState = document.getElementById('emptyState');
+      
+      // First filter by role
+      let filtered = getVisibleNotifications();
+      
+      // Then apply category/type filter
+      if (filter === 'unread') {
+        filtered = filtered.filter(n => n.unread);
+      } else if (filter === 'urgent') {
+        filtered = filtered.filter(n => n.type === 'urgent');
+      } else if (filter !== 'all') {
+        filtered = filtered.filter(n => n.category === filter);
+      }
+
+      if (filtered.length === 0) {
+        container.innerHTML = '';
+        emptyState.classList.remove('hidden');
+        return;
+      }
+
+      emptyState.classList.add('hidden');
+      
+      container.innerHTML = filtered.map(n => `
+        <div class="notification-item ${n.type} ${n.unread ? 'unread' : ''}" data-id="${n.id}">
+          <div class="notification-icon ${n.type}">
+            <i class="fa-solid ${n.icon}"></i>
+          </div>
+          <div class="notification-content">
+            <div class="notification-title">
+              ${n.unread ? '<span class="unread-dot"></span>' : ''}
+              ${n.title}
+            </div>
+            <div class="notification-text">${n.text}</div>
+            <div class="notification-meta">
+              <span><i class="fa-regular fa-clock"></i> ${n.time}</span>
+              <span><i class="fa-solid fa-tag"></i> ${getCategoryLabel(n.category)}</span>
+            </div>
+            ${n.actions.length > 0 ? `
+              <div class="notification-actions">
+                ${n.actions.map((action, i) => `
+                  <button class="btn-action ${i === 0 ? 'primary' : 'secondary'}" onclick="handleAction('${action}', ${n.id})">
+                    ${action}
+                  </button>
+                `).join('')}
+              </div>
+            ` : ''}
+          </div>
+          <div class="notification-time">${n.time}</div>
+        </div>
+      `).join('');
+    }
+
+    function getCategoryLabel(category) {
+      const labels = {
+        vehicle: 'Транспорт',
+        driver: 'Водители',
+        system: 'Система'
+      };
+      return labels[category] || category;
+    }
+
+    function handleAction(action, id) {
+      // Mark as read first
+      const notif = notifications.find(n => n.id === id);
+      if (notif) notif.unread = false;
+      updateStats();
+      renderNotifications(currentFilter);
+
+      // Handle specific actions
+      switch(action) {
+        case 'Показать на карте':
+          showVehicleOnMap(notif);
+          break;
+        case 'Связаться с водителем':
+          showDriverContact(notif);
+          break;
+        case 'Запланировать ТО':
+          window.location.href = './maintenance.html';
+          break;
+        case 'Детали рейса':
+          window.location.href = './trips.html';
+          break;
+        case 'Продлить страховку':
+          showInsuranceModal(notif);
+          break;
+        case 'Напомнить позже':
+          scheduleReminder(notif);
+          break;
+        case 'Открыть геозону':
+          window.location.href = './geozones.html';
+          break;
+        case 'Анализ расхода':
+          window.location.href = './fuel.html';
+          break;
+        case 'Назначить ТС':
+          window.location.href = './staff.html';
+          break;
+        default:
+          showNotification(`Действие: ${action}`, 'info');
+      }
+    }
+
+    // Show vehicle on map modal
+    function showVehicleOnMap(notif) {
+      const modal = document.createElement('div');
+      modal.className = 'fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm';
+      modal.id = 'mapModal';
+      modal.innerHTML = `
+        <div class="glass-panel p-0 w-full max-w-4xl overflow-hidden" style="height: 70vh;">
+          <div class="flex items-center justify-between p-4 border-b border-white/10">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center">
+                <i class="fa-solid fa-truck text-blue-500"></i>
+              </div>
+              <div>
+                <h3 class="font-semibold">Местоположение ТС</h3>
+                <p class="text-sm text-muted">Volvo FH16 #1 • В реальном времени</p>
+              </div>
+            </div>
+            <button onclick="document.getElementById('mapModal').remove()" class="icon-btn">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+          <div id="notifMapContainer" style="height: calc(100% - 80px);"></div>
+        </div>
+      `;
+      document.body.appendChild(modal);
+      modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+      
+      // Initialize map
+      setTimeout(() => {
+        const map = L.map('notifMapContainer').setView([55.7558, 37.6173], 10);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
+        L.marker([55.7558, 37.6173], {
+          icon: L.divIcon({
+            className: 'custom-marker',
+            html: '<div style="width:40px;height:40px;background:linear-gradient(135deg,#3b82f6,#10b981);border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;border:3px solid white;box-shadow:0 4px 15px rgba(0,0,0,0.3);"><i class="fa-solid fa-truck"></i></div>',
+            iconSize: [40, 40],
+            iconAnchor: [20, 20]
+          })
+        }).addTo(map).bindPopup('<b>Volvo FH16 #1</b><br>Водитель: Иванов А.').openPopup();
+      }, 100);
+    }
+
+    // Show driver contact modal
+    function showDriverContact(notif) {
+      const modal = document.createElement('div');
+      modal.className = 'fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm';
+      modal.id = 'contactModal';
+      modal.innerHTML = `
+        <div class="glass-panel p-6 w-full max-w-md">
+          <div class="flex items-center justify-between mb-6">
+            <h3 class="text-lg font-bold">Связаться с водителем</h3>
+            <button onclick="document.getElementById('contactModal').remove()" class="icon-btn">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+          <div class="flex items-center gap-4 mb-6">
+            <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-emerald-500 flex items-center justify-center text-white text-2xl font-bold">
+              ИА
+            </div>
+            <div>
+              <div class="font-semibold text-lg">Иванов Алексей</div>
+              <div class="text-sm text-muted">Volvo FH16 #1 • В рейсе</div>
+              <div class="flex items-center gap-2 mt-1">
+                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                <span class="text-xs text-emerald-500">Онлайн</span>
+              </div>
+            </div>
+          </div>
+          <div class="space-y-3">
+            <a href="tel:+79001234567" class="flex items-center gap-4 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/20 transition-all">
+              <div class="w-12 h-12 rounded-xl bg-emerald-500/20 flex items-center justify-center">
+                <i class="fa-solid fa-phone text-emerald-500 text-lg"></i>
+              </div>
+              <div class="flex-1">
+                <div class="font-medium">Позвонить</div>
+                <div class="text-sm text-muted">+7 (900) 123-45-67</div>
+              </div>
+              <i class="fa-solid fa-chevron-right text-muted"></i>
+            </a>
+            <a href="https://wa.me/79001234567" target="_blank" class="flex items-center gap-4 p-4 rounded-xl bg-green-500/10 border border-green-500/20 hover:bg-green-500/20 transition-all">
+              <div class="w-12 h-12 rounded-xl bg-green-500/20 flex items-center justify-center">
+                <i class="fa-brands fa-whatsapp text-green-500 text-xl"></i>
+              </div>
+              <div class="flex-1">
+                <div class="font-medium">WhatsApp</div>
+                <div class="text-sm text-muted">Написать сообщение</div>
+              </div>
+              <i class="fa-solid fa-chevron-right text-muted"></i>
+            </a>
+            <a href="https://t.me/driver_ivanov" target="_blank" class="flex items-center gap-4 p-4 rounded-xl bg-blue-500/10 border border-blue-500/20 hover:bg-blue-500/20 transition-all">
+              <div class="w-12 h-12 rounded-xl bg-blue-500/20 flex items-center justify-center">
+                <i class="fa-brands fa-telegram text-blue-500 text-xl"></i>
+              </div>
+              <div class="flex-1">
+                <div class="font-medium">Telegram</div>
+                <div class="text-sm text-muted">@driver_ivanov</div>
+              </div>
+              <i class="fa-solid fa-chevron-right text-muted"></i>
+            </a>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(modal);
+      modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+    }
+
+    // Show insurance modal
+    function showInsuranceModal(notif) {
+      const modal = document.createElement('div');
+      modal.className = 'fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm';
+      modal.id = 'insuranceModal';
+      modal.innerHTML = `
+        <div class="glass-panel p-6 w-full max-w-md">
+          <div class="flex items-center justify-between mb-6">
+            <h3 class="text-lg font-bold">Продление ОСАГО</h3>
+            <button onclick="document.getElementById('insuranceModal').remove()" class="icon-btn">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+          <div class="text-center mb-6">
+            <div class="w-20 h-20 rounded-2xl bg-gradient-to-br from-amber-500/20 to-red-500/20 flex items-center justify-center mx-auto mb-4">
+              <i class="fa-solid fa-shield-halved text-amber-500 text-3xl"></i>
+            </div>
+            <h4 class="font-semibold">Scania R500 #3</h4>
+            <p class="text-sm text-muted">Полис истекает через 5 дней</p>
+          </div>
+          <div class="space-y-3 mb-6">
+            <div class="flex justify-between p-3 rounded-xl bg-white/5">
+              <span class="text-muted">Текущий полис</span>
+              <span class="font-medium">XXX-123456789</span>
+            </div>
+            <div class="flex justify-between p-3 rounded-xl bg-white/5">
+              <span class="text-muted">Срок действия</span>
+              <span class="font-medium text-amber-500">до 26.01.2026</span>
+            </div>
+            <div class="flex justify-between p-3 rounded-xl bg-white/5">
+              <span class="text-muted">Страховщик</span>
+              <span class="font-medium">Росгосстрах</span>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <button onclick="document.getElementById('insuranceModal').remove(); showNotification('Напоминание установлено', 'success')" class="btn-secondary py-3">
+              Напомнить
+            </button>
+            <button onclick="document.getElementById('insuranceModal').remove(); showNotification('Заявка отправлена страховщику', 'success')" class="btn-primary py-3">
+              Продлить
+            </button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(modal);
+      modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+    }
+
+    // Schedule reminder
+    function scheduleReminder(notif) {
+      showNotification('Напоминание установлено на завтра', 'success');
+    }
+
+    function markAllRead() {
+      notifications.forEach(n => n.unread = false);
+      updateStats();
+      renderNotifications(currentFilter);
+      showNotification('Все уведомления прочитаны', 'success');
+    }
+
+    function clearAll() {
+      if (confirm('Удалить все уведомления?')) {
+        notifications.length = 0;
+        updateStats();
+        renderNotifications(currentFilter);
+        showNotification('Уведомления очищены', 'success');
+      }
+    }
+
+    function updateStats() {
+      // Only count notifications visible to current role
+      const visible = getVisibleNotifications();
+      const unread = visible.filter(n => n.unread).length;
+      const urgent = visible.filter(n => n.type === 'urgent').length;
+      const today = visible.filter(n => n.time.includes('мин') || n.time.includes('час')).length;
+      
+      document.getElementById('stat-unread').textContent = unread;
+      document.getElementById('stat-urgent').textContent = urgent;
+      document.getElementById('stat-today').textContent = today;
+      document.getElementById('stat-total').textContent = visible.length;
+      document.getElementById('notifCount').textContent = unread;
+      
+      // Update filter counts
+      document.querySelector('[data-filter="all"] .count').textContent = visible.length;
+      document.querySelector('[data-filter="unread"] .count').textContent = unread;
+      document.querySelector('[data-filter="urgent"] .count').textContent = urgent;
+    }
+
+    // Filter click handlers
+    document.querySelectorAll('.filter-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        currentFilter = chip.dataset.filter;
+        renderNotifications(currentFilter);
+      });
+    });
+
+    // Notification click to mark as read
+    document.getElementById('notificationsList').addEventListener('click', (e) => {
+      const item = e.target.closest('.notification-item');
+      if (item && !e.target.closest('.btn-action')) {
+        const id = parseInt(item.dataset.id);
+        const notif = notifications.find(n => n.id === id);
+        if (notif && notif.unread) {
+          notif.unread = false;
+          updateStats();
+          renderNotifications(currentFilter);
+        }
+      }
+    });
+
+    // Simple notification toast
+    function showNotification(message, type = 'success') {
+      const colors = { success: 'emerald', error: 'red', warning: 'amber', info: 'blue' };
+      const icons = { success: 'check', error: 'xmark', warning: 'exclamation', info: 'info' };
+      
+      const notif = document.createElement('div');
+      notif.className = `fixed bottom-4 right-4 glass-panel px-4 py-3 flex items-center gap-3 z-50`;
+      notif.innerHTML = `
+        <div class="w-8 h-8 rounded-lg bg-${colors[type]}-500/20 flex items-center justify-center">
+          <i class="fa-solid fa-${icons[type]} text-${colors[type]}-500"></i>
+        </div>
+        <span class="font-medium">${message}</span>
+      `;
+      document.body.appendChild(notif);
+      setTimeout(() => {
+        notif.style.opacity = '0';
+        setTimeout(() => notif.remove(), 300);
+      }, 3000);
+    }
+
+    // ========== ROUTA PLATFORM INITIALIZATION ==========
+    (async function() {
+      Routa.Theme.load();
+      const user = await Routa.App.init({
+        requireAuth: true,
+        currentPage: 'notifications.html'
+      });
+      if (!user) return;
+      console.log('Notifications page initialized for:', user.role, user.edition);
+      renderNotifications();
+      updateStats();
+    })();
+    
+    function logout() { Routa.Auth.logout(); }
+    function toggleTheme() { Routa.Theme.toggle(); }
+  </script>
+  <script src="./assets/js/role-theme.js"></script>
+  <script src="./assets/js/smooth-navigation.js"></script>
+</body>
+</html>

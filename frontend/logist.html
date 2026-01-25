@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RoutoX — Панель логиста</title>
+  <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+  <script src="https://kit.fontawesome.com/a2e0e9e5a9.js" crossorigin="anonymous"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <link rel="stylesheet" href="./assets/css/page-transitions.css">
+  <link rel="stylesheet" href="./assets/css/routox-unified.css">
+  <style>
+    body {
+        font-family: "Inter", sans-serif;
+        background-color: #F5F5F7;
+        background-image: 
+            radial-gradient(at 0% 0%, hsla(45,100%,96%,1) 0, transparent 50%), 
+            radial-gradient(at 100% 0%, hsla(35,100%,96%,1) 0, transparent 50%), 
+            radial-gradient(at 100% 100%, hsla(40,100%,96%,1) 0, transparent 50%);
+    }
+    .glass-panel {
+        background: rgba(255, 255, 255, 0.65);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.8);
+        box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.05);
+        border-radius: 16px;
+    }
+    .glass-card {
+        background: rgba(255, 255, 255, 0.75);
+        backdrop-filter: blur(16px);
+        border: 1px solid rgba(255, 255, 255, 0.6);
+        box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+        border-radius: 14px;
+        transition: all 0.2s ease;
+    }
+    .glass-card:hover {
+        background: rgba(255, 255, 255, 0.85);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.06);
+        transform: translateY(-2px);
+    }
+    .nav-item-active {
+        background: rgba(255, 255, 255, 0.9);
+        color: #f59e0b !important;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        font-weight: 600 !important;
+    }
+    .role-badge.logist { 
+        background: rgba(245, 158, 11, 0.15); 
+        color: #f59e0b; 
+        border: 1px solid rgba(245, 158, 11, 0.3); 
+    }
+    .kpi-value {
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+    .order-card {
+        cursor: pointer;
+        transition: all 0.2s ease;
+        position: relative;
+        overflow: hidden;
+    }
+    .order-card::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 4px;
+        border-radius: 4px 0 0 4px;
+    }
+    .order-card.new::before { background: linear-gradient(180deg, #3b82f6, #2563eb); }
+    .order-card.assigned::before { background: linear-gradient(180deg, #f59e0b, #d97706); }
+    .order-card.in-progress::before { background: linear-gradient(180deg, #10b981, #059669); }
+    .order-card.completed::before { background: linear-gradient(180deg, #6b7280, #4b5563); }
+    .order-card:hover {
+        transform: translateX(4px);
+        border-color: rgba(245, 158, 11, 0.4);
+    }
+    .status-badge {
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 600;
+    }
+    .status-new { background: rgba(59, 130, 246, 0.15); color: #3b82f6; }
+    .status-assigned { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
+    .status-in-progress { background: rgba(16, 185, 129, 0.15); color: #10b981; }
+    .status-completed { background: rgba(107, 114, 128, 0.15); color: #6b7280; }
+    .priority-high { color: #ef4444; }
+    .priority-medium { color: #f59e0b; }
+    .priority-low { color: #10b981; }
+    #ordersMap { border-radius: 16px; z-index: 1; }
+    .leaflet-control-zoom { border: none !important; border-radius: 10px !important; overflow: hidden; }
+    .btn-primary {
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+        color: white;
+        padding: 10px 20px;
+        border-radius: 12px;
+        font-weight: 600;
+        transition: all 0.2s;
+    }
+    .btn-primary:hover {
+        box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);
+        transform: translateY(-1px);
+    }
+    .drag-indicator {
+        width: 4px;
+        height: 100%;
+        background: linear-gradient(180deg, rgba(245, 158, 11, 0.3), rgba(245, 158, 11, 0.1));
+        border-radius: 2px;
+        position: absolute;
+        left: 0;
+        top: 0;
+        opacity: 0;
+        transition: opacity 0.2s;
+    }
+    .order-card:hover .drag-indicator { opacity: 1; }
+    .kanban-column {
+        min-height: 300px;
+    }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 3px; }
+  </style>
+</head>
+<body class="min-h-screen">
+  <!-- Header -->
+  <header class="h-16 glass-panel flex items-center justify-between px-6 z-40 shrink-0 border-b border-white/50 sticky top-0 mx-4 mt-4 rounded-2xl">
+    <div class="flex items-center gap-12">
+        <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-white font-extrabold text-xl shadow-lg shadow-amber-500/20">
+                R
+            </div>
+            <div class="flex flex-col">
+                <span class="font-bold text-lg leading-none tracking-tight text-slate-800">RoutoX</span>
+                <span class="text-[10px] text-slate-400 font-semibold uppercase tracking-widest mt-0.5">Logist Panel</span>
+            </div>
+        </div>
+        <nav class="hidden lg:flex items-center gap-1 bg-slate-100/50 p-1 rounded-xl">
+            <a class="px-3 py-1.5 rounded-lg text-sm font-semibold nav-item-active transition-all" href="logist.html">Заказы</a>
+            <a class="px-3 py-1.5 rounded-lg text-sm font-medium text-slate-500 hover:text-slate-800 hover:bg-white/60 transition-colors" href="routes.html">Маршруты</a>
+            <a class="px-3 py-1.5 rounded-lg text-sm font-medium text-slate-500 hover:text-slate-800 hover:bg-white/60 transition-colors" href="trips.html">Рейсы</a>
+            <a class="px-3 py-1.5 rounded-lg text-sm font-medium text-slate-500 hover:text-slate-800 hover:bg-white/60 transition-colors" href="drivers-manage.html">Водители</a>
+            <a class="px-3 py-1.5 rounded-lg text-sm font-medium text-slate-500 hover:text-slate-800 hover:bg-white/60 transition-colors" href="clients.html">Клиенты</a>
+            <a class="px-3 py-1.5 rounded-lg text-sm font-medium text-slate-500 hover:text-slate-800 hover:bg-white/60 transition-colors" href="warehouse.html">Склад</a>
+            <a class="px-3 py-1.5 rounded-lg text-sm font-medium text-slate-500 hover:text-slate-800 hover:bg-white/60 transition-colors" href="loading-plan.html">Планирование</a>
+            <a class="px-3 py-1.5 rounded-lg text-sm font-medium text-slate-500 hover:text-slate-800 hover:bg-white/60 transition-colors" href="delivery-stats.html">Статистика</a>
+            <a class="px-3 py-1.5 rounded-lg text-sm font-medium text-slate-500 hover:text-slate-800 hover:bg-white/60 transition-colors" href="geozones.html">Геозоны</a>
+        </nav>
+    </div>
+    <div class="flex items-center gap-5">
+        <div class="px-3 py-1.5 bg-white/60 backdrop-blur-md border border-white/60 rounded-full flex items-center gap-2 shadow-sm">
+            <span class="relative flex h-2.5 w-2.5">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+            </span>
+            <span class="text-xs font-bold text-slate-700 tracking-tight">LIVE</span>
+        </div>
+        <div class="h-6 w-px bg-slate-200"></div>
+        <span class="role-badge logist" id="roleBadge">
+            <i class="fa-solid fa-route"></i>
+            <span id="roleText">Логист</span>
+        </span>
+        <div class="flex items-center gap-3 pl-1 pr-1 py-1 bg-white/50 border border-white rounded-full shadow-sm hover:shadow-md transition-shadow cursor-pointer">
+            <div class="w-8 h-8 rounded-full bg-slate-200 overflow-hidden ring-2 ring-white">
+                <img alt="User" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCTs9iN8pKS03W5I54u9FB4B-c8kh0-SvddoYiVdknvnn0XFQ_ScxzcOGMuvCw75ZDO7eej3OBFSUyW7YGzfIdw8bm2JVE2qYntX-6WFsuWZDXeCjqgvXyR-Lo9UnAE2bTQejiaicaZNqXTEEWzBEmoalZytqScbtdaXlk0i5laN5yjsqI3j457keHzESRrW4bLeWD2l5xuer1uZ4Zd_LMeP8p-XTEa4_wtLTcRyHGOncDuMQUJk788z8tvDII7r8UTdnahdzzaAtY"/>
+            </div>
+            <div class="pr-3 flex flex-col items-end leading-none">
+                <p class="text-xs font-bold text-slate-800" id="userName">Логист</p>
+                <p class="text-[9px] text-amber-600 font-semibold mt-0.5" id="userRole">Pro</p>
+            </div>
+        </div>
+        <button class="w-10 h-10 flex items-center justify-center text-slate-400 hover:text-slate-700 bg-white/50 hover:bg-white rounded-full transition-all shadow-sm border border-white/50 relative" title="Уведомления" onclick="window.location.href='notifications.html'">
+            <span class="material-symbols-outlined text-[20px]">notifications</span>
+            <span class="absolute top-2.5 right-2.5 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white"></span>
+        </button>
+        <button class="w-10 h-10 flex items-center justify-center text-slate-400 hover:text-red-500 bg-white/50 hover:bg-white rounded-full transition-all shadow-sm border border-white/50" title="Выход" onclick="logout()">
+            <span class="material-symbols-outlined text-[20px]">logout</span>
+        </button>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="p-4 grid grid-cols-12 gap-4" style="height: calc(100vh - 100px);">
+    <!-- Left Panel - Orders List -->
+    <aside class="col-span-4 space-y-4 overflow-hidden flex flex-col">
+      <!-- KPI Stats -->
+      <div class="grid grid-cols-4 gap-3">
+        <div class="glass-panel p-3 text-center">
+          <div class="text-2xl font-bold kpi-value">24</div>
+          <div class="text-[10px] text-slate-500 font-medium">Всего</div>
+        </div>
+        <div class="glass-panel p-3 text-center">
+          <div class="text-2xl font-bold text-blue-500">8</div>
+          <div class="text-[10px] text-slate-500 font-medium">Новые</div>
+        </div>
+        <div class="glass-panel p-3 text-center">
+          <div class="text-2xl font-bold text-amber-500">12</div>
+          <div class="text-[10px] text-slate-500 font-medium">В работе</div>
+        </div>
+        <div class="glass-panel p-3 text-center">
+          <div class="text-2xl font-bold text-green-500">4</div>
+          <div class="text-[10px] text-slate-500 font-medium">Готово</div>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="flex gap-2">
+        <button class="btn-primary flex items-center gap-2 flex-1 justify-center" onclick="showCreateOrderModal()">
+          <i class="fa-solid fa-plus"></i>
+          Новый заказ
+        </button>
+        <button class="glass-card px-4 py-2.5 text-slate-600 hover:text-amber-600" onclick="showOptimizeModal()">
+          <i class="fa-solid fa-wand-magic-sparkles"></i>
+        </button>
+      </div>
+
+      <!-- Filters -->
+      <div class="flex gap-2 flex-wrap">
+        <button class="filter-btn active px-3 py-1.5 rounded-lg text-xs font-semibold" data-filter="all" onclick="filterOrders('all')">Все</button>
+        <button class="filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-white/50 text-slate-500" data-filter="new" onclick="filterOrders('new')">Новые</button>
+        <button class="filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-white/50 text-slate-500" data-filter="assigned" onclick="filterOrders('assigned')">Назначены</button>
+        <button class="filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-white/50 text-slate-500" data-filter="in-progress" onclick="filterOrders('in-progress')">В пути</button>
+      </div>
+
+      <!-- Orders List -->
+      <div class="glass-panel flex-1 overflow-hidden flex flex-col">
+        <div class="p-3 border-b border-white/30 flex items-center justify-between">
+          <h3 class="text-sm font-bold text-slate-700">Заказы на сегодня</h3>
+          <span class="text-xs text-slate-500">25 января</span>
+        </div>
+        <div class="flex-1 overflow-y-auto p-3 space-y-2" id="ordersList">
+          <!-- Orders will be rendered here -->
+        </div>
+      </div>
+    </aside>
+
+    <!-- Center Panel - Map -->
+    <section class="col-span-5 glass-panel overflow-hidden flex flex-col">
+      <div class="p-3 border-b border-white/30 flex items-center justify-between">
+        <h3 class="text-sm font-bold text-slate-700">Маршруты и точки доставки</h3>
+        <div class="flex gap-2">
+          <button class="text-xs px-3 py-1 rounded-lg bg-amber-50 text-amber-600 font-medium" onclick="showAllRoutes()">
+            <i class="fa-solid fa-route mr-1"></i> Все маршруты
+          </button>
+        </div>
+      </div>
+      <div class="flex-1 relative">
+        <div id="ordersMap" class="absolute inset-0"></div>
+      </div>
+    </section>
+
+    <!-- Right Panel - Order Details / Assign -->
+    <aside class="col-span-3 space-y-4 flex flex-col overflow-hidden">
+      <!-- Selected Order Details -->
+      <div class="glass-panel flex-1 overflow-hidden flex flex-col" id="orderDetailsPanel">
+        <div class="p-4 border-b border-white/30">
+          <h3 class="text-sm font-bold text-slate-700">Детали заказа</h3>
+        </div>
+        <div class="flex-1 p-4 overflow-y-auto" id="orderDetails">
+          <div class="text-center text-slate-400 py-10">
+            <i class="fa-solid fa-box text-4xl mb-3 opacity-50"></i>
+            <p class="text-sm">Выберите заказ для просмотра деталей</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Available Vehicles -->
+      <div class="glass-panel h-64 overflow-hidden flex flex-col">
+        <div class="p-3 border-b border-white/30 flex items-center justify-between">
+          <h3 class="text-sm font-bold text-slate-700">Свободные ТС</h3>
+          <span class="text-xs bg-green-100 text-green-600 px-2 py-0.5 rounded-full font-semibold">6 доступно</span>
+        </div>
+        <div class="flex-1 overflow-y-auto p-3 space-y-2" id="availableVehicles">
+          <!-- Available vehicles list -->
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <!-- Create Order Modal -->
+  <div id="createOrderModal" class="hidden fixed inset-0 bg-black/30 backdrop-blur-sm z-50 items-center justify-center p-4">
+    <div class="glass-panel w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl">
+      <div class="p-4 border-b border-white/30 flex items-center justify-between bg-gradient-to-r from-amber-500/10 to-orange-500/10">
+        <h3 class="font-bold text-slate-800 text-lg">Новый заказ</h3>
+        <button onclick="closeCreateOrderModal()" class="w-8 h-8 rounded-full bg-white/50 hover:bg-white flex items-center justify-center">
+          <i class="fa-solid fa-times text-slate-500"></i>
+        </button>
+      </div>
+      <div class="p-4 space-y-4 max-h-96 overflow-y-auto">
+        <div>
+          <label class="text-xs font-semibold text-slate-600 mb-1 block">Клиент</label>
+          <input type="text" class="w-full px-4 py-2 rounded-xl bg-white/60 border border-white/50 text-sm" placeholder="Название компании">
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-xs font-semibold text-slate-600 mb-1 block">Точка погрузки</label>
+            <input type="text" class="w-full px-4 py-2 rounded-xl bg-white/60 border border-white/50 text-sm" placeholder="Адрес">
+          </div>
+          <div>
+            <label class="text-xs font-semibold text-slate-600 mb-1 block">Точка выгрузки</label>
+            <input type="text" class="w-full px-4 py-2 rounded-xl bg-white/60 border border-white/50 text-sm" placeholder="Адрес">
+          </div>
+        </div>
+        <div class="grid grid-cols-3 gap-3">
+          <div>
+            <label class="text-xs font-semibold text-slate-600 mb-1 block">Груз</label>
+            <input type="text" class="w-full px-4 py-2 rounded-xl bg-white/60 border border-white/50 text-sm" placeholder="Описание">
+          </div>
+          <div>
+            <label class="text-xs font-semibold text-slate-600 mb-1 block">Вес (т)</label>
+            <input type="number" class="w-full px-4 py-2 rounded-xl bg-white/60 border border-white/50 text-sm" placeholder="0">
+          </div>
+          <div>
+            <label class="text-xs font-semibold text-slate-600 mb-1 block">Объём (м³)</label>
+            <input type="number" class="w-full px-4 py-2 rounded-xl bg-white/60 border border-white/50 text-sm" placeholder="0">
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-xs font-semibold text-slate-600 mb-1 block">Дата погрузки</label>
+            <input type="date" class="w-full px-4 py-2 rounded-xl bg-white/60 border border-white/50 text-sm">
+          </div>
+          <div>
+            <label class="text-xs font-semibold text-slate-600 mb-1 block">Приоритет</label>
+            <select class="w-full px-4 py-2 rounded-xl bg-white/60 border border-white/50 text-sm">
+              <option value="low">Низкий</option>
+              <option value="medium" selected>Средний</option>
+              <option value="high">Высокий</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-slate-600 mb-1 block">Комментарий</label>
+          <textarea class="w-full px-4 py-2 rounded-xl bg-white/60 border border-white/50 text-sm h-20" placeholder="Дополнительная информация"></textarea>
+        </div>
+      </div>
+      <div class="p-4 border-t border-white/30 flex gap-3">
+        <button onclick="closeCreateOrderModal()" class="flex-1 py-2.5 rounded-xl bg-slate-100 text-slate-600 font-semibold">Отмена</button>
+        <button onclick="createOrder()" class="flex-1 py-2.5 rounded-xl btn-primary">Создать заказ</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Assign Vehicle Modal -->
+  <div id="assignVehicleModal" class="hidden fixed inset-0 bg-black/30 backdrop-blur-sm z-50 items-center justify-center p-4">
+    <div class="glass-panel w-full max-w-md rounded-3xl overflow-hidden shadow-2xl">
+      <div class="p-4 border-b border-white/30 flex items-center justify-between bg-gradient-to-r from-amber-500/10 to-orange-500/10">
+        <h3 class="font-bold text-slate-800 text-lg">Назначить ТС</h3>
+        <button onclick="closeAssignModal()" class="w-8 h-8 rounded-full bg-white/50 hover:bg-white flex items-center justify-center">
+          <i class="fa-solid fa-times text-slate-500"></i>
+        </button>
+      </div>
+      <div class="p-4 space-y-3 max-h-80 overflow-y-auto" id="assignVehicleList">
+        <!-- Vehicles will be listed here -->
+      </div>
+      <div class="p-4 border-t border-white/30">
+        <button onclick="confirmAssign()" class="w-full py-2.5 rounded-xl btn-primary">Назначить</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="./assets/js/routox-unified.js"></script>
+  <script>
+    // Demo orders data
+    const orders = [
+      { id: 1, client: 'ООО "ТрансЛогистика"', from: 'Москва, Ленинский пр. 45', to: 'Санкт-Петербург, Невский пр. 100', cargo: 'Оборудование', weight: 5.2, status: 'new', priority: 'high', lat: 55.7558, lng: 37.6173 },
+      { id: 2, client: 'АО "СтройМатериалы"', from: 'Казань, ул. Баумана 12', to: 'Нижний Новгород, пл. Минина 5', cargo: 'Стройматериалы', weight: 18.5, status: 'assigned', priority: 'medium', lat: 55.7965, lng: 49.1057, vehicleId: 'А 123 АВ' },
+      { id: 3, client: 'ИП Иванов', from: 'Екатеринбург, ул. Ленина 24', to: 'Челябинск, пр. Победы 88', cargo: 'Продукты', weight: 8.0, status: 'in-progress', priority: 'high', lat: 56.8389, lng: 60.6057, vehicleId: 'В 456 МК' },
+      { id: 4, client: 'ООО "ФудТрейд"', from: 'Новосибирск, Красный пр. 50', to: 'Омск, ул. Ленина 15', cargo: 'Продукты питания', weight: 12.3, status: 'new', priority: 'medium', lat: 55.0084, lng: 82.9357 },
+      { id: 5, client: 'АО "ТехноПарк"', from: 'Самара, ул. Молодогвардейская 1', to: 'Уфа, пр. Октября 45', cargo: 'Электроника', weight: 3.5, status: 'assigned', priority: 'low', lat: 53.1959, lng: 50.1002, vehicleId: 'Е 789 НО' },
+      { id: 6, client: 'ООО "МеталлПром"', from: 'Краснодар, ул. Красная 100', to: 'Ростов-на-Дону, пр. Ворошиловский 12', cargo: 'Металлопрокат', weight: 22.0, status: 'in-progress', priority: 'medium', lat: 45.0448, lng: 38.9760, vehicleId: 'К 321 СТ' },
+      { id: 7, client: 'ИП Сидорова', from: 'Воронеж, пр. Революции 30', to: 'Липецк, ул. Советская 5', cargo: 'Текстиль', weight: 4.8, status: 'completed', priority: 'low', lat: 51.6683, lng: 39.1919 },
+      { id: 8, client: 'ООО "АгроХим"', from: 'Волгоград, ул. Мира 18', to: 'Саратов, пр. Кирова 25', cargo: 'Удобрения', weight: 15.0, status: 'new', priority: 'high', lat: 48.7194, lng: 44.5018 }
+    ];
+
+    const availableVehicles = [
+      { id: 'А 001 АА', name: 'MAN TGX 18.440', driver: 'Петров И.А.', capacity: 20, location: 'Москва' },
+      { id: 'В 002 ВВ', name: 'Volvo FH 460', driver: 'Сидоров П.С.', capacity: 22, location: 'Казань' },
+      { id: 'С 003 СС', name: 'Scania R450', driver: 'Козлов А.М.', capacity: 18, location: 'Екатеринбург' },
+      { id: 'Е 004 ЕЕ', name: 'DAF XF 480', driver: 'Новиков Д.В.', capacity: 24, location: 'Новосибирск' },
+      { id: 'К 005 КК', name: 'Mercedes Actros', driver: 'Федоров С.И.', capacity: 20, location: 'Самара' },
+      { id: 'М 006 ММ', name: 'КАМАЗ 5490', driver: 'Орлов В.А.', capacity: 18, location: 'Краснодар' }
+    ];
+
+    let selectedOrderId = null;
+    let selectedVehicleForAssign = null;
+    let currentFilter = 'all';
+    let map = null;
+    let markers = [];
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+      initMap();
+      renderOrders();
+      renderAvailableVehicles();
+    });
+
+    function initMap() {
+      map = L.map('ordersMap').setView([55.7558, 37.6173], 5);
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+        attribution: '© OpenStreetMap contributors © CARTO'
+      }).addTo(map);
+      
+      addOrderMarkers();
+    }
+
+    function addOrderMarkers() {
+      markers.forEach(m => map.removeLayer(m));
+      markers = [];
+      
+      orders.forEach(order => {
+        const color = order.status === 'new' ? '#3b82f6' : 
+                      order.status === 'assigned' ? '#f59e0b' : 
+                      order.status === 'in-progress' ? '#10b981' : '#6b7280';
+        
+        const marker = L.circleMarker([order.lat, order.lng], {
+          radius: 8,
+          fillColor: color,
+          color: '#fff',
+          weight: 2,
+          fillOpacity: 0.9
+        }).addTo(map);
+        
+        marker.bindPopup(`
+          <div class="p-2">
+            <div class="font-bold">${order.client}</div>
+            <div class="text-sm text-gray-600">${order.cargo} • ${order.weight}т</div>
+            <div class="text-xs text-gray-500 mt-1">${order.from} → ${order.to}</div>
+          </div>
+        `);
+        
+        marker.on('click', () => selectOrder(order.id));
+        markers.push(marker);
+      });
+    }
+
+    function renderOrders() {
+      const container = document.getElementById('ordersList');
+      const filtered = currentFilter === 'all' ? orders : orders.filter(o => o.status === currentFilter);
+      
+      container.innerHTML = filtered.map(order => `
+        <div class="order-card glass-card p-3 ${order.status} ${selectedOrderId === order.id ? 'ring-2 ring-amber-400' : ''}" onclick="selectOrder(${order.id})">
+          <div class="flex items-start justify-between mb-2">
+            <div class="flex items-center gap-2">
+              <i class="fa-solid fa-${order.priority === 'high' ? 'exclamation-circle priority-high' : order.priority === 'medium' ? 'minus-circle priority-medium' : 'check-circle priority-low'}"></i>
+              <span class="font-semibold text-slate-800 text-sm">${order.client}</span>
+            </div>
+            <span class="status-badge status-${order.status}">${getStatusText(order.status)}</span>
+          </div>
+          <div class="text-xs text-slate-500 mb-1">
+            <i class="fa-solid fa-box mr-1"></i> ${order.cargo} • ${order.weight}т
+          </div>
+          <div class="text-xs text-slate-400">
+            <i class="fa-solid fa-route mr-1"></i> ${order.from.split(',')[0]} → ${order.to.split(',')[0]}
+          </div>
+          ${order.vehicleId ? `<div class="text-xs text-amber-600 mt-1"><i class="fa-solid fa-truck mr-1"></i>${order.vehicleId}</div>` : ''}
+        </div>
+      `).join('');
+    }
+
+    function getStatusText(status) {
+      const texts = { 'new': 'Новый', 'assigned': 'Назначен', 'in-progress': 'В пути', 'completed': 'Завершён' };
+      return texts[status] || status;
+    }
+
+    function selectOrder(id) {
+      selectedOrderId = id;
+      renderOrders();
+      renderOrderDetails();
+      
+      const order = orders.find(o => o.id === id);
+      if (order) {
+        map.setView([order.lat, order.lng], 8);
+      }
+    }
+
+    function renderOrderDetails() {
+      const container = document.getElementById('orderDetails');
+      const order = orders.find(o => o.id === selectedOrderId);
+      
+      if (!order) {
+        container.innerHTML = `
+          <div class="text-center text-slate-400 py-10">
+            <i class="fa-solid fa-box text-4xl mb-3 opacity-50"></i>
+            <p class="text-sm">Выберите заказ для просмотра деталей</p>
+          </div>
+        `;
+        return;
+      }
+      
+      container.innerHTML = `
+        <div class="space-y-4">
+          <div class="flex items-center justify-between">
+            <span class="status-badge status-${order.status}">${getStatusText(order.status)}</span>
+            <span class="text-xs text-slate-500">#${order.id}</span>
+          </div>
+          
+          <div>
+            <div class="text-xs text-slate-500 mb-1">Клиент</div>
+            <div class="font-semibold text-slate-800">${order.client}</div>
+          </div>
+          
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <div class="text-xs text-slate-500 mb-1">Груз</div>
+              <div class="text-sm font-medium">${order.cargo}</div>
+            </div>
+            <div>
+              <div class="text-xs text-slate-500 mb-1">Вес</div>
+              <div class="text-sm font-medium">${order.weight} т</div>
+            </div>
+          </div>
+          
+          <div class="glass-card p-3">
+            <div class="flex items-center gap-2 mb-2">
+              <div class="w-2 h-2 rounded-full bg-blue-500"></div>
+              <div class="text-xs text-slate-600">Погрузка</div>
+            </div>
+            <div class="text-sm font-medium text-slate-800 ml-4">${order.from}</div>
+            
+            <div class="border-l-2 border-dashed border-slate-200 h-4 ml-1 my-2"></div>
+            
+            <div class="flex items-center gap-2 mb-2">
+              <div class="w-2 h-2 rounded-full bg-green-500"></div>
+              <div class="text-xs text-slate-600">Выгрузка</div>
+            </div>
+            <div class="text-sm font-medium text-slate-800 ml-4">${order.to}</div>
+          </div>
+          
+          ${order.vehicleId ? `
+          <div>
+            <div class="text-xs text-slate-500 mb-1">Назначенное ТС</div>
+            <div class="glass-card p-2 flex items-center gap-2">
+              <i class="fa-solid fa-truck text-amber-500"></i>
+              <span class="font-medium">${order.vehicleId}</span>
+            </div>
+          </div>
+          ` : ''}
+          
+          <div class="flex gap-2 mt-4">
+            ${order.status === 'new' ? `
+              <button onclick="showAssignModal(${order.id})" class="flex-1 py-2 rounded-xl btn-primary text-sm">
+                <i class="fa-solid fa-truck mr-1"></i> Назначить ТС
+              </button>
+            ` : ''}
+            ${order.status === 'assigned' ? `
+              <button onclick="startOrder(${order.id})" class="flex-1 py-2 rounded-xl btn-primary text-sm">
+                <i class="fa-solid fa-play mr-1"></i> Начать рейс
+              </button>
+            ` : ''}
+            ${order.status === 'in-progress' ? `
+              <button onclick="completeOrder(${order.id})" class="flex-1 py-2 rounded-xl bg-green-500 text-white text-sm">
+                <i class="fa-solid fa-check mr-1"></i> Завершить
+              </button>
+            ` : ''}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderAvailableVehicles() {
+      const container = document.getElementById('availableVehicles');
+      container.innerHTML = availableVehicles.map(v => `
+        <div class="glass-card p-2 flex items-center gap-3 cursor-pointer hover:border-amber-300" onclick="quickAssign('${v.id}')">
+          <div class="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center">
+            <i class="fa-solid fa-truck text-amber-600 text-sm"></i>
+          </div>
+          <div class="flex-1">
+            <div class="text-xs font-semibold text-slate-800">${v.id}</div>
+            <div class="text-[10px] text-slate-500">${v.driver} • ${v.location}</div>
+          </div>
+          <div class="text-[10px] text-slate-400">${v.capacity}т</div>
+        </div>
+      `).join('');
+    }
+
+    function filterOrders(filter) {
+      currentFilter = filter;
+      document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.filter === filter);
+        btn.classList.toggle('bg-gradient-to-r', btn.dataset.filter === filter);
+        btn.classList.toggle('from-amber-500', btn.dataset.filter === filter);
+        btn.classList.toggle('to-orange-500', btn.dataset.filter === filter);
+        btn.classList.toggle('text-white', btn.dataset.filter === filter);
+        btn.classList.toggle('bg-white/50', btn.dataset.filter !== filter);
+        btn.classList.toggle('text-slate-500', btn.dataset.filter !== filter);
+      });
+      renderOrders();
+    }
+
+    function showCreateOrderModal() {
+      document.getElementById('createOrderModal').classList.remove('hidden');
+      document.getElementById('createOrderModal').classList.add('flex');
+    }
+
+    function closeCreateOrderModal() {
+      document.getElementById('createOrderModal').classList.add('hidden');
+      document.getElementById('createOrderModal').classList.remove('flex');
+    }
+
+    function createOrder() {
+      alert('Заказ создан!');
+      closeCreateOrderModal();
+    }
+
+    function showAssignModal(orderId) {
+      selectedOrderId = orderId;
+      const container = document.getElementById('assignVehicleList');
+      container.innerHTML = availableVehicles.map(v => `
+        <div class="glass-card p-3 flex items-center gap-3 cursor-pointer hover:border-amber-300 ${selectedVehicleForAssign === v.id ? 'ring-2 ring-amber-400' : ''}" onclick="selectVehicleForAssign('${v.id}')">
+          <div class="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center">
+            <i class="fa-solid fa-truck text-amber-600"></i>
+          </div>
+          <div class="flex-1">
+            <div class="text-sm font-semibold text-slate-800">${v.id} • ${v.name}</div>
+            <div class="text-xs text-slate-500">${v.driver}</div>
+          </div>
+          <div class="text-right">
+            <div class="text-xs font-semibold text-slate-700">${v.capacity}т</div>
+            <div class="text-[10px] text-slate-400">${v.location}</div>
+          </div>
+        </div>
+      `).join('');
+      
+      document.getElementById('assignVehicleModal').classList.remove('hidden');
+      document.getElementById('assignVehicleModal').classList.add('flex');
+    }
+
+    function closeAssignModal() {
+      document.getElementById('assignVehicleModal').classList.add('hidden');
+      document.getElementById('assignVehicleModal').classList.remove('flex');
+      selectedVehicleForAssign = null;
+    }
+
+    function selectVehicleForAssign(vehicleId) {
+      selectedVehicleForAssign = vehicleId;
+      showAssignModal(selectedOrderId);
+    }
+
+    function confirmAssign() {
+      if (!selectedVehicleForAssign) {
+        alert('Выберите транспортное средство');
+        return;
+      }
+      const order = orders.find(o => o.id === selectedOrderId);
+      if (order) {
+        order.status = 'assigned';
+        order.vehicleId = selectedVehicleForAssign;
+        renderOrders();
+        renderOrderDetails();
+        addOrderMarkers();
+      }
+      closeAssignModal();
+    }
+
+    function quickAssign(vehicleId) {
+      if (!selectedOrderId) {
+        alert('Сначала выберите заказ');
+        return;
+      }
+      const order = orders.find(o => o.id === selectedOrderId);
+      if (order && order.status === 'new') {
+        order.status = 'assigned';
+        order.vehicleId = vehicleId;
+        renderOrders();
+        renderOrderDetails();
+        addOrderMarkers();
+      }
+    }
+
+    function startOrder(orderId) {
+      const order = orders.find(o => o.id === orderId);
+      if (order) {
+        order.status = 'in-progress';
+        renderOrders();
+        renderOrderDetails();
+        addOrderMarkers();
+      }
+    }
+
+    function completeOrder(orderId) {
+      const order = orders.find(o => o.id === orderId);
+      if (order) {
+        order.status = 'completed';
+        renderOrders();
+        renderOrderDetails();
+        addOrderMarkers();
+      }
+    }
+
+    function showAllRoutes() {
+      map.setView([55.7558, 60.0], 4);
+    }
+
+    function showOptimizeModal() {
+      alert('Функция оптимизации маршрутов в разработке');
+    }
+
+    function logout() {
+      if (typeof Routa !== 'undefined' && Routa.Auth) {
+        Routa.Auth.logout();
+      } else {
+        localStorage.removeItem('routox_token');
+        localStorage.removeItem('routox_role');
+        window.location.href = 'login.html';
+      }
+    }
+  </script>
+  <script src="./assets/js/routa-core.js"></script>
+  <script src="./assets/js/routox-ai.js"></script>
+  <script>
+    // Initialize Routa
+    Routa.Theme.load();
+    
+    // Update user info from localStorage
+    const role = localStorage.getItem('routox_role') || 'logist';
+    const roleData = {
+      logist: { name: 'Логист', badge: 'Pro', color: 'text-amber-600' },
+      owner: { name: 'Владелец', badge: 'Enterprise', color: 'text-purple-600' },
+      admin: { name: 'Администратор', badge: 'Admin', color: 'text-red-600' },
+      dispatcher: { name: 'Диспетчер', badge: 'Pro', color: 'text-blue-600' }
+    };
+    const data = roleData[role] || roleData.logist;
+    const userNameEl = document.getElementById('userName');
+    const userRoleEl = document.getElementById('userRole');
+    if (userNameEl) userNameEl.textContent = data.name;
+    if (userRoleEl) {
+      userRoleEl.textContent = data.badge;
+      userRoleEl.className = 'text-[9px] ' + data.color + ' font-semibold mt-0.5';
+    }
+  </script>
+  <script src="./assets/js/smooth-navigation.js"></script>
+</body>
+</html>

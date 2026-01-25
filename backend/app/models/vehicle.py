@@ -1,8 +1,20 @@
-from sqlalchemy import Column, DateTime, ForeignKey, Float, Integer, String, func
-from sqlalchemy.dialects.postgresql import ARRAY
+from sqlalchemy import JSON, Column, DateTime, ForeignKey, Float, Integer, String, func
+
+try:
+    from sqlalchemy.dialects.postgresql import ARRAY  # type: ignore
+except Exception:  # pragma: no cover
+    ARRAY = None
 from sqlalchemy.orm import relationship
 
+from app.core.settings import settings
 from app.db.base import Base
+
+
+_STATUS_SECONDARY_TYPE = (
+    ARRAY(String)
+    if (ARRAY is not None and settings.database_url.startswith("postgres"))
+    else JSON
+)
 
 
 class Vehicle(Base):
@@ -18,7 +30,7 @@ class Vehicle(Base):
     tag = Column(String, nullable=True)
 
     status_main = Column(String, nullable=True)
-    status_secondary = Column(ARRAY(String), nullable=False, default=list)
+    status_secondary = Column(_STATUS_SECONDARY_TYPE, nullable=False, default=list)
 
     cargo_desc = Column(String, nullable=True)
     route_code = Column(String, nullable=True)

@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RoutoX — Управление водителями</title>
+  <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+  <script src="https://kit.fontawesome.com/a2e0e9e5a9.js" crossorigin="anonymous"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="./assets/css/routox-unified.css">
+  <link rel="stylesheet" href="./assets/css/page-transitions.css">
+  <style>
+    body {
+        font-family: "Inter", sans-serif;
+        background-color: #FFF8F0;
+        background-image: 
+            radial-gradient(at 0% 0%, hsla(30,100%,96%,1) 0, transparent 50%), 
+            radial-gradient(at 100% 0%, hsla(35,100%,96%,1) 0, transparent 50%);
+    }
+    .glass-panel { background: rgba(255,255,255,0.75); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.9); box-shadow: 0 8px 32px 0 rgba(245,158,11,0.08); border-radius: 16px; }
+    .glass-card { background: rgba(255,255,255,0.85); backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.7); box-shadow: 0 4px 20px rgba(245,158,11,0.05); border-radius: 14px; transition: all 0.2s ease; }
+    .glass-card:hover { background: rgba(255,255,255,0.95); box-shadow: 0 10px 30px rgba(245,158,11,0.12); transform: translateY(-2px); }
+    .nav-item-active { background: rgba(255,255,255,0.9); color: #f59e0b !important; box-shadow: 0 2px 10px rgba(245,158,11,0.15); font-weight: 600 !important; }
+    .btn-primary { background: linear-gradient(135deg, #f59e0b, #d97706); color: white; transition: all 0.2s ease; }
+    .btn-primary:hover { background: linear-gradient(135deg, #d97706, #b45309); box-shadow: 0 8px 20px rgba(245,158,11,0.25); transform: translateY(-1px); }
+    .status-available { background: rgba(16,185,129,0.15); color: #10b981; }
+    .status-busy { background: rgba(245,158,11,0.15); color: #f59e0b; }
+    .status-offline { background: rgba(107,114,128,0.15); color: #6b7280; }
+    .status-vacation { background: rgba(59,130,246,0.15); color: #3b82f6; }
+    .driver-card { cursor: pointer; border-left: 4px solid transparent; }
+    .driver-card.selected { border-left-color: #f59e0b; background: rgba(245,158,11,0.05); }
+    .stat-card { background: linear-gradient(135deg, #fef3c7, #fde68a); border: 1px solid #fbbf24; }
+  </style>
+</head>
+<body>
+  <header class="sticky top-0 z-40 glass-panel border-b border-white/50 px-6 py-3">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-8">
+        <a href="logist.html" class="flex items-center gap-3 group">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg">
+            <i class="fa-solid fa-truck-fast text-white text-lg"></i>
+          </div>
+          <div class="flex flex-col leading-none">
+            <span class="text-lg font-bold bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">RoutoX</span>
+            <span class="text-[10px] text-slate-500 font-medium">LOGIST</span>
+          </div>
+        </a>
+        <nav class="hidden lg:flex items-center gap-1 bg-slate-100/50 p-1 rounded-xl">
+          <a class="px-4 py-1.5 rounded-lg text-sm font-medium text-slate-500 hover:text-amber-800 hover:bg-white/60 transition-colors" href="logist.html">Заказы</a>
+          <a class="px-4 py-1.5 rounded-lg text-sm font-medium text-slate-500 hover:text-amber-800 hover:bg-white/60 transition-colors" href="routes.html">Маршруты</a>
+          <a class="px-4 py-1.5 rounded-lg text-sm font-medium text-slate-500 hover:text-amber-800 hover:bg-white/60 transition-colors" href="trips.html">Рейсы</a>
+          <a class="px-4 py-1.5 rounded-lg text-sm font-semibold nav-item-active transition-all" href="drivers-manage.html">Водители</a>
+          <a class="px-4 py-1.5 rounded-lg text-sm font-medium text-slate-500 hover:text-amber-800 hover:bg-white/60 transition-colors" href="clients.html">Клиенты</a>
+          <a class="px-4 py-1.5 rounded-lg text-sm font-medium text-slate-500 hover:text-amber-800 hover:bg-white/60 transition-colors" href="warehouse.html">Склад</a>
+          <a class="px-4 py-1.5 rounded-lg text-sm font-medium text-slate-500 hover:text-amber-800 hover:bg-white/60 transition-colors" href="loading-plan.html">Планирование</a>
+          <a class="px-4 py-1.5 rounded-lg text-sm font-medium text-slate-500 hover:text-amber-800 hover:bg-white/60 transition-colors" href="delivery-stats.html">Статистика</a>
+          <a class="px-4 py-1.5 rounded-lg text-sm font-medium text-slate-500 hover:text-amber-800 hover:bg-white/60 transition-colors" href="geozones.html">Геозоны</a>
+        </nav>
+      </div>
+      <div class="flex items-center gap-3">
+        <span class="hidden lg:flex items-center gap-2 px-3 py-1.5 bg-amber-50 border border-amber-200 rounded-full text-xs">
+            <i class="fa-solid fa-id-card text-amber-600"></i>
+            <span class="font-semibold text-amber-800">Логист</span>
+        </span>
+        <div class="flex items-center gap-3 pl-1 pr-1 py-1 bg-white/50 border border-white rounded-full shadow-sm">
+            <div class="w-8 h-8 rounded-full bg-slate-200 overflow-hidden ring-2 ring-white">
+                <img alt="User" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCTs9iN8pKS03W5I54u9FB4B-c8kh0-SvddoYiVdknvnn0XFQ_ScxzcOGMuvCw75ZDO7eej3OBFSUyW7YGzfIdw8bm2JVE2qYntX-6WFsuWZDXeCjqgvXyR-Lo9UnAE2bTQejiaicaZNqXTEEWzBEmoalZytqScbtdaXlk0i5laN5yjsqI3j457keHzESRrW4bLeWD2l5xuer1uZ4Zd_LMeP8p-XTEa4_wtLTcRyHGOncDuMQUJk788z8tvDII7r8UTdnahdzzaAtY"/>
+            </div>
+            <div class="pr-3 flex flex-col items-end leading-none">
+                <p class="text-xs font-bold text-slate-800">Логист</p>
+                <p class="text-[9px] text-amber-600 font-semibold mt-0.5">Pro</p>
+            </div>
+        </div>
+        <button class="w-10 h-10 flex items-center justify-center text-slate-400 hover:text-slate-700 bg-white/50 hover:bg-white rounded-full transition-all shadow-sm border border-white/50 relative" onclick="window.location.href='notifications.html'">
+            <span class="material-symbols-outlined text-[20px]">notifications</span>
+            <span class="absolute top-2.5 right-2.5 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white"></span>
+        </button>
+        <button class="w-10 h-10 flex items-center justify-center text-slate-400 hover:text-red-500 bg-white/50 hover:bg-white rounded-full transition-all shadow-sm border border-white/50" onclick="logout()">
+            <span class="material-symbols-outlined text-[20px]">logout</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="p-4 grid grid-cols-12 gap-4" style="height: calc(100vh - 88px);">
+    <aside class="col-span-4 space-y-4 flex flex-col">
+      <div class="grid grid-cols-3 gap-3">
+        <div class="stat-card p-3 rounded-xl">
+          <div class="text-2xl font-bold text-amber-800">24</div>
+          <div class="text-[10px] text-amber-700 font-medium mt-1">Водителей</div>
+        </div>
+        <div class="stat-card p-3 rounded-xl">
+          <div class="text-2xl font-bold text-green-600">18</div>
+          <div class="text-[10px] text-amber-700 font-medium mt-1">На линии</div>
+        </div>
+        <div class="stat-card p-3 rounded-xl">
+          <div class="text-2xl font-bold text-blue-600">6</div>
+          <div class="text-[10px] text-amber-700 font-medium mt-1">Свободны</div>
+        </div>
+      </div>
+
+      <button onclick="addDriver()" class="btn-primary py-2.5 rounded-xl text-sm font-medium shadow-lg">
+        <i class="fa-solid fa-user-plus mr-2"></i>Добавить водителя
+      </button>
+
+      <div class="glass-panel p-4 flex-1 overflow-y-auto">
+        <h3 class="text-xs font-bold text-slate-500 mb-3 uppercase">Водители</h3>
+        <div class="space-y-2" id="driversList"></div>
+      </div>
+    </aside>
+
+    <section class="col-span-5">
+      <div class="glass-panel p-4 h-full flex flex-col">
+        <h2 class="text-lg font-bold text-slate-800 mb-4">График работы</h2>
+        <div class="flex-1 overflow-y-auto space-y-3" id="schedule"></div>
+      </div>
+    </section>
+
+    <aside class="col-span-3">
+      <div class="glass-panel p-4 h-full overflow-y-auto">
+        <h3 class="text-sm font-bold text-slate-800 mb-4">Детали</h3>
+        <div id="driverDetails"></div>
+      </div>
+    </aside>
+  </main>
+
+  <script src="./assets/js/routa-core.js"></script>
+  <script>
+    Routa.Theme.load();
+
+    const drivers = [
+      { id: 1, name: 'Артём Малышев', phone: '+7 917 555-4433', status: 'busy', license: 'CE', experience: 9, rating: 4.9, trips: 156, currentTrip: 'МСК-СПб' },
+      { id: 2, name: 'Сергей Иванов', phone: '+7 915 123-4567', status: 'available', license: 'CE', experience: 5, rating: 4.7, trips: 89 },
+      { id: 3, name: 'Михаил Петров', phone: '+7 916 987-6543', status: 'busy', license: 'CE', experience: 12, rating: 4.8, trips: 234, currentTrip: 'Казань-НН' },
+      { id: 4, name: 'Алексей Козлов', phone: '+7 917 332-1877', status: 'available', license: 'CE', experience: 3, rating: 4.5, trips: 45 },
+      { id: 5, name: 'Дмитрий Новиков', phone: '+7 918 222-1100', status: 'vacation', license: 'CE', experience: 7, rating: 4.6, trips: 123 },
+      { id: 6, name: 'Владимир Морозов', phone: '+7 919 888-7766', status: 'offline', license: 'CE', experience: 4, rating: 4.4, trips: 67 }
+    ];
+
+    let selectedDriverId = null;
+
+    document.addEventListener('DOMContentLoaded', () => {
+      renderDrivers();
+      renderSchedule();
+      if (drivers.length > 0) selectDriver(drivers[0].id);
+    });
+
+    function renderDrivers() {
+      document.getElementById('driversList').innerHTML = drivers.map(d => `
+        <div class="driver-card glass-card p-3 ${selectedDriverId === d.id ? 'selected' : ''}" onclick="selectDriver(${d.id})">
+          <div class="flex items-center gap-3 mb-2">
+            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white font-bold">
+              ${d.name.split(' ').map(n => n[0]).join('')}
+            </div>
+            <div class="flex-1">
+              <div class="font-semibold text-sm text-slate-800">${d.name}</div>
+              <div class="text-xs text-slate-500">${d.phone}</div>
+            </div>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-xs px-2 py-1 rounded-full status-${d.status}">${d.status === 'available' ? 'Свободен' : d.status === 'busy' ? 'Занят' : d.status === 'vacation' ? 'Отпуск' : 'Оффлайн'}</span>
+            <span class="text-xs text-slate-600">⭐ ${d.rating}</span>
+          </div>
+          ${d.currentTrip ? `<div class="mt-2 text-xs text-amber-600"><i class="fa-solid fa-route mr-1"></i>${d.currentTrip}</div>` : ''}
+        </div>
+      `).join('');
+    }
+
+    function renderSchedule() {
+      const schedule = drivers.filter(d => d.status === 'busy').map(d => ({
+        driver: d.name,
+        trip: d.currentTrip || 'Рейс',
+        start: '08:00',
+        end: '17:30'
+      }));
+
+      document.getElementById('schedule').innerHTML = schedule.length ? schedule.map(s => `
+        <div class="glass-card p-3">
+          <div class="font-semibold text-sm text-slate-800">${s.driver}</div>
+          <div class="text-xs text-slate-600 mt-1">${s.trip}</div>
+          <div class="flex items-center gap-2 mt-2 text-xs text-slate-500">
+            <i class="fa-solid fa-clock"></i>
+            <span>${s.start} - ${s.end}</span>
+          </div>
+        </div>
+      `).join('') : '<p class="text-sm text-slate-400 text-center py-10">Нет активных рейсов</p>';
+    }
+
+    function selectDriver(id) {
+      selectedDriverId = id;
+      renderDrivers();
+      const driver = drivers.find(d => d.id === id);
+      if (!driver) return;
+
+      document.getElementById('driverDetails').innerHTML = `
+        <div class="space-y-4">
+          <div class="glass-card p-4 text-center">
+            <div class="w-16 h-16 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white font-bold text-2xl mx-auto mb-2">
+              ${driver.name.split(' ').map(n => n[0]).join('')}
+            </div>
+            <div class="font-bold text-lg text-slate-800">${driver.name}</div>
+            <div class="text-sm text-slate-600">${driver.phone}</div>
+          </div>
+
+          <div class="space-y-2 text-sm">
+            <div class="flex justify-between">
+              <span class="text-slate-600">Категория</span>
+              <span class="font-semibold">${driver.license}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-600">Опыт</span>
+              <span class="font-semibold">${driver.experience} лет</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-600">Рейтинг</span>
+              <span class="font-semibold text-amber-600">⭐ ${driver.rating}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-600">Рейсов</span>
+              <span class="font-semibold">${driver.trips}</span>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2">
+            <button onclick="assignTrip(${driver.id})" class="btn-primary py-2 rounded-lg text-xs font-medium">
+              <i class="fa-solid fa-route mr-1"></i>Назначить
+            </button>
+            <button onclick="editDriver(${driver.id})" class="py-2 rounded-lg bg-blue-500 hover:bg-blue-600 text-white text-xs font-medium transition">
+              <i class="fa-solid fa-edit mr-1"></i>Редактировать
+            </button>
+          </div>
+        </div>
+      `;
+    }
+
+    function addDriver() {
+      alert('Добавление нового водителя');
+    }
+
+    function assignTrip(id) {
+      alert(`Назначение рейса водителю #${id}`);
+    }
+
+    function editDriver(id) {
+      alert(`Редактирование водителя #${id}`);
+    }
+
+    function logout() {
+      if (typeof Routa !== 'undefined' && Routa.Auth) {
+        Routa.Auth.logout();
+      } else {
+        localStorage.removeItem('routox_token');
+        localStorage.removeItem('routox_role');
+        window.location.href = 'login.html';
+      }
+    }
+  </script>
+  <script src="./assets/js/smooth-navigation.js"></script>
+</body>
+</html>

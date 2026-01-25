@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RoutoX — Отслеживание заказа</title>
+  <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+  <script src="https://kit.fontawesome.com/a2e0e9e5a9.js" crossorigin="anonymous"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <link rel="stylesheet" href="./assets/css/routox-unified.css">
+  <style>
+    body {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+      min-height: 100vh;
+    }
+    
+    .tracking-card {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(20px);
+      border-radius: 32px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+      max-width: 480px;
+      width: 100%;
+      overflow: hidden;
+    }
+    
+    [data-theme="dark"] .tracking-card {
+      background: rgba(17, 24, 39, 0.95);
+    }
+    
+    .input-modern {
+      background: rgba(0, 0, 0, 0.05);
+      border: 2px solid rgba(0, 0, 0, 0.1);
+      border-radius: 16px;
+      padding: 16px 20px;
+      font-size: 16px;
+      transition: all 0.3s ease;
+      width: 100%;
+    }
+    
+    [data-theme="dark"] .input-modern {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: rgba(255, 255, 255, 0.1);
+      color: white;
+    }
+    
+    .input-modern:focus {
+      outline: none;
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+    }
+    
+    .input-modern::placeholder {
+      color: rgba(0, 0, 0, 0.4);
+    }
+    
+    [data-theme="dark"] .input-modern::placeholder {
+      color: rgba(255, 255, 255, 0.4);
+    }
+    
+    .btn-track {
+      background: linear-gradient(135deg, #3b82f6, #10b981);
+      color: white;
+      font-weight: 600;
+      padding: 16px 32px;
+      border-radius: 16px;
+      font-size: 16px;
+      transition: all 0.3s ease;
+      width: 100%;
+      border: none;
+      cursor: pointer;
+    }
+    
+    .btn-track:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(59, 130, 246, 0.4);
+    }
+    
+    .btn-track:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+    
+    /* Map styles */
+    #trackingMap {
+      border-radius: 20px;
+      z-index: 1;
+      height: 300px;
+    }
+    
+    .leaflet-control-zoom { 
+      border: none !important; 
+      border-radius: 12px !important; 
+    }
+    
+    /* Timeline */
+    .timeline-vertical {
+      position: relative;
+      padding-left: 32px;
+    }
+    
+    .timeline-vertical::before {
+      content: '';
+      position: absolute;
+      left: 11px;
+      top: 24px;
+      bottom: 24px;
+      width: 2px;
+      background: linear-gradient(to bottom, #3b82f6, #10b981);
+    }
+    
+    .timeline-point {
+      position: relative;
+    }
+    
+    .timeline-point::before {
+      content: '';
+      position: absolute;
+      left: -32px;
+      top: 4px;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: white;
+      border: 3px solid currentColor;
+    }
+    
+    .timeline-point.completed::before {
+      background: currentColor;
+    }
+    
+    .timeline-point.active::before {
+      animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4); }
+      50% { box-shadow: 0 0 0 8px rgba(59, 130, 246, 0); }
+    }
+    
+    /* Status badges */
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    
+    .status-badge.in-transit {
+      background: rgba(59, 130, 246, 0.15);
+      color: #3b82f6;
+    }
+    
+    .status-badge.delivered {
+      background: rgba(16, 185, 129, 0.15);
+      color: #10b981;
+    }
+    
+    .status-badge.pending {
+      background: rgba(245, 158, 11, 0.15);
+      color: #f59e0b;
+    }
+    
+    /* Truck marker animation */
+    .truck-marker {
+      animation: truckBounce 3s ease-in-out infinite;
+    }
+    
+    @keyframes truckBounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-3px); }
+    }
+    
+    /* Loading spinner */
+    .spinner {
+      width: 24px;
+      height: 24px;
+      border: 3px solid rgba(255, 255, 255, 0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    /* Hide/Show sections */
+    .hidden { display: none !important; }
+    
+    /* Glass effect for cards */
+    .glass-info {
+      background: rgba(0, 0, 0, 0.03);
+      border-radius: 16px;
+      padding: 16px;
+    }
+    
+    [data-theme="dark"] .glass-info {
+      background: rgba(255, 255, 255, 0.05);
+    }
+  </style>
+</head>
+<body class="flex items-center justify-center p-4">
+  <!-- Main Tracking Card -->
+  <div class="tracking-card">
+    <!-- Header -->
+    <div class="p-6 pb-4 text-center border-b border-black/5 dark:border-white/5">
+      <div class="flex justify-center mb-4">
+        <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-emerald-500 flex items-center justify-center shadow-lg">
+          <i class="fa-solid fa-truck-fast text-white text-2xl"></i>
+        </div>
+      </div>
+      <h1 class="text-2xl font-bold mb-1">Отслеживание заказа</h1>
+      <p class="text-muted text-sm">Введите данные для отслеживания вашей доставки</p>
+    </div>
+    
+    <!-- Search Form -->
+    <div id="searchForm" class="p-6">
+      <form onsubmit="trackOrder(event)">
+        <!-- Order Number or Phone -->
+        <div class="mb-4">
+          <label class="block text-sm font-medium mb-2">Номер заказа или телефон</label>
+          <input 
+            type="text" 
+            id="orderInput" 
+            class="input-modern" 
+            placeholder="Например: ORD-2024-1234 или +7 999 123-45-67"
+            required
+          >
+        </div>
+        
+        <!-- Verification Factor -->
+        <div class="mb-6">
+          <label class="block text-sm font-medium mb-2">Код подтверждения</label>
+          <input 
+            type="text" 
+            id="verificationCode" 
+            class="input-modern" 
+            placeholder="Последние 4 цифры телефона или код из SMS"
+            required
+          >
+          <p class="text-xs text-muted mt-2">
+            <i class="fa-solid fa-info-circle mr-1"></i>
+            Код был отправлен вам при оформлении заказа
+          </p>
+        </div>
+        
+        <button type="submit" class="btn-track" id="trackBtn">
+          <i class="fa-solid fa-search mr-2"></i>
+          Отследить заказ
+        </button>
+      </form>
+      
+      <div class="mt-6 text-center">
+        <p class="text-sm text-muted mb-3">Или отсканируйте QR-код с накладной</p>
+        <button onclick="openQRScanner()" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-black/5 dark:bg-white/5 text-sm font-medium hover:bg-black/10 dark:hover:bg-white/10 transition-colors">
+          <i class="fa-solid fa-qrcode"></i>
+          Сканировать QR
+        </button>
+      </div>
+    </div>
+    
+    <!-- Tracking Results (Initially Hidden) -->
+    <div id="trackingResults" class="hidden">
+      <!-- Status Header -->
+      <div class="p-6 pb-4 border-b border-black/5 dark:border-white/5">
+        <div class="flex items-center justify-between mb-4">
+          <button onclick="goBack()" class="w-10 h-10 rounded-xl bg-black/5 dark:bg-white/5 flex items-center justify-center hover:bg-black/10 dark:hover:bg-white/10 transition-colors">
+            <i class="fa-solid fa-arrow-left"></i>
+          </button>
+          <div class="status-badge in-transit" id="statusBadge">
+            <i class="fa-solid fa-truck"></i>
+            <span id="statusText">В пути</span>
+          </div>
+          <button onclick="refreshTracking()" class="w-10 h-10 rounded-xl bg-black/5 dark:bg-white/5 flex items-center justify-center hover:bg-black/10 dark:hover:bg-white/10 transition-colors">
+            <i class="fa-solid fa-rotate-right"></i>
+          </button>
+        </div>
+        
+        <div class="text-center">
+          <h2 class="text-xl font-bold mb-1" id="orderNumber">Заказ #ORD-2024-1234</h2>
+          <p class="text-muted text-sm" id="orderRoute">Москва → Санкт-Петербург</p>
+        </div>
+      </div>
+      
+      <!-- Map Section -->
+      <div class="p-4">
+        <div id="trackingMap" class="mb-4"></div>
+        
+        <!-- ETA Card -->
+        <div class="glass-info flex items-center justify-between mb-4">
+          <div>
+            <div class="text-sm text-muted">Ожидаемая доставка</div>
+            <div class="text-xl font-bold" id="etaTime">Сегодня, ~15:30</div>
+          </div>
+          <div class="text-right">
+            <div class="text-sm text-muted">Осталось</div>
+            <div class="text-xl font-bold text-blue-500" id="distanceLeft">~156 км</div>
+          </div>
+        </div>
+        
+        <!-- Progress Bar -->
+        <div class="mb-6">
+          <div class="flex justify-between text-sm mb-2">
+            <span class="text-muted">Прогресс доставки</span>
+            <span class="font-semibold" id="progressPercent">68%</span>
+          </div>
+          <div class="h-2 bg-black/10 dark:bg-white/10 rounded-full overflow-hidden">
+            <div class="h-full bg-gradient-to-r from-blue-500 to-emerald-500 rounded-full transition-all duration-500" id="progressBar" style="width: 68%"></div>
+          </div>
+        </div>
+        
+        <!-- Driver Info -->
+        <div class="glass-info flex items-center gap-4 mb-4">
+          <img src="https://randomuser.me/api/portraits/men/45.jpg" alt="Driver" class="w-14 h-14 rounded-full object-cover" id="driverPhoto">
+          <div class="flex-1">
+            <div class="font-semibold" id="driverName">Сергей Петров</div>
+            <div class="text-sm text-muted" id="vehicleInfo">Volvo FH • А123ВС 77</div>
+          </div>
+          <a href="tel:+79991234567" class="w-12 h-12 rounded-xl bg-emerald-500/15 flex items-center justify-center text-emerald-500 hover:bg-emerald-500/25 transition-colors">
+            <i class="fa-solid fa-phone"></i>
+          </a>
+        </div>
+        
+        <!-- Timeline -->
+        <div class="glass-info">
+          <h3 class="font-semibold mb-4">История перемещений</h3>
+          <div class="timeline-vertical space-y-4" id="timeline">
+            <div class="timeline-point completed text-emerald-500">
+              <div class="font-medium">Заказ оформлен</div>
+              <div class="text-sm text-muted">12 января, 08:00</div>
+            </div>
+            <div class="timeline-point completed text-emerald-500">
+              <div class="font-medium">Отправлен со склада</div>
+              <div class="text-sm text-muted">Москва • 12 января, 09:30</div>
+            </div>
+            <div class="timeline-point completed text-emerald-500">
+              <div class="font-medium">В пути</div>
+              <div class="text-sm text-muted">Прошёл Тверь • 12 января, 12:45</div>
+            </div>
+            <div class="timeline-point active text-blue-500">
+              <div class="font-medium">Текущее местоположение</div>
+              <div class="text-sm text-muted">Великий Новгород • Сейчас</div>
+            </div>
+            <div class="timeline-point text-gray-400">
+              <div class="font-medium text-muted">Доставка получателю</div>
+              <div class="text-sm text-muted">Ожидается ~15:30</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Footer Actions -->
+      <div class="p-4 pt-0">
+        <div class="grid grid-cols-2 gap-3">
+          <button onclick="shareTracking()" class="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-black/5 dark:bg-white/5 text-sm font-medium hover:bg-black/10 dark:hover:bg-white/10 transition-colors">
+            <i class="fa-solid fa-share"></i>
+            Поделиться
+          </button>
+          <button onclick="contactSupport()" class="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-blue-500/15 text-blue-500 text-sm font-medium hover:bg-blue-500/25 transition-colors">
+            <i class="fa-solid fa-headset"></i>
+            Поддержка
+          </button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Error Message (Hidden) -->
+    <div id="errorMessage" class="hidden p-6 text-center">
+      <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-red-500/15 flex items-center justify-center">
+        <i class="fa-solid fa-exclamation-triangle text-red-500 text-2xl"></i>
+      </div>
+      <h3 class="text-lg font-bold mb-2">Заказ не найден</h3>
+      <p class="text-muted text-sm mb-4">Проверьте правильность введённых данных и попробуйте снова</p>
+      <button onclick="goBack()" class="btn-track">
+        <i class="fa-solid fa-arrow-left mr-2"></i>
+        Попробовать снова
+      </button>
+    </div>
+    
+    <!-- Footer -->
+    <div class="p-4 text-center border-t border-black/5 dark:border-white/5">
+      <p class="text-xs text-muted">
+        <i class="fa-solid fa-shield-halved mr-1"></i>
+        Защищённое отслеживание RoutoX
+      </p>
+    </div>
+  </div>
+  
+  <!-- QR Scanner Modal -->
+  <div id="qrModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+    <div class="bg-white dark:bg-gray-800 rounded-3xl p-6 max-w-sm w-full text-center">
+      <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-blue-500/15 flex items-center justify-center">
+        <i class="fa-solid fa-qrcode text-blue-500 text-2xl"></i>
+      </div>
+      <h3 class="text-lg font-bold mb-2">Сканер QR-кода</h3>
+      <p class="text-muted text-sm mb-4">Наведите камеру на QR-код с накладной</p>
+      <div class="aspect-square bg-black/5 dark:bg-white/5 rounded-2xl mb-4 flex items-center justify-center">
+        <i class="fa-solid fa-camera text-4xl text-muted"></i>
+      </div>
+      <button onclick="closeQRScanner()" class="w-full px-4 py-3 rounded-xl bg-black/5 dark:bg-white/5 text-sm font-medium hover:bg-black/10 dark:hover:bg-white/10 transition-colors">
+        Отмена
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // Initialize theme
+    const savedTheme = localStorage.getItem('routox_theme') || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    
+    let trackingMap = null;
+    let truckMarker = null;
+    
+    // Demo order data
+    const demoOrders = {
+      'ORD-2024-1234': {
+        status: 'in-transit',
+        statusText: 'В пути',
+        route: 'Москва → Санкт-Петербург',
+        eta: 'Сегодня, ~15:30',
+        distance: '~156 км',
+        progress: 68,
+        driver: {
+          name: 'Сергей Петров',
+          phone: '+7 (999) 123-45-67',
+          photo: 'https://randomuser.me/api/portraits/men/45.jpg',
+          vehicle: 'Volvo FH • А123ВС 77'
+        },
+        currentPosition: [58.5222, 31.2750], // Великий Новгород
+        timeline: [
+          { title: 'Заказ оформлен', time: '12 января, 08:00', completed: true },
+          { title: 'Отправлен со склада', time: 'Москва • 12 января, 09:30', completed: true },
+          { title: 'В пути', time: 'Прошёл Тверь • 12 января, 12:45', completed: true },
+          { title: 'Текущее местоположение', time: 'Великий Новгород • Сейчас', active: true },
+          { title: 'Доставка получателю', time: 'Ожидается ~15:30', completed: false }
+        ]
+      },
+      'ORD-2024-5678': {
+        status: 'delivered',
+        statusText: 'Доставлен',
+        route: 'Казань → Нижний Новгород',
+        eta: 'Доставлен 11 января',
+        distance: '0 км',
+        progress: 100,
+        driver: {
+          name: 'Михаил Иванов',
+          phone: '+7 (999) 987-65-43',
+          photo: 'https://randomuser.me/api/portraits/men/32.jpg',
+          vehicle: 'MAN TGX • В456МН 16'
+        },
+        currentPosition: [56.2965, 43.9361], // Нижний Новгород
+        timeline: [
+          { title: 'Заказ оформлен', time: '10 января, 10:00', completed: true },
+          { title: 'Отправлен со склада', time: 'Казань • 10 января, 12:00', completed: true },
+          { title: 'В пути', time: 'Чебоксары • 10 января, 16:30', completed: true },
+          { title: 'Прибыл в город', time: 'Нижний Новгород • 11 января, 08:00', completed: true },
+          { title: 'Доставлен', time: '11 января, 09:15', completed: true }
+        ]
+      }
+    };
+    
+    function trackOrder(e) {
+      e.preventDefault();
+      
+      const orderInput = document.getElementById('orderInput').value.trim();
+      const verificationCode = document.getElementById('verificationCode').value.trim();
+      
+      // Simulate loading
+      const btn = document.getElementById('trackBtn');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner inline-block mr-2"></span>Поиск...';
+      
+      setTimeout(() => {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-search mr-2"></i>Отследить заказ';
+        
+        // Check for demo orders or validate phone format
+        let order = demoOrders[orderInput.toUpperCase()];
+        
+        // If not found by order number, check by phone (demo: any phone with code "1234")
+        if (!order && verificationCode === '1234') {
+          order = demoOrders['ORD-2024-1234'];
+        }
+        
+        if (order) {
+          showTrackingResults(order, orderInput);
+        } else {
+          showError();
+        }
+      }, 1500);
+    }
+    
+    function showTrackingResults(order, orderInput) {
+      document.getElementById('searchForm').classList.add('hidden');
+      document.getElementById('errorMessage').classList.add('hidden');
+      document.getElementById('trackingResults').classList.remove('hidden');
+      
+      // Update UI with order data
+      document.getElementById('orderNumber').textContent = `Заказ #${orderInput.toUpperCase() || 'ORD-2024-1234'}`;
+      document.getElementById('orderRoute').textContent = order.route;
+      document.getElementById('etaTime').textContent = order.eta;
+      document.getElementById('distanceLeft').textContent = order.distance;
+      document.getElementById('progressPercent').textContent = order.progress + '%';
+      document.getElementById('progressBar').style.width = order.progress + '%';
+      
+      // Update status badge
+      const statusBadge = document.getElementById('statusBadge');
+      statusBadge.className = `status-badge ${order.status}`;
+      document.getElementById('statusText').textContent = order.statusText;
+      
+      // Update driver info
+      document.getElementById('driverName').textContent = order.driver.name;
+      document.getElementById('driverPhoto').src = order.driver.photo;
+      document.getElementById('vehicleInfo').textContent = order.driver.vehicle;
+      
+      // Update timeline
+      const timelineEl = document.getElementById('timeline');
+      timelineEl.innerHTML = order.timeline.map(point => `
+        <div class="timeline-point ${point.completed ? 'completed' : ''} ${point.active ? 'active' : ''} ${point.completed || point.active ? 'text-emerald-500' : 'text-gray-400'}">
+          <div class="font-medium ${!point.completed && !point.active ? 'text-muted' : ''}">${point.title}</div>
+          <div class="text-sm text-muted">${point.time}</div>
+        </div>
+      `).join('');
+      
+      // Initialize map
+      setTimeout(() => initTrackingMap(order.currentPosition), 100);
+    }
+    
+    function showError() {
+      document.getElementById('searchForm').classList.add('hidden');
+      document.getElementById('trackingResults').classList.add('hidden');
+      document.getElementById('errorMessage').classList.remove('hidden');
+    }
+    
+    function goBack() {
+      document.getElementById('searchForm').classList.remove('hidden');
+      document.getElementById('trackingResults').classList.add('hidden');
+      document.getElementById('errorMessage').classList.add('hidden');
+      
+      // Clear form
+      document.getElementById('orderInput').value = '';
+      document.getElementById('verificationCode').value = '';
+      
+      // Remove map
+      if (trackingMap) {
+        trackingMap.remove();
+        trackingMap = null;
+      }
+    }
+    
+    function initTrackingMap(position) {
+      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+      
+      if (trackingMap) {
+        trackingMap.remove();
+      }
+      
+      trackingMap = L.map('trackingMap', { zoomControl: false }).setView(position, 10);
+      
+      L.tileLayer(
+        isDark 
+          ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+          : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+        { attribution: '© OSM' }
+      ).addTo(trackingMap);
+      
+      // Route line (demo: Moscow - Saint Petersburg)
+      const routeCoords = [
+        [55.7558, 37.6173], // Moscow
+        [56.8584, 35.9176], // Tver
+        [58.5222, 31.2750], // Veliky Novgorod (current)
+        [59.9343, 30.3351]  // Saint Petersburg
+      ];
+      
+      L.polyline(routeCoords, { 
+        color: '#3b82f6', 
+        weight: 4, 
+        opacity: 0.8,
+        dashArray: '10, 10'
+      }).addTo(trackingMap);
+      
+      // Start marker
+      L.marker([55.7558, 37.6173], {
+        icon: L.divIcon({
+          className: 'custom-marker',
+          html: '<div style="width:14px;height:14px;background:#10b981;border-radius:50%;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.3);"></div>',
+          iconSize: [14, 14],
+          iconAnchor: [7, 7]
+        })
+      }).addTo(trackingMap).bindPopup('Москва — Отправление');
+      
+      // End marker
+      L.marker([59.9343, 30.3351], {
+        icon: L.divIcon({
+          className: 'custom-marker',
+          html: '<div style="width:14px;height:14px;background:#f59e0b;border-radius:50%;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.3);"></div>',
+          iconSize: [14, 14],
+          iconAnchor: [7, 7]
+        })
+      }).addTo(trackingMap).bindPopup('Санкт-Петербург — Доставка');
+      
+      // Current truck position
+      truckMarker = L.marker(position, {
+        icon: L.divIcon({
+          className: 'truck-marker',
+          html: `<div style="width:40px;height:40px;background:linear-gradient(135deg,#3b82f6,#10b981);border-radius:50%;border:3px solid white;box-shadow:0 4px 15px rgba(59,130,246,0.5);display:flex;align-items:center;justify-content:center;">
+            <i class="fa-solid fa-truck" style="color:white;font-size:16px;"></i>
+          </div>`,
+          iconSize: [40, 40],
+          iconAnchor: [20, 20]
+        })
+      }).addTo(trackingMap).bindPopup('Текущее местоположение');
+      
+      // Fit bounds
+      trackingMap.fitBounds(routeCoords, { padding: [30, 30] });
+    }
+    
+    function refreshTracking() {
+      // Simulate refresh
+      const btn = event.target.closest('button');
+      btn.querySelector('i').classList.add('fa-spin');
+      
+      setTimeout(() => {
+        btn.querySelector('i').classList.remove('fa-spin');
+        // Update some values to simulate real-time
+        const newDistance = Math.floor(Math.random() * 10 + 150);
+        document.getElementById('distanceLeft').textContent = `~${newDistance} км`;
+      }, 1000);
+    }
+    
+    function shareTracking() {
+      const orderNum = document.getElementById('orderNumber').textContent;
+      const url = window.location.href;
+      
+      if (navigator.share) {
+        navigator.share({
+          title: `Отслеживание ${orderNum}`,
+          text: `Следите за доставкой вашего заказа`,
+          url: url
+        });
+      } else {
+        navigator.clipboard.writeText(url).then(() => {
+          alert('Ссылка скопирована в буфер обмена');
+        });
+      }
+    }
+    
+    function contactSupport() {
+      alert('Телефон поддержки: 8-800-123-45-67\nEmail: support@routox.ru');
+    }
+    
+    function openQRScanner() {
+      document.getElementById('qrModal').classList.remove('hidden');
+      document.getElementById('qrModal').classList.add('flex');
+    }
+    
+    function closeQRScanner() {
+      document.getElementById('qrModal').classList.add('hidden');
+      document.getElementById('qrModal').classList.remove('flex');
+    }
+    
+    // Parse URL params for direct tracking
+    const urlParams = new URLSearchParams(window.location.search);
+    const orderParam = urlParams.get('order');
+    const codeParam = urlParams.get('code');
+    
+    if (orderParam && codeParam) {
+      document.getElementById('orderInput').value = orderParam;
+      document.getElementById('verificationCode').value = codeParam;
+      // Auto-track
+      setTimeout(() => {
+        document.querySelector('form').dispatchEvent(new Event('submit'));
+      }, 500);
+    }
+  </script>
+  <script src="./assets/js/routa-core.js"></script>
+  <script src="./assets/js/routox-unified.js"></script>
+</body>
+</html>

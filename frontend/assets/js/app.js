@@ -22,13 +22,19 @@ async function apiRequest(endpoint, options = {}) {
     });
     
     if (!response.ok) {
+      if (response.status === 401) {
+          // Token expired or invalid
+          localStorage.removeItem("auth_token");
+          authToken = null;
+          // Optionally redirect to login, but let the specific handler decide
+      }
       const error = await response.json().catch(() => ({ detail: response.statusText }));
       throw new Error(error.detail || `HTTP ${response.status}`);
     }
     
     return await response.json();
   } catch (error) {
-    console.error("API request failed:", error);
+    console.warn(`API request failed [${endpoint}]:`, error); // Warn instead of Error to allow fallback
     throw error;
   }
 }
@@ -3271,6 +3277,472 @@ function loadDemoCargoForVehicle(vehicle) {
   renderCargoGrid();
   updateCargoStats();
 }
+
+// ============================================
+// CARGO PLANNER: VALIDATION, EXPORT, BALANCE
+// ============================================
+
+const CARGO_MAX_WEIGHT_KG = 24000; // Max trailer weight
+const CARGO_AXLE_LIMIT_KG = 10000; // Max per axle
+
+// Calculate total cargo weight
+function calculateCargoWeight() {
+  let totalWeight = 0;
+  const weightByType = {};
+  
+  cargoGrid.forEach((cellData, index) => {
+    if (!cellData) return;
+    const type = typeof cellData === 'string' ? cellData : cellData.type;
+    if (type && cargoTypes[type]) {
+      totalWeight += cargoTypes[type].weight;
+      weightByType[type] = (weightByType[type] || 0) + cargoTypes[type].weight;
+    }
+  });
+  
+  // Add merged cells weight
+  Object.values(mergedCells).forEach(merge => {
+    if (merge.type && cargoTypes[merge.type]) {
+      // Weight already counted in grid, skip
+    }
+  });
+  
+  return { totalWeight, weightByType };
+}
+
+// Calculate weight distribution (front/back, left/right)
+function calculateWeightBalance() {
+  let frontWeight = 0, backWeight = 0;
+  let leftWeight = 0, rightWeight = 0;
+  
+  cargoGrid.forEach((cellData, index) => {
+    if (!cellData) return;
+    const type = typeof cellData === 'string' ? cellData : cellData.type;
+    if (!type || !cargoTypes[type]) return;
+    
+    const weight = cargoTypes[type].weight;
+    const col = index % CARGO_GRID_COLS;
+    const row = Math.floor(index / CARGO_GRID_COLS);
+    
+    // Front = first 4 cols, Back = last 4 cols
+    if (col < CARGO_GRID_COLS / 2) {
+      frontWeight += weight;
+    } else {
+      backWeight += weight;
+    }
+    
+    // Left = row 0, Right = row 2, Center = row 1
+    if (row === 0) leftWeight += weight;
+    else if (row === 2) rightWeight += weight;
+    else {
+      leftWeight += weight / 2;
+      rightWeight += weight / 2;
+    }
+  });
+  
+  const total = frontWeight + backWeight || 1;
+  return {
+    frontWeight,
+    backWeight,
+    leftWeight,
+    rightWeight,
+    frontPercent: Math.round((frontWeight / total) * 100),
+    backPercent: Math.round((backWeight / total) * 100),
+    leftPercent: Math.round((leftWeight / (leftWeight + rightWeight || 1)) * 100),
+    rightPercent: Math.round((rightWeight / (leftWeight + rightWeight || 1)) * 100),
+    isBalanced: Math.abs(frontWeight - backWeight) < total * 0.2 && Math.abs(leftWeight - rightWeight) < (leftWeight + rightWeight) * 0.15
+  };
+}
+
+// Validate cargo plan
+function validateCargoPlan() {
+  const warnings = [];
+  const errors = [];
+  
+  const { totalWeight, weightByType } = calculateCargoWeight();
+  const balance = calculateWeightBalance();
+  
+  // Weight validation
+  if (totalWeight > CARGO_MAX_WEIGHT_KG) {
+    errors.push({
+      code: 'OVERWEIGHT',
+      message: `Превышен лимит веса: ${totalWeight.toFixed(0)} кг / ${CARGO_MAX_WEIGHT_KG} кг`,
+      severity: 'error'
+    });
+  } else if (totalWeight > CARGO_MAX_WEIGHT_KG * 0.9) {
+    warnings.push({
+      code: 'NEAR_WEIGHT_LIMIT',
+      message: `Близко к лимиту веса: ${totalWeight.toFixed(0)} кг (${Math.round(totalWeight / CARGO_MAX_WEIGHT_KG * 100)}%)`,
+      severity: 'warning'
+    });
+  }
+  
+  // Balance validation
+  if (!balance.isBalanced) {
+    if (Math.abs(balance.frontPercent - balance.backPercent) > 30) {
+      warnings.push({
+        code: 'AXLE_IMBALANCE',
+        message: `Неравномерная нагрузка на оси: перед ${balance.frontPercent}% / зад ${balance.backPercent}%`,
+        severity: 'warning'
+      });
+    }
+    if (Math.abs(balance.leftPercent - balance.rightPercent) > 20) {
+      warnings.push({
+        code: 'SIDE_IMBALANCE',
+        message: `Боковой дисбаланс: лево ${balance.leftPercent}% / право ${balance.rightPercent}%`,
+        severity: 'warning'
+      });
+    }
+  }
+  
+  // Temperature conflict check
+  const hasCold = weightByType.cold > 0;
+  const hasHot = weightByType.hot > 0;
+  if (hasCold && hasHot) {
+    errors.push({
+      code: 'TEMP_CONFLICT',
+      message: 'Конфликт температур: холодный и горячий груз в одном прицепе',
+      severity: 'error'
+    });
+  }
+  
+  // Hazmat isolation check
+  if (weightByType.hazmat > 0 && (weightByType.fragile > 0 || Object.keys(weightByType).length > 2)) {
+    warnings.push({
+      code: 'HAZMAT_MIXED',
+      message: 'Опасный груз смешан с другими типами',
+      severity: 'warning'
+    });
+  }
+  
+  return {
+    isValid: errors.length === 0,
+    errors,
+    warnings,
+    stats: {
+      totalWeight,
+      weightByType,
+      balance,
+      cellsUsed: cargoGrid.filter(c => c !== null).length,
+      totalCells: CARGO_TOTAL_CELLS,
+      loadPercent: Math.round((cargoGrid.filter(c => c !== null).length / CARGO_TOTAL_CELLS) * 100)
+    }
+  };
+}
+
+// Show validation results in UI
+function showCargoValidation() {
+  const validation = validateCargoPlan();
+  const container = document.getElementById('cargoValidationPanel');
+  
+  if (!container) {
+    // Create validation panel if not exists
+    const cargoSection = document.querySelector('.cargo-constructor-container') || document.getElementById('cargoGrid')?.parentElement;
+    if (!cargoSection) return;
+    
+    const panel = document.createElement('div');
+    panel.id = 'cargoValidationPanel';
+    panel.className = 'mt-4 p-4 rounded-xl bg-slate-800/60 border border-slate-700';
+    cargoSection.appendChild(panel);
+  }
+  
+  const panel = document.getElementById('cargoValidationPanel');
+  if (!panel) return;
+  
+  const { stats, errors, warnings, isValid } = validation;
+  
+  panel.innerHTML = `
+    <div class="flex items-center justify-between mb-3">
+      <h4 class="text-sm font-semibold text-white flex items-center gap-2">
+        <i class="fa-solid fa-scale-balanced text-blue-400"></i>
+        Валидация груза
+      </h4>
+      <span class="px-2 py-1 rounded-lg text-xs font-bold ${isValid ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}">
+        ${isValid ? '✓ Валидно' : '✗ Есть ошибки'}
+      </span>
+    </div>
+    
+    <!-- Weight & Balance -->
+    <div class="grid grid-cols-2 gap-3 mb-3">
+      <div class="bg-slate-900/50 rounded-lg p-3">
+        <div class="text-xs text-slate-400 mb-1">Общий вес</div>
+        <div class="text-lg font-bold ${stats.totalWeight > CARGO_MAX_WEIGHT_KG ? 'text-red-400' : 'text-white'}">
+          ${stats.totalWeight.toFixed(0)} <span class="text-xs text-slate-400">/ ${CARGO_MAX_WEIGHT_KG} кг</span>
+        </div>
+        <div class="w-full h-2 bg-slate-700 rounded-full mt-2 overflow-hidden">
+          <div class="h-full rounded-full transition-all ${stats.totalWeight > CARGO_MAX_WEIGHT_KG ? 'bg-red-500' : stats.totalWeight > CARGO_MAX_WEIGHT_KG * 0.9 ? 'bg-amber-500' : 'bg-emerald-500'}"
+               style="width: ${Math.min((stats.totalWeight / CARGO_MAX_WEIGHT_KG) * 100, 100)}%"></div>
+        </div>
+      </div>
+      
+      <div class="bg-slate-900/50 rounded-lg p-3">
+        <div class="text-xs text-slate-400 mb-1">Баланс осей</div>
+        <div class="flex items-center gap-2 text-sm">
+          <span class="text-blue-400">Перед: ${stats.balance.frontPercent}%</span>
+          <span class="text-slate-500">|</span>
+          <span class="text-amber-400">Зад: ${stats.balance.backPercent}%</span>
+        </div>
+        <div class="flex gap-1 mt-2">
+          <div class="h-2 bg-blue-500 rounded-l-full" style="width: ${stats.balance.frontPercent}%"></div>
+          <div class="h-2 bg-amber-500 rounded-r-full" style="width: ${stats.balance.backPercent}%"></div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Errors -->
+    ${errors.length > 0 ? `
+      <div class="space-y-2 mb-3">
+        ${errors.map(e => `
+          <div class="flex items-start gap-2 p-2 rounded-lg bg-red-500/10 border border-red-500/30">
+            <i class="fa-solid fa-circle-xmark text-red-400 mt-0.5"></i>
+            <span class="text-xs text-red-300">${e.message}</span>
+          </div>
+        `).join('')}
+      </div>
+    ` : ''}
+    
+    <!-- Warnings -->
+    ${warnings.length > 0 ? `
+      <div class="space-y-2">
+        ${warnings.map(w => `
+          <div class="flex items-start gap-2 p-2 rounded-lg bg-amber-500/10 border border-amber-500/30">
+            <i class="fa-solid fa-triangle-exclamation text-amber-400 mt-0.5"></i>
+            <span class="text-xs text-amber-300">${w.message}</span>
+          </div>
+        `).join('')}
+      </div>
+    ` : ''}
+    
+    <!-- Actions -->
+    <div class="flex gap-2 mt-4">
+      <button onclick="exportCargoJSON()" class="flex-1 px-3 py-2 rounded-lg bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 text-xs font-semibold transition">
+        <i class="fa-solid fa-download mr-1"></i> JSON
+      </button>
+      <button onclick="exportCargoPDF()" class="flex-1 px-3 py-2 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 text-xs font-semibold transition">
+        <i class="fa-solid fa-file-pdf mr-1"></i> PDF
+      </button>
+      <button onclick="saveCargoToServer()" class="flex-1 px-3 py-2 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 text-xs font-semibold transition">
+        <i class="fa-solid fa-cloud-arrow-up mr-1"></i> Сохранить
+      </button>
+    </div>
+  `;
+}
+
+// Export cargo plan as JSON
+function exportCargoJSON() {
+  const validation = validateCargoPlan();
+  const plan = {
+    version: '1.0',
+    exportedAt: new Date().toISOString(),
+    vehicleId: selected?.id || null,
+    vehicleName: selected?.name || 'Unknown',
+    grid: {
+      rows: CARGO_GRID_ROWS,
+      cols: CARGO_GRID_COLS,
+      cells: cargoGrid.map((cell, index) => ({
+        index,
+        row: Math.floor(index / CARGO_GRID_COLS),
+        col: index % CARGO_GRID_COLS,
+        cellId: `BX-${(index + 1).toString().padStart(2, '0')}`,
+        type: cell ? (typeof cell === 'string' ? cell : cell.type) : null,
+        mergeId: cell && typeof cell === 'object' ? cell.mergeId : null
+      }))
+    },
+    mergedCells: mergedCells,
+    validation: {
+      isValid: validation.isValid,
+      totalWeight: validation.stats.totalWeight,
+      loadPercent: validation.stats.loadPercent,
+      balance: validation.stats.balance,
+      errors: validation.errors.map(e => e.message),
+      warnings: validation.warnings.map(w => w.message)
+    }
+  };
+  
+  const blob = new Blob([JSON.stringify(plan, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `cargo-plan-${selected?.plate || 'export'}-${new Date().toISOString().split('T')[0]}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  
+  showToast('План груза экспортирован в JSON');
+}
+
+// Export cargo plan as PDF (simplified HTML-to-print)
+function exportCargoPDF() {
+  const validation = validateCargoPlan();
+  const { stats } = validation;
+  
+  // Generate printable HTML
+  const printContent = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <title>Грузовой план - ${selected?.name || 'Export'}</title>
+      <style>
+        body { font-family: Arial, sans-serif; padding: 20px; color: #1e293b; }
+        .header { border-bottom: 2px solid #3b82f6; padding-bottom: 10px; margin-bottom: 20px; }
+        .header h1 { margin: 0; color: #1e40af; }
+        .header p { margin: 5px 0 0; color: #64748b; }
+        .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px; }
+        .stat-card { background: #f1f5f9; padding: 15px; border-radius: 8px; text-align: center; }
+        .stat-value { font-size: 24px; font-weight: bold; color: #0f172a; }
+        .stat-label { font-size: 12px; color: #64748b; margin-top: 5px; }
+        .grid-container { margin: 20px 0; }
+        .grid { display: grid; grid-template-columns: repeat(${CARGO_GRID_COLS}, 40px); gap: 3px; }
+        .cell { width: 40px; height: 40px; border: 1px solid #cbd5e1; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 8px; }
+        .cell.cold { background: #bfdbfe; }
+        .cell.hot { background: #fecaca; }
+        .cell.dry { background: #fde68a; }
+        .cell.fragile { background: #fbcfe8; }
+        .cell.hazmat { background: #fca5a5; }
+        .cell.general { background: #d1d5db; }
+        .warnings { background: #fef3c7; padding: 10px; border-radius: 8px; margin-top: 20px; }
+        .errors { background: #fee2e2; padding: 10px; border-radius: 8px; margin-top: 10px; }
+        .footer { margin-top: 30px; padding-top: 10px; border-top: 1px solid #e2e8f0; font-size: 11px; color: #94a3b8; }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <h1>🚛 Грузовой план</h1>
+        <p>Транспорт: ${selected?.name || 'N/A'} | Номер: ${selected?.plate || 'N/A'} | Дата: ${new Date().toLocaleDateString('ru-RU')}</p>
+      </div>
+      
+      <div class="stats">
+        <div class="stat-card">
+          <div class="stat-value">${stats.totalWeight.toFixed(0)} кг</div>
+          <div class="stat-label">Общий вес</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">${stats.loadPercent}%</div>
+          <div class="stat-label">Загрузка</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">${stats.cellsUsed}/${stats.totalCells}</div>
+          <div class="stat-label">Ячеек</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">${stats.balance.frontPercent}/${stats.balance.backPercent}</div>
+          <div class="stat-label">Баланс осей</div>
+        </div>
+      </div>
+      
+      <div class="grid-container">
+        <h3>Схема загрузки прицепа</h3>
+        <div class="grid">
+          ${cargoGrid.map((cell, i) => {
+            const type = cell ? (typeof cell === 'string' ? cell : cell.type) : '';
+            return `<div class="cell ${type}">BX-${(i+1).toString().padStart(2,'0')}</div>`;
+          }).join('')}
+        </div>
+      </div>
+      
+      ${validation.warnings.length > 0 ? `
+        <div class="warnings">
+          <strong>⚠️ Предупреждения:</strong>
+          <ul>${validation.warnings.map(w => `<li>${w.message}</li>`).join('')}</ul>
+        </div>
+      ` : ''}
+      
+      ${validation.errors.length > 0 ? `
+        <div class="errors">
+          <strong>❌ Ошибки:</strong>
+          <ul>${validation.errors.map(e => `<li>${e.message}</li>`).join('')}</ul>
+        </div>
+      ` : ''}
+      
+      <div class="footer">
+        Сгенерировано RoutoX · ${new Date().toLocaleString('ru-RU')}
+      </div>
+    </body>
+    </html>
+  `;
+  
+  const printWindow = window.open('', '_blank');
+  printWindow.document.write(printContent);
+  printWindow.document.close();
+  printWindow.print();
+  
+  showToast('Грузовой план открыт для печати');
+}
+
+// Save cargo plan to server
+async function saveCargoToServer() {
+  const validation = validateCargoPlan();
+  
+  const payload = {
+    vehicle_id: selected?.id || null,
+    grid: cargoGrid,
+    merged_cells: mergedCells,
+    total_weight: validation.stats.totalWeight,
+    is_valid: validation.isValid
+  };
+  
+  try {
+    if (authToken) {
+      await apiRequest('/cargo/plans', {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      });
+      showToast('План сохранён на сервер', 'success');
+    } else {
+      // Demo mode - save to localStorage
+      const plans = JSON.parse(localStorage.getItem('routox_cargo_plans') || '[]');
+      plans.push({
+        ...payload,
+        id: `local-${Date.now()}`,
+        created_at: new Date().toISOString()
+      });
+      localStorage.setItem('routox_cargo_plans', JSON.stringify(plans.slice(-10))); // Keep last 10
+      showToast('План сохранён локально (демо режим)', 'info');
+    }
+  } catch (error) {
+    console.error('Failed to save cargo plan:', error);
+    showToast('Ошибка сохранения: ' + error.message, 'error');
+  }
+}
+
+// Load cargo plan from file
+function loadCargoFromFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const plan = JSON.parse(e.target.result);
+      
+      if (plan.grid && plan.grid.cells) {
+        cargoGrid = plan.grid.cells.map(c => c.type ? (c.mergeId ? { type: c.type, mergeId: c.mergeId } : c.type) : null);
+      }
+      
+      if (plan.mergedCells) {
+        mergedCells = plan.mergedCells;
+      }
+      
+      renderCargoGrid();
+      updateCargoStats();
+      showCargoValidation();
+      saveCargoToStorage();
+      
+      showToast('План загружен из файла');
+    } catch (error) {
+      console.error('Failed to parse cargo plan:', error);
+      showToast('Ошибка загрузки файла', 'error');
+    }
+  };
+  reader.readAsText(file);
+}
+
+// Make functions globally available
+window.exportCargoJSON = exportCargoJSON;
+window.exportCargoPDF = exportCargoPDF;
+window.saveCargoToServer = saveCargoToServer;
+window.loadCargoFromFile = loadCargoFromFile;
+window.showCargoValidation = showCargoValidation;
+window.validateCargoPlan = validateCargoPlan;
 
 // ============================================
 // END CARGO CONSTRUCTOR

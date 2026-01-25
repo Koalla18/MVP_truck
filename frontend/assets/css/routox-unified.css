@@ -175,6 +175,14 @@ body {
   box-shadow: var(--shadow-glow-purple);
 }
 
+/* Nav Item Active - Header Navigation */
+.nav-item-active {
+  background: rgba(255, 255, 255, 0.9);
+  color: #007AFF !important;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+  font-weight: 600 !important;
+}
+
 /* ========== Buttons ========== */
 .btn {
   display: inline-flex;
@@ -192,13 +200,25 @@ body {
 }
 
 .btn-primary {
-  background: var(--gradient-primary);
+  background: linear-gradient(135deg, #007AFF 0%, #5856D6 100%);
   color: white;
 }
 
 .btn-primary:hover {
   transform: translateY(-2px);
-  box-shadow: var(--shadow-glow-blue);
+  box-shadow: 0 4px 20px rgba(0, 122, 255, 0.4);
+}
+
+.btn-gradient {
+  background: linear-gradient(135deg, #007AFF 0%, #5856D6 100%);
+  color: white;
+  transition: all 0.3s ease;
+}
+
+.btn-gradient:hover {
+  background: linear-gradient(135deg, #0056b3 0%, #4240a8 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 15px rgba(0, 122, 255, 0.4);
 }
 
 .btn-purple {
@@ -857,6 +877,446 @@ body {
 .rounded-xl { border-radius: var(--radius-xl); }
 .rounded-full { border-radius: var(--radius-full); }
 
+/* ========== Toast Notifications ========== */
+.routox-toast-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 400px;
+}
+
+.routox-toast {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  transform: translateX(120%);
+  transition: all var(--transition-normal);
+}
+
+.routox-toast.show {
+  transform: translateX(0);
+}
+
+.routox-toast i:first-child {
+  font-size: 18px;
+}
+
+.routox-toast-success i:first-child { color: var(--brand-emerald); }
+.routox-toast-error i:first-child { color: var(--brand-rose); }
+.routox-toast-warning i:first-child { color: var(--brand-amber); }
+.routox-toast-info i:first-child { color: var(--brand-blue); }
+
+.routox-toast .toast-close {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
+}
+
+.routox-toast .toast-close:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+/* ========== Modal ========== */
+.routox-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  opacity: 0;
+  transition: opacity var(--transition-normal);
+}
+
+.routox-modal-overlay.show {
+  opacity: 1;
+}
+
+.routox-modal {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
+  width: 100%;
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transform: scale(0.95) translateY(20px);
+  transition: transform var(--transition-normal);
+}
+
+.routox-modal-overlay.show .routox-modal {
+  transform: scale(1) translateY(0);
+}
+
+.routox-modal-sm { max-width: 400px; }
+.routox-modal-md { max-width: 560px; }
+.routox-modal-lg { max-width: 800px; }
+.routox-modal-xl { max-width: 1100px; }
+
+.routox-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.routox-modal-header h3 {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.routox-modal-close {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+}
+
+.routox-modal-close:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.routox-modal-body {
+  padding: 24px;
+  overflow-y: auto;
+}
+
+.routox-modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 24px;
+  border-top: 1px solid var(--border-color);
+}
+
+/* ========== Loading & Error States ========== */
+.routox-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 40px;
+  color: var(--text-secondary);
+}
+
+.routox-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--border-color);
+  border-top-color: var(--brand-blue);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.routox-error {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 20px;
+  background: rgba(244, 63, 94, 0.1);
+  border: 1px solid rgba(244, 63, 94, 0.3);
+  border-radius: var(--radius-md);
+  color: var(--brand-rose);
+}
+
+/* ========== Role-specific Navigation Colors ========== */
+.role-badge.blue { 
+  background: rgba(59, 130, 246, 0.15); 
+  color: #3b82f6; 
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.role-badge.purple { 
+  background: rgba(139, 92, 246, 0.15); 
+  color: #8b5cf6; 
+  border: 1px solid rgba(139, 92, 246, 0.3);
+}
+
+.role-badge.green { 
+  background: rgba(16, 185, 129, 0.15); 
+  color: #10b981; 
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+/* Owner-only navigation styling */
+.nav-pill.owner-only {
+  border: 1px dashed rgba(139, 92, 246, 0.4);
+}
+
+.nav-pill.owner-only.active {
+  background: var(--gradient-purple);
+  border: none;
+  box-shadow: var(--shadow-glow-purple);
+}
+
+/* ========== Edition & Plan Tags ========== */
+.edition-tag {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+  margin-left: 4px;
+}
+
+.plan-tag {
+  font-size: 9px;
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: rgba(255,255,255,0.2);
+  color: inherit;
+  margin-left: 4px;
+}
+
+#editionBadge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: var(--radius-md);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* ========== Role Badge Extended ========== */
+.role-badge.rose {
+  background: rgba(244, 63, 94, 0.15);
+  color: #f43f5e;
+  border: 1px solid rgba(244, 63, 94, 0.3);
+}
+
+.role-badge.cyan {
+  background: rgba(6, 182, 212, 0.15);
+  color: #06b6d4;
+  border: 1px solid rgba(6, 182, 212, 0.3);
+}
+
+.role-badge.emerald {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+/* ========== Access Denied Screen ========== */
+.access-denied-screen {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-primary);
+  z-index: 10000;
+}
+
+.access-denied-card {
+  text-align: center;
+  padding: 48px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
+  max-width: 400px;
+}
+
+.access-denied-card i {
+  font-size: 48px;
+  color: var(--brand-amber);
+  margin-bottom: 24px;
+}
+
+.access-denied-card h2 {
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  color: var(--text-primary);
+}
+
+.access-denied-card p {
+  color: var(--text-secondary);
+  margin-bottom: 24px;
+}
+
+/* ========== Routa CSS Aliases (direct copy) ========== */
+/* Note: Routa uses the same styles as RoutoX for backward compatibility */
+
+/* ========== Skeleton Loading ========== */
+.skeleton {
+  background: linear-gradient(90deg, var(--border-color) 25%, var(--bg-hover) 50%, var(--border-color) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s ease-in-out infinite;
+  border-radius: var(--radius-sm);
+}
+
+@keyframes skeleton-loading {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.skeleton-text {
+  height: 14px;
+  margin: 4px 0;
+}
+
+.skeleton-title {
+  height: 24px;
+  width: 60%;
+  margin-bottom: 16px;
+}
+
+.skeleton-card {
+  height: 120px;
+  border-radius: var(--radius-md);
+}
+
+/* ========== AI Assistant Widget ========== */
+.ai-widget {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 1000;
+}
+
+.ai-widget-btn {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--gradient-primary);
+  border: none;
+  color: white;
+  font-size: 24px;
+  cursor: pointer;
+  box-shadow: var(--shadow-glow-blue);
+  transition: all var(--transition-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ai-widget-btn:hover {
+  transform: scale(1.1);
+  box-shadow: 0 8px 30px rgba(59, 130, 246, 0.5);
+}
+
+.ai-widget-panel {
+  position: absolute;
+  bottom: 70px;
+  right: 0;
+  width: 380px;
+  max-height: 500px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
+  display: none;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.ai-widget-panel.open {
+  display: flex;
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.ai-widget-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.ai-widget-header h4 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.ai-widget-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  max-height: 300px;
+}
+
+.ai-widget-input {
+  display: flex;
+  gap: 8px;
+  padding: 16px;
+  border-top: 1px solid var(--border-color);
+}
+
+.ai-widget-input input {
+  flex: 1;
+  padding: 10px 14px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+.ai-widget-input input:focus {
+  outline: none;
+  border-color: var(--brand-blue);
+}
+
+.ai-widget-input button {
+  padding: 10px 16px;
+  background: var(--gradient-primary);
+  border: none;
+  border-radius: var(--radius-md);
+  color: white;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
 /* ========== Print Styles ========== */
 @media print {
   .glass-panel {
@@ -866,6 +1326,12 @@ body {
   }
   
   .nav-pill, .icon-btn, .theme-toggle-track {
+    display: none !important;
+  }
+  
+  .routox-toast-container,
+  .routox-modal-overlay,
+  .ai-widget {
     display: none !important;
   }
 }

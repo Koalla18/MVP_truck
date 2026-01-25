@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="./assets/css/routox-unified.css">
   <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
   <script src="https://kit.fontawesome.com/a2e0e9e5a9.js" crossorigin="anonymous"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     .kpi-value {
@@ -19,43 +20,89 @@
     .progress-ring-circle { transition: stroke-dashoffset 0.5s ease; }
     .trans-row { transition: all 0.2s ease; border-radius: 8px; }
     .trans-row:hover { background: rgba(59, 130, 246, 0.08); }
+    .role-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+    .role-badge.admin { background: rgba(59, 130, 246, 0.15); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.3); }
+    .role-badge.owner { background: rgba(139, 92, 246, 0.15); color: #8b5cf6; border: 1px solid rgba(139, 92, 246, 0.3); }
+    .role-badge.dispatcher { background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); }
+    .fuel-tab { flex: 1; padding: 12px 16px; border-radius: 12px; font-size: 14px; font-weight: 500; transition: all 0.2s ease; color: var(--text-secondary); background: transparent; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+    .fuel-tab:hover { color: var(--text-primary); background: rgba(59, 130, 246, 0.08); }
+    .fuel-tab.active { background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; }
+    .fuel-card { background: linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02)); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 1.5rem; transition: all 0.3s ease; }
+    .fuel-card:hover { transform: translateY(-4px); border-color: rgba(59, 130, 246, 0.3); }
   </style>
 </head>
 <body class="min-h-screen">
   <!-- Header -->
-  <header class="glass-panel mx-4 mt-4 px-6 py-4 flex items-center justify-between sticky top-4 z-30">
-    <div class="flex items-center gap-6">
-      <a href="./index.html" class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-emerald-500 flex items-center justify-center font-bold text-lg text-white">R</div>
-        <div>
-          <div class="font-semibold">RoutoX</div>
-          <div class="text-xs text-muted">Fleet Management</div>
+  <header class="h-16 glass-panel flex items-center justify-between px-6 z-40 shrink-0 border-b border-white/50 sticky top-0 mx-4 mt-4 rounded-2xl">
+    <div class="flex items-center gap-12">
+        <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-extrabold text-xl shadow-lg shadow-blue-500/20">
+                R
+            </div>
+            <div class="flex flex-col">
+                <span class="font-bold text-lg leading-none tracking-tight text-slate-800">RoutoX</span>
+                <span class="text-[10px] text-slate-400 font-semibold uppercase tracking-widest mt-0.5">Fleet OS</span>
+            </div>
         </div>
-      </a>
-      <nav id="mainNav" class="flex items-center gap-1 ml-8">
-        <!-- Navigation populated by JS -->
-      </nav>
+        <nav class="hidden lg:flex items-center gap-1 bg-slate-100/50 p-1 rounded-xl">
+            <a class="px-4 py-1.5 rounded-lg text-sm font-medium text-slate-500 hover:text-slate-800 hover:bg-white/60 transition-colors" href="fleet.html">Флот</a>
+            <a class="px-4 py-1.5 rounded-lg text-sm font-medium text-slate-500 hover:text-slate-800 hover:bg-white/60 transition-colors" href="trips.html">Рейсы</a>
+            <a class="px-4 py-1.5 rounded-lg text-sm font-medium text-slate-500 hover:text-slate-800 hover:bg-white/60 transition-colors" href="geozones.html">Геозоны</a>
+            <a class="px-4 py-1.5 rounded-lg text-sm font-semibold nav-item-active transition-all" href="fuel.html">Топливо</a>
+            <a class="px-4 py-1.5 rounded-lg text-sm font-medium text-slate-500 hover:text-slate-800 hover:bg-white/60 transition-colors" href="maintenance.html">ТО</a>
+            <a class="px-4 py-1.5 rounded-lg text-sm font-medium text-slate-500 hover:text-slate-800 hover:bg-white/60 transition-colors" href="documents.html">Документы</a>
+        </nav>
     </div>
-    <div class="flex items-center gap-3">
-      <span class="role-badge admin" id="roleBadge">
-        <i class="fa-solid fa-user-gear"></i>
-        <span id="roleText">Администратор</span>
-      </span>
-      <div class="theme-toggle-track" onclick="toggleTheme()">
-        <div class="theme-toggle-thumb"></div>
-      </div>
-      <button class="icon-btn" title="Уведомления">
-        <i class="fa-solid fa-bell text-muted"></i>
-        <span class="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center font-bold">2</span>
-      </button>
-      <button class="icon-btn" title="Выход" onclick="logout()"><i class="fa-solid fa-right-from-bracket text-muted"></i></button>
+    <div class="flex items-center gap-5">
+        <div class="px-3 py-1.5 bg-white/60 backdrop-blur-md border border-white/60 rounded-full flex items-center gap-2 shadow-sm">
+            <span class="relative flex h-2.5 w-2.5">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+            </span>
+            <span class="text-xs font-bold text-slate-700 tracking-tight">LIVE</span>
+        </div>
+        <div class="h-6 w-px bg-slate-200"></div>
+        <div class="flex items-center gap-3 pl-1 pr-1 py-1 bg-white/50 border border-white rounded-full shadow-sm hover:shadow-md transition-shadow cursor-pointer">
+            <div class="w-8 h-8 rounded-full bg-slate-200 overflow-hidden ring-2 ring-white">
+                <img alt="User" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCTs9iN8pKS03W5I54u9FB4B-c8kh0-SvddoYiVdknvnn0XFQ_ScxzcOGMuvCw75ZDO7eej3OBFSUyW7YGzfIdw8bm2JVE2qYntX-6WFsuWZDXeCjqgvXyR-Lo9UnAE2bTQejiaicaZNqXTEEWzBEmoalZytqScbtdaXlk0i5laN5yjsqI3j457keHzESRrW4bLeWD2l5xuer1uZ4Zd_LMeP8p-XTEa4_wtLTcRyHGOncDuMQUJk788z8tvDII7r8UTdnahdzzaAtY"/>
+            </div>
+            <div class="pr-3 flex flex-col items-end leading-none">
+                <p class="text-xs font-bold text-slate-800" id="userName">Диспетчер</p>
+                <p class="text-[9px] text-blue-600 font-semibold mt-0.5" id="userRole">Pro</p>
+            </div>
+        </div>
+        <button class="w-10 h-10 flex items-center justify-center text-slate-400 hover:text-slate-700 bg-white/50 hover:bg-white rounded-full transition-all shadow-sm border border-white/50 relative" title="Уведомления" onclick="window.location.href='notifications.html'">
+            <span class="material-symbols-outlined text-[20px]">notifications</span>
+            <span class="absolute top-2.5 right-2.5 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white"></span>
+        </button>
+        <button class="w-10 h-10 flex items-center justify-center text-slate-400 hover:text-red-500 bg-white/50 hover:bg-white rounded-full transition-all shadow-sm border border-white/50" title="Выход" onclick="logout()">
+            <span class="material-symbols-outlined text-[20px]">logout</span>
+        </button>
     </div>
   </header>
 
   <!-- Main Content -->
   <main class="p-4 space-y-4">
-    <!-- Stats Row -->
-    <div class="grid grid-cols-5 gap-4">
+    <!-- Tabs -->
+    <div class="glass-panel p-2 flex items-center gap-2 mb-4">
+      <button class="fuel-tab active" data-tab="consumption" onclick="switchFuelTab('consumption')">
+        <i class="fa-solid fa-chart-line mr-2"></i>
+        Расход топлива
+      </button>
+      <button class="fuel-tab" data-tab="cards" onclick="switchFuelTab('cards')">
+        <i class="fa-solid fa-credit-card mr-2"></i>
+        Топливные карты
+      </button>
+      <button class="fuel-tab" data-tab="anomalies" onclick="switchFuelTab('anomalies')">
+        <i class="fa-solid fa-triangle-exclamation mr-2"></i>
+        Аномалии
+      </button>
+    </div>
+
+    <!-- Consumption Tab Content -->
+    <div id="consumptionTab">
+      <!-- Stats Row -->
+      <div class="grid grid-cols-5 gap-4 mb-4">
       <div class="glass-panel stat-card p-5">
         <div class="flex items-center justify-between mb-3">
           <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 flex items-center justify-center">
@@ -328,6 +375,235 @@
         </div>
       </aside>
     </div>
+    </div><!-- End consumptionTab -->
+
+    <!-- Fuel Cards Tab -->
+    <div id="cardsTab" style="display: none;">
+      <div class="grid grid-cols-3 gap-6">
+        <!-- Cards Grid -->
+        <div class="col-span-2 space-y-4">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-xl font-bold">Топливные карты</h2>
+            <button class="btn-primary" onclick="showAddCardModal()">
+              <i class="fa-solid fa-plus mr-2"></i>
+              Добавить карту
+            </button>
+          </div>
+          
+          <div class="grid grid-cols-2 gap-4" id="fuelCardsGrid">
+            <!-- Card 1 - Лукойл -->
+            <div class="fuel-card">
+              <div class="flex items-start justify-between mb-4">
+                <div class="w-14 h-10 rounded-lg bg-gradient-to-r from-red-500 to-red-600 flex items-center justify-center">
+                  <span class="text-white font-bold text-sm">ЛУКОЙЛ</span>
+                </div>
+                <span class="px-2 py-1 rounded-lg bg-emerald-500/15 text-emerald-500 text-xs font-medium">Активна</span>
+              </div>
+              <div class="text-lg font-mono tracking-wider mb-1">**** **** **** 4521</div>
+              <div class="text-sm text-muted mb-4">Volvo FH16 #1 • Иванов А.</div>
+              <div class="flex items-center justify-between p-3 rounded-xl bg-white/5">
+                <div>
+                  <div class="text-xs text-muted">Баланс</div>
+                  <div class="text-xl font-bold text-emerald-500">₽ 145,320</div>
+                </div>
+                <div class="text-right">
+                  <div class="text-xs text-muted">Лимит/мес</div>
+                  <div class="text-lg font-semibold">₽ 200,000</div>
+                </div>
+              </div>
+              <div class="flex gap-2 mt-4">
+                <button class="flex-1 btn-secondary text-sm py-2">История</button>
+                <button class="flex-1 btn-secondary text-sm py-2">Лимиты</button>
+              </div>
+            </div>
+
+            <!-- Card 2 - ГПН -->
+            <div class="fuel-card">
+              <div class="flex items-start justify-between mb-4">
+                <div class="w-14 h-10 rounded-lg bg-gradient-to-r from-green-500 to-green-600 flex items-center justify-center">
+                  <span class="text-white font-bold text-sm">ГПН</span>
+                </div>
+                <span class="px-2 py-1 rounded-lg bg-emerald-500/15 text-emerald-500 text-xs font-medium">Активна</span>
+              </div>
+              <div class="text-lg font-mono tracking-wider mb-1">**** **** **** 3156</div>
+              <div class="text-sm text-muted mb-4">MAN TGX #2 • Петров С.</div>
+              <div class="flex items-center justify-between p-3 rounded-xl bg-white/5">
+                <div>
+                  <div class="text-xs text-muted">Баланс</div>
+                  <div class="text-xl font-bold text-emerald-500">₽ 89,750</div>
+                </div>
+                <div class="text-right">
+                  <div class="text-xs text-muted">Лимит/мес</div>
+                  <div class="text-lg font-semibold">₽ 150,000</div>
+                </div>
+              </div>
+              <div class="flex gap-2 mt-4">
+                <button class="flex-1 btn-secondary text-sm py-2">История</button>
+                <button class="flex-1 btn-secondary text-sm py-2">Лимиты</button>
+              </div>
+            </div>
+
+            <!-- Card 3 - Роснефть -->
+            <div class="fuel-card">
+              <div class="flex items-start justify-between mb-4">
+                <div class="w-14 h-10 rounded-lg bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center">
+                  <span class="text-white font-bold text-xs">РОСНЕФТЬ</span>
+                </div>
+                <span class="px-2 py-1 rounded-lg bg-emerald-500/15 text-emerald-500 text-xs font-medium">Активна</span>
+              </div>
+              <div class="text-lg font-mono tracking-wider mb-1">**** **** **** 9023</div>
+              <div class="text-sm text-muted mb-4">Scania R500 #3 • Сидоров М.</div>
+              <div class="flex items-center justify-between p-3 rounded-xl bg-white/5">
+                <div>
+                  <div class="text-xs text-muted">Баланс</div>
+                  <div class="text-xl font-bold text-emerald-500">₽ 234,100</div>
+                </div>
+                <div class="text-right">
+                  <div class="text-xs text-muted">Лимит/мес</div>
+                  <div class="text-lg font-semibold">₽ 250,000</div>
+                </div>
+              </div>
+              <div class="flex gap-2 mt-4">
+                <button class="flex-1 btn-secondary text-sm py-2">История</button>
+                <button class="flex-1 btn-secondary text-sm py-2">Лимиты</button>
+              </div>
+            </div>
+
+            <!-- Card 4 - Blocked -->
+            <div class="fuel-card opacity-60">
+              <div class="flex items-start justify-between mb-4">
+                <div class="w-14 h-10 rounded-lg bg-gradient-to-r from-amber-500 to-amber-600 flex items-center justify-center">
+                  <span class="text-white font-bold text-sm">Е100</span>
+                </div>
+                <span class="px-2 py-1 rounded-lg bg-red-500/15 text-red-500 text-xs font-medium">Заблокирована</span>
+              </div>
+              <div class="text-lg font-mono tracking-wider mb-1">**** **** **** 7788</div>
+              <div class="text-sm text-muted mb-4">Mercedes Actros #4</div>
+              <div class="flex items-center justify-between p-3 rounded-xl bg-white/5">
+                <div>
+                  <div class="text-xs text-muted">Баланс</div>
+                  <div class="text-xl font-bold">₽ 0</div>
+                </div>
+                <div class="text-right">
+                  <div class="text-xs text-muted">Причина</div>
+                  <div class="text-sm text-red-500">Утеряна</div>
+                </div>
+              </div>
+              <div class="flex gap-2 mt-4">
+                <button class="flex-1 btn-primary text-sm py-2">Разблокировать</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Cards Summary -->
+        <div class="space-y-4">
+          <div class="glass-panel p-5">
+            <h3 class="font-semibold mb-4">Сводка по картам</h3>
+            <div class="space-y-4">
+              <div class="flex items-center justify-between">
+                <span class="text-muted">Всего карт</span>
+                <span class="text-2xl font-bold">64</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-muted">Активных</span>
+                <span class="text-xl font-semibold text-emerald-500">58</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-muted">Заблокировано</span>
+                <span class="text-xl font-semibold text-red-500">6</span>
+              </div>
+              <hr class="border-white/10">
+              <div class="flex items-center justify-between">
+                <span class="text-muted">Общий баланс</span>
+                <span class="text-xl font-bold text-emerald-500">₽ 2.8M</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="glass-panel p-5">
+            <h3 class="font-semibold mb-4">Последние операции</h3>
+            <div class="space-y-3">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-emerald-500/15 flex items-center justify-center">
+                  <i class="fa-solid fa-gas-pump text-emerald-500"></i>
+                </div>
+                <div class="flex-1">
+                  <div class="text-sm font-medium">Заправка 420л</div>
+                  <div class="text-xs text-muted">TR-001 • Лукойл</div>
+                </div>
+                <span class="text-sm font-semibold">-₽24.7K</span>
+              </div>
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-blue-500/15 flex items-center justify-center">
+                  <i class="fa-solid fa-plus text-blue-500"></i>
+                </div>
+                <div class="flex-1">
+                  <div class="text-sm font-medium">Пополнение</div>
+                  <div class="text-xs text-muted">Карта *4521</div>
+                </div>
+                <span class="text-sm font-semibold text-emerald-500">+₽100K</span>
+              </div>
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-emerald-500/15 flex items-center justify-center">
+                  <i class="fa-solid fa-gas-pump text-emerald-500"></i>
+                </div>
+                <div class="flex-1">
+                  <div class="text-sm font-medium">Заправка 380л</div>
+                  <div class="text-xs text-muted">TR-023 • ГПН</div>
+                </div>
+                <span class="text-sm font-semibold">-₽22.4K</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Anomalies Tab -->
+    <div id="anomaliesTab" style="display: none;">
+      <div class="glass-panel p-6">
+        <div class="flex items-center justify-between mb-6">
+          <h2 class="text-xl font-bold flex items-center gap-3">
+            <i class="fa-solid fa-triangle-exclamation text-amber-500"></i>
+            Аномалии расхода топлива
+          </h2>
+          <span class="px-3 py-1 rounded-full bg-amber-500/15 text-amber-500 text-sm font-medium">3 за неделю</span>
+        </div>
+        <div class="space-y-4">
+          <div class="p-4 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center gap-4">
+            <div class="w-12 h-12 rounded-xl bg-red-500/20 flex items-center justify-center">
+              <i class="fa-solid fa-droplet-slash text-red-500 text-xl"></i>
+            </div>
+            <div class="flex-1">
+              <div class="font-semibold">Подозрение на слив топлива</div>
+              <div class="text-sm text-muted">TR-012 • Вчера в 23:45 • -85 литров за 5 минут</div>
+            </div>
+            <button class="btn-secondary">Расследовать</button>
+          </div>
+          <div class="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center gap-4">
+            <div class="w-12 h-12 rounded-xl bg-amber-500/20 flex items-center justify-center">
+              <i class="fa-solid fa-gauge-high text-amber-500 text-xl"></i>
+            </div>
+            <div class="flex-1">
+              <div class="font-semibold">Повышенный расход</div>
+              <div class="text-sm text-muted">TR-007 • 15.01 • Расход 45л/100км (норма 32л)</div>
+            </div>
+            <button class="btn-secondary">Анализ</button>
+          </div>
+          <div class="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center gap-4">
+            <div class="w-12 h-12 rounded-xl bg-amber-500/20 flex items-center justify-center">
+              <i class="fa-solid fa-location-crosshairs text-amber-500 text-xl"></i>
+            </div>
+            <div class="flex-1">
+              <div class="font-semibold">Заправка вне маршрута</div>
+              <div class="text-sm text-muted">TR-034 • 14.01 • АЗС в 15км от маршрута</div>
+            </div>
+            <button class="btn-secondary">Подробнее</button>
+          </div>
+        </div>
+      </div>
+    </div>
   </main>
 
   <script>
@@ -446,46 +722,38 @@
       </tr>
     `).join('');
 
-    // Role management
-    document.addEventListener('DOMContentLoaded', () => {
-      initNavigation('fuel');
-      if (typeof updateRoleBadge === 'function') updateRoleBadge();
-    });
-
-    // Initialize navigation based on role
-    function initNavigation(currentPage) {
-      const role = localStorage.getItem('user_role') || 'admin';
-      const nav = document.getElementById('mainNav');
+    // Tab switching
+    function switchFuelTab(tab) {
+      document.querySelectorAll('.fuel-tab').forEach(t => t.classList.remove('active'));
+      document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
       
-      let navItems = [];
-      
-      if (role === 'owner') {
-        navItems.push({ href: './owner.html', icon: 'fa-crown', text: 'Обзор', page: 'owner' });
-      }
-      
-      navItems = navItems.concat([
-        { href: './index.html', icon: 'fa-truck', text: 'Флот', page: 'index' },
-        { href: './trips.html', icon: 'fa-route', text: 'Рейсы', page: 'trips' },
-        { href: './geozones.html', icon: 'fa-map-location-dot', text: 'Геозоны', page: 'geozones' },
-        { href: './analytics.html', icon: 'fa-chart-line', text: 'Аналитика', page: 'analytics' },
-        { href: './fuel.html', icon: 'fa-gas-pump', text: 'Топливо', page: 'fuel' },
-        { href: './maintenance.html', icon: 'fa-wrench', text: 'ТО', page: 'maintenance' },
-        { href: './documents.html', icon: 'fa-file-lines', text: 'Документы', page: 'documents' }
-      ]);
-      
-      nav.innerHTML = navItems.map(item => 
-        `<a href="${item.href}" class="nav-pill ${item.page === currentPage ? 'active' : ''}"><i class="fa-solid ${item.icon}"></i><span>${item.text}</span></a>`
-      ).join('');
+      document.getElementById('consumptionTab').style.display = tab === 'consumption' ? 'block' : 'none';
+      document.getElementById('cardsTab').style.display = tab === 'cards' ? 'block' : 'none';
+      document.getElementById('anomaliesTab').style.display = tab === 'anomalies' ? 'block' : 'none';
     }
 
-    // Logout function
-    function logout() {
-      localStorage.removeItem('auth_token');
-      localStorage.removeItem('user_role');
-      localStorage.removeItem('demo_mode');
-      window.location.href = './login.html';
+    function showAddCardModal() {
+      alert('Форма добавления топливной карты');
     }
+
   </script>
+  <script src="./assets/js/routa-core.js"></script>
   <script src="./assets/js/routox-unified.js"></script>
+  <script src="./assets/js/routox-ai.js"></script>
+  <script>
+    // ========== ROUTA PLATFORM INITIALIZATION ==========
+    (async function() {
+      Routa.Theme.load();
+      const user = await Routa.App.init({
+        requireAuth: true,
+        currentPage: 'fuel.html'
+      });
+      if (!user) return;
+      console.log('Fuel page initialized for:', user.role, user.edition);
+    })();
+    
+    function logout() { Routa.Auth.logout(); }
+    function toggleTheme() { Routa.Theme.toggle(); }
+  </script>
 </body>
 </html>

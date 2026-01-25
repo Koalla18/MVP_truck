@@ -5,10 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>RoutoX — Геозоны</title>
   <link rel="stylesheet" href="./assets/css/routox-unified.css">
+  <link rel="stylesheet" href="./assets/css/page-transitions.css">
   <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
   <script src="https://kit.fontawesome.com/a2e0e9e5a9.js" crossorigin="anonymous"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
   <style>
     #geozoneMap { border-radius: 16px; z-index: 1; }
     .leaflet-control-zoom { border: none !important; border-radius: 10px !important; overflow: hidden; }
@@ -34,40 +38,73 @@
     .stat-value { font-size: 28px; font-weight: 700; background: linear-gradient(135deg, #3b82f6, #10b981); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
     .modal-backdrop { background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); }
     [data-theme="dark"] .modal-backdrop { background: rgba(0,0,0,0.8); }
+    .role-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+    .role-badge.admin { background: rgba(59, 130, 246, 0.15); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.3); }
+    .role-badge.owner { background: rgba(139, 92, 246, 0.15); color: #8b5cf6; border: 1px solid rgba(139, 92, 246, 0.3); }
+    .role-badge.dispatcher { background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); }
+    .role-badge.logist { background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.3); }
+    .nav-item-active {
+        background: rgba(255, 255, 255, 0.9);
+        color: #f59e0b !important;
+        box-shadow: 0 2px 10px rgba(245, 158, 11, 0.15);
+        font-weight: 600 !important;
+    }
   </style>
 </head>
 <body class="min-h-screen">
   <!-- Header -->
-  <header class="glass-panel mx-4 mt-4 px-6 py-4 flex items-center justify-between sticky top-4 z-30">
-    <div class="flex items-center gap-6">
-      <a href="./index.html" class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-emerald-500 flex items-center justify-center font-bold text-lg text-white">R</div>
-        <div>
-          <div class="font-semibold">RoutoX</div>
-          <div class="text-xs text-muted">Fleet Management</div>
+  <header class="h-16 glass-panel flex items-center justify-between px-6 z-40 shrink-0 border-b border-white/50 sticky top-0 mx-4 mt-4 rounded-2xl">
+    <div class="flex items-center gap-12">
+        <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-white font-extrabold text-xl shadow-lg shadow-amber-500/20">
+                R
+            </div>
+            <div class="flex flex-col">
+                <span class="font-bold text-lg leading-none tracking-tight text-slate-800">RoutoX</span>
+                <span class="text-[10px] text-slate-400 font-semibold uppercase tracking-widest mt-0.5">Logist Panel</span>
+            </div>
         </div>
-      </a>
-      <nav id="mainNav" class="flex items-center gap-1 ml-8">
-        <!-- Navigation populated by JS -->
-      </nav>
+        <nav class="hidden lg:flex items-center gap-1 bg-slate-100/50 p-1 rounded-xl">
+            <a class="px-3 py-1.5 rounded-lg text-sm font-medium text-slate-500 hover:text-slate-800 hover:bg-white/60 transition-colors" href="logist.html">Заказы</a>
+            <a class="px-3 py-1.5 rounded-lg text-sm font-medium text-slate-500 hover:text-slate-800 hover:bg-white/60 transition-colors" href="routes.html">Маршруты</a>
+            <a class="px-3 py-1.5 rounded-lg text-sm font-medium text-slate-500 hover:text-slate-800 hover:bg-white/60 transition-colors" href="trips.html">Рейсы</a>
+            <a class="px-3 py-1.5 rounded-lg text-sm font-medium text-slate-500 hover:text-slate-800 hover:bg-white/60 transition-colors" href="drivers-manage.html">Водители</a>
+            <a class="px-3 py-1.5 rounded-lg text-sm font-medium text-slate-500 hover:text-slate-800 hover:bg-white/60 transition-colors" href="clients.html">Клиенты</a>
+            <a class="px-3 py-1.5 rounded-lg text-sm font-medium text-slate-500 hover:text-slate-800 hover:bg-white/60 transition-colors" href="warehouse.html">Склад</a>
+            <a class="px-3 py-1.5 rounded-lg text-sm font-medium text-slate-500 hover:text-slate-800 hover:bg-white/60 transition-colors" href="loading-plan.html">Планирование</a>
+            <a class="px-3 py-1.5 rounded-lg text-sm font-medium text-slate-500 hover:text-slate-800 hover:bg-white/60 transition-colors" href="delivery-stats.html">Статистика</a>
+            <a class="px-3 py-1.5 rounded-lg text-sm font-semibold nav-item-active transition-all" href="geozones.html">Геозоны</a>
+        </nav>
     </div>
-    <div class="flex items-center gap-3">
-      <div class="flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-500/15 border border-emerald-500/30">
-        <span class="w-2 h-2 rounded-full bg-emerald-500 live-pulse"></span>
-        <span class="text-sm text-emerald-600 font-medium">Live</span>
-      </div>
-      <span class="role-badge admin" id="roleBadge">
-        <i class="fa-solid fa-user-gear"></i>
-        <span id="roleText">Администратор</span>
-      </span>
-      <div class="theme-toggle-track" onclick="toggleTheme()">
-        <div class="theme-toggle-thumb"></div>
-      </div>
-      <button class="icon-btn" title="Уведомления">
-        <i class="fa-solid fa-bell text-muted"></i>
-        <span class="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center font-bold">4</span>
-      </button>
-      <button class="icon-btn" title="Выход" onclick="logout()"><i class="fa-solid fa-right-from-bracket text-muted"></i></button>
+    <div class="flex items-center gap-5">
+        <div class="px-3 py-1.5 bg-white/60 backdrop-blur-md border border-white/60 rounded-full flex items-center gap-2 shadow-sm">
+            <span class="relative flex h-2.5 w-2.5">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+            </span>
+            <span class="text-xs font-bold text-slate-700 tracking-tight">LIVE</span>
+        </div>
+        <div class="h-6 w-px bg-slate-200"></div>
+        <span class="role-badge logist px-3 py-1.5 rounded-full text-xs font-semibold" style="background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.3);">
+            <i class="fa-solid fa-route"></i>
+            <span>Логист</span>
+        </span>
+        <div class="flex items-center gap-3 pl-1 pr-1 py-1 bg-white/50 border border-white rounded-full shadow-sm hover:shadow-md transition-shadow cursor-pointer">
+            <div class="w-8 h-8 rounded-full bg-slate-200 overflow-hidden ring-2 ring-white">
+                <img alt="User" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCTs9iN8pKS03W5I54u9FB4B-c8kh0-SvddoYiVdknvnn0XFQ_ScxzcOGMuvCw75ZDO7eej3OBFSUyW7YGzfIdw8bm2JVE2qYntX-6WFsuWZDXeCjqgvXyR-Lo9UnAE2bTQejiaicaZNqXTEEWzBEmoalZytqScbtdaXlk0i5laN5yjsqI3j457keHzESRrW4bLeWD2l5xuer1uZ4Zd_LMeP8p-XTEa4_wtLTcRyHGOncDuMQUJk788z8tvDII7r8UTdnahdzzaAtY"/>
+            </div>
+            <div class="pr-3 flex flex-col items-end leading-none">
+                <p class="text-xs font-bold text-slate-800" id="userName">Логист</p>
+                <p class="text-[9px] text-amber-600 font-semibold mt-0.5" id="userRole">Pro</p>
+            </div>
+        </div>
+        <button class="w-10 h-10 flex items-center justify-center text-slate-400 hover:text-slate-700 bg-white/50 hover:bg-white rounded-full transition-all shadow-sm border border-white/50 relative" title="Уведомления" onclick="window.location.href='notifications.html'">
+            <span class="material-symbols-outlined text-[20px]">notifications</span>
+            <span class="absolute top-2.5 right-2.5 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white"></span>
+        </button>
+        <button class="w-10 h-10 flex items-center justify-center text-slate-400 hover:text-red-500 bg-white/50 hover:bg-white rounded-full transition-all shadow-sm border border-white/50" title="Выход" onclick="logout()">
+            <span class="material-symbols-outlined text-[20px]">logout</span>
+        </button>
     </div>
   </header>
 
@@ -510,8 +547,88 @@
       tool.addEventListener('click', () => {
         document.querySelectorAll('.draw-tool').forEach(t => t.classList.remove('active'));
         tool.classList.add('active');
+        const toolType = tool.dataset.tool;
+        startDrawing(toolType);
       });
     });
+
+    // Drawing functionality
+    let drawnItems = new L.FeatureGroup();
+    map.addLayer(drawnItems);
+    let currentDrawHandler = null;
+
+    function startDrawing(type) {
+      // Cancel any existing drawing
+      if (currentDrawHandler) {
+        currentDrawHandler.disable();
+      }
+
+      const drawOptions = {
+        color: '#3b82f6',
+        fillColor: '#3b82f6',
+        fillOpacity: 0.2,
+        weight: 2
+      };
+
+      switch(type) {
+        case 'circle':
+          currentDrawHandler = new L.Draw.Circle(map, { shapeOptions: drawOptions });
+          break;
+        case 'polygon':
+          currentDrawHandler = new L.Draw.Polygon(map, { shapeOptions: drawOptions, allowIntersection: false });
+          break;
+        case 'rectangle':
+          currentDrawHandler = new L.Draw.Rectangle(map, { shapeOptions: drawOptions });
+          break;
+        case 'route':
+          currentDrawHandler = new L.Draw.Polyline(map, { shapeOptions: { ...drawOptions, weight: 6, opacity: 0.6 } });
+          break;
+      }
+
+      if (currentDrawHandler) {
+        currentDrawHandler.enable();
+      }
+    }
+
+    // Handle created shapes
+    map.on(L.Draw.Event.CREATED, function (event) {
+      const layer = event.layer;
+      drawnItems.addLayer(layer);
+      
+      // Get coordinates
+      let coords;
+      if (event.layerType === 'circle') {
+        coords = layer.getLatLng();
+        const radius = layer.getRadius();
+        showCreateZoneModalWithData(coords.lat, coords.lng, Math.round(radius));
+      } else if (event.layerType === 'polygon' || event.layerType === 'rectangle') {
+        coords = layer.getBounds().getCenter();
+        showCreateZoneModalWithData(coords.lat, coords.lng, 500);
+      } else if (event.layerType === 'polyline') {
+        coords = layer.getLatLngs()[0];
+        showCreateZoneModalWithData(coords.lat, coords.lng, 1000);
+      }
+      
+      // Reset tool buttons
+      document.querySelectorAll('.draw-tool').forEach(t => t.classList.remove('active'));
+      currentDrawHandler = null;
+    });
+
+    function showCreateZoneModalWithData(lat, lng, radius) {
+      showCreateZoneModal();
+      // Fill in coordinates
+      const form = document.getElementById('createZoneModal').querySelector('form');
+      const inputs = form.querySelectorAll('input[type="number"]');
+      if (inputs[0]) inputs[0].value = lat.toFixed(6);
+      if (inputs[1]) inputs[1].value = lng.toFixed(6);
+      
+      // Set radius
+      const slider = document.getElementById('radiusSlider');
+      if (slider && radius >= 100 && radius <= 5000) {
+        slider.value = radius;
+        document.getElementById('radiusValue').textContent = radius >= 1000 ? `${radius/1000}км` : `${radius}м`;
+      }
+    }
 
     const radiusSlider = document.getElementById('radiusSlider');
     const radiusValue = document.getElementById('radiusValue');
@@ -539,46 +656,27 @@
     renderZoneList();
     updateZoneDetails(zones[0]);
 
-    // Role management
-    document.addEventListener('DOMContentLoaded', () => {
-      initNavigation('geozones');
-      if (typeof updateRoleBadge === 'function') updateRoleBadge();
-    });
-
-    // Initialize navigation based on role
-    function initNavigation(currentPage) {
-      const role = localStorage.getItem('user_role') || 'admin';
-      const nav = document.getElementById('mainNav');
-      
-      let navItems = [];
-      
-      if (role === 'owner') {
-        navItems.push({ href: './owner.html', icon: 'fa-crown', text: 'Обзор', page: 'owner' });
-      }
-      
-      navItems = navItems.concat([
-        { href: './index.html', icon: 'fa-truck', text: 'Флот', page: 'index' },
-        { href: './trips.html', icon: 'fa-route', text: 'Рейсы', page: 'trips' },
-        { href: './geozones.html', icon: 'fa-map-location-dot', text: 'Геозоны', page: 'geozones' },
-        { href: './analytics.html', icon: 'fa-chart-line', text: 'Аналитика', page: 'analytics' },
-        { href: './fuel.html', icon: 'fa-gas-pump', text: 'Топливо', page: 'fuel' },
-        { href: './maintenance.html', icon: 'fa-wrench', text: 'ТО', page: 'maintenance' },
-        { href: './documents.html', icon: 'fa-file-lines', text: 'Документы', page: 'documents' }
-      ]);
-      
-      nav.innerHTML = navItems.map(item => 
-        `<a href="${item.href}" class="nav-pill ${item.page === currentPage ? 'active' : ''}"><i class="fa-solid ${item.icon}"></i><span>${item.text}</span></a>`
-      ).join('');
-    }
-
-    // Logout function
-    function logout() {
-      localStorage.removeItem('auth_token');
-      localStorage.removeItem('user_role');
-      localStorage.removeItem('demo_mode');
-      window.location.href = './login.html';
-    }
   </script>
+  <script src="./assets/js/routa-core.js"></script>
   <script src="./assets/js/routox-unified.js"></script>
+  <script src="./assets/js/routox-ai.js"></script>
+  <script>
+    // Global theme toggle
+    // ========== ROUTA PLATFORM INITIALIZATION ==========
+    (async function() {
+      Routa.Theme.load();
+      const user = await Routa.App.init({
+        requireAuth: true,
+        currentPage: 'geozones.html'
+      });
+      if (!user) return;
+      console.log('Geozones page initialized for:', user.role, user.edition);
+    })();
+    
+    function logout() { Routa.Auth.logout(); }
+    function toggleTheme() { Routa.Theme.toggle(); }
+  </script>
+  <script src="./assets/js/role-theme.js"></script>
+  <script src="./assets/js/smooth-navigation.js"></script>
 </body>
 </html>

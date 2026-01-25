@@ -5,8 +5,9 @@
 ### Предварительные требования
 
 **Установленное ПО**:
-- Docker Desktop 20+ (для macOS/Windows) или Docker Engine + Docker Compose (для Linux)
+- Python 3.11+
 - Git 2.30+
+- Docker Desktop 20+ (опционально: для контейнерного запуска)
 - IDE: VS Code (рекомендуется) / PyCharm / WebStorm
 - Опционально: Postman / Insomnia (для тестирования API)
 
@@ -77,6 +78,31 @@ python -c "import secrets; print(secrets.token_urlsafe(64))"
 
 ### 3. Запуск проекта
 
+#### Вариант A — без Docker (рекомендуется)
+
+**Windows PowerShell (полный стек):**
+```powershell
+./start_local.ps1 -Seed
+```
+
+**Backend отдельно:**
+```bash
+cd backend
+python -m venv .venv
+..venv\Scripts\activate   # Windows
+source .venv/bin/activate       # macOS/Linux
+pip install -r requirements.txt
+python run_local.py --seed
+```
+
+**Frontend отдельно:**
+```bash
+cd frontend
+python -m http.server 3000
+```
+
+#### Вариант B — через Docker
+
 ```bash
 # Находясь в папке backend/
 docker compose up --build
@@ -105,7 +131,11 @@ docker compose exec backend alembic upgrade head
 docker compose exec backend alembic current
 ```
 
+> При локальном запуске без Docker `run_local.py` автоматически инициализирует SQLite, миграции не требуются.
+
 ### 5. Создание первого пользователя
+
+> Если запускаете локально без Docker, просто используйте `python run_local.py --seed` — он создаёт demo-аккаунты автоматически.
 
 ```bash
 # Вход в контейнер
@@ -233,10 +263,16 @@ curl http://localhost:8000/api/v1/auth/me \
 cd frontend
 
 # Python 3
-python -m http.server 8080
+python -m http.server 3000
 
 # Открыть в браузере
-open http://localhost:8080/index.html
+open http://localhost:3000/index.html
+```
+
+### Вариант 3: Старт через скрипт
+
+```powershell
+./start_local.ps1
 ```
 
 ### Вариант 3: Статический Nginx (Docker)
@@ -290,25 +326,25 @@ venv\Scripts\activate  # Windows
 # Установить зависимости
 pip install -r requirements.txt
 
-# Настроить .env (DATABASE_URL должен указывать на локальный PostgreSQL)
-# DATABASE_URL=postgresql://user:pass@localhost:5432/routox_db
-
-# Запустить PostgreSQL отдельно:
-docker run -d \
-  --name routox-postgres \
-  -e POSTGRES_DB=routox_db \
-  -e POSTGRES_USER=routox_user \
-  -e POSTGRES_PASSWORD=routox_password \
-  -p 5432:5432 \
-  postgres:15
-
-# Применить миграции
-alembic upgrade head
-
-# Запустить dev сервер
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+# Запуск dev-сервера (SQLite по умолчанию)
+python run_local.py --seed
 
 # Сервер перезагружается при изменении кода
+```
+
+**Если нужен PostgreSQL локально (опционально):**
+```bash
+# DATABASE_URL=postgresql://user:pass@localhost:5432/routox_db
+docker run -d \
+    --name routox-postgres \
+    -e POSTGRES_DB=routox_db \
+    -e POSTGRES_USER=routox_user \
+    -e POSTGRES_PASSWORD=routox_password \
+    -p 5432:5432 \
+    postgres:15
+
+alembic upgrade head
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 #### 2. Создание новой миграции

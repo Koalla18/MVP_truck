@@ -1,10 +1,18 @@
 from __future__ import annotations
 
-from sqlalchemy import Boolean, Column, DateTime, Enum, ForeignKey, Float, String, func
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy import JSON, Boolean, Column, DateTime, Enum, ForeignKey, Float, String, func
 
+try:
+    from sqlalchemy.dialects.postgresql import JSONB  # type: ignore
+except Exception:  # pragma: no cover
+    JSONB = None
+
+from app.core.settings import settings
 from app.db.base import Base
 from app.models.enums import GeozoneEventType, GeozoneType
+
+
+_JSON_TYPE = JSONB if (JSONB is not None and settings.database_url.startswith("postgres")) else JSON
 
 
 class Geozone(Base):
@@ -21,7 +29,7 @@ class Geozone(Base):
     center_lon = Column(Float, nullable=True)
     radius_m = Column(Float, nullable=True)
 
-    polygon = Column(JSONB, nullable=True)
+    polygon = Column(_JSON_TYPE, nullable=True)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 

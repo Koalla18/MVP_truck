@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>RoutoX — Панель администратора</title>
+  <title>RoutoX — Панель диспетчера</title>
   <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
   <script src="https://kit.fontawesome.com/a2e0e9e5a9.js" crossorigin="anonymous"></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -148,6 +148,41 @@
       right: 0;
       background: linear-gradient(to top, #3b82f6, #60a5fa, #93c5fd);
       transition: height 0.5s ease;
+    }
+    
+    /* Tenant Management Styles */
+    .tenant-tab {
+      padding: 8px 16px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 500;
+      background: transparent;
+      color: #94a3b8;
+      transition: all 0.2s;
+    }
+    .tenant-tab:hover { background: rgba(59, 130, 246, 0.1); color: #e2e8f0; }
+    .tenant-tab.active { background: rgba(59, 130, 246, 0.2); color: #3b82f6; }
+    
+    .tenant-card {
+      background: linear-gradient(135deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 16px;
+      padding: 1rem;
+      transition: all 0.2s;
+    }
+    .tenant-card:hover {
+      border-color: rgba(59, 130, 246, 0.3);
+      background: rgba(59, 130, 246, 0.05);
+    }
+    .tenant-status {
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 500;
+    }
+    .tenant-status.active { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+    .tenant-status.trial { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+    .tenant-status.suspended { background: rgba(239, 68, 68, 0.2); color: #f87171; }
     }
 
     .mech-bar-stripes {
@@ -725,6 +760,67 @@
     </div>
   </div>
 
+  <!-- Tenant Management Modal -->
+  <div id="tenantModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden items-center justify-center">
+    <div class="glass-panel p-6 w-full max-w-4xl mx-4 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <h2 class="text-xl font-bold">Управление тенантами</h2>
+          <p class="text-sm text-slate-400">SaaS-администрирование компаний</p>
+        </div>
+        <button onclick="closeTenantModal()" class="icon-btn">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      
+      <!-- Tenant Stats -->
+      <div class="grid grid-cols-4 gap-4 mb-6">
+        <div class="glass-card p-4 text-center">
+          <div class="text-3xl font-bold text-blue-500">24</div>
+          <div class="text-xs text-slate-400">Всего компаний</div>
+        </div>
+        <div class="glass-card p-4 text-center">
+          <div class="text-3xl font-bold text-emerald-500">18</div>
+          <div class="text-xs text-slate-400">Активных</div>
+        </div>
+        <div class="glass-card p-4 text-center">
+          <div class="text-3xl font-bold text-amber-500">4</div>
+          <div class="text-xs text-slate-400">Триальных</div>
+        </div>
+        <div class="glass-card p-4 text-center">
+          <div class="text-3xl font-bold text-purple-500">₽2.4M</div>
+          <div class="text-xs text-slate-400">MRR</div>
+        </div>
+      </div>
+      
+      <!-- Tenant Actions -->
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex gap-2">
+          <button class="tenant-tab active" data-filter="all">Все</button>
+          <button class="tenant-tab" data-filter="active">Активные</button>
+          <button class="tenant-tab" data-filter="trial">Триал</button>
+          <button class="tenant-tab" data-filter="suspended">Приостановлены</button>
+        </div>
+        <button class="btn-primary" onclick="showAddTenantForm()">
+          <i class="fa-solid fa-plus mr-2"></i>
+          Добавить компанию
+        </button>
+      </div>
+      
+      <!-- Tenant List -->
+      <div class="space-y-3" id="tenantList">
+        <!-- Tenants will be rendered here -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Admin Actions Button -->
+  <button id="adminFab" onclick="openTenantModal()" 
+          class="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center shadow-lg hover:shadow-xl hover:scale-110 transition-all z-40"
+          title="Управление тенантами">
+    <i class="fa-solid fa-building-user text-white text-lg"></i>
+  </button>
+
   <script>
     // Truck data
     const trucks = [
@@ -839,8 +935,104 @@
 
     // Close modal on Escape
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') closeMapModal();
+      if (e.key === 'Escape') {
+        closeMapModal();
+        closeTenantModal();
+      }
     });
+
+    // Tenant Management
+    const tenants = [
+      { id: 1, name: 'ООО "ТрансЛогистик"', plan: 'Enterprise', vehicles: 45, users: 12, status: 'active', mrr: 89000 },
+      { id: 2, name: 'ИП Сидоров А.В.', plan: 'Professional', vehicles: 15, users: 5, status: 'active', mrr: 35000 },
+      { id: 3, name: 'АО "Грузовик"', plan: 'Enterprise', vehicles: 120, users: 35, status: 'active', mrr: 180000 },
+      { id: 4, name: 'ООО "Быстрая доставка"', plan: 'Starter', vehicles: 8, users: 3, status: 'trial', mrr: 0 },
+      { id: 5, name: 'ООО "МегаФлот"', plan: 'Professional', vehicles: 25, users: 8, status: 'active', mrr: 45000 },
+      { id: 6, name: 'ИП Козлов М.И.', plan: 'Starter', vehicles: 3, users: 2, status: 'trial', mrr: 0 },
+      { id: 7, name: 'ООО "СтарТранс"', plan: 'Professional', vehicles: 18, users: 6, status: 'suspended', mrr: 35000 },
+    ];
+
+    function openTenantModal() {
+      document.getElementById('tenantModal').classList.remove('hidden');
+      document.getElementById('tenantModal').classList.add('flex');
+      renderTenants();
+    }
+
+    function closeTenantModal() {
+      document.getElementById('tenantModal').classList.add('hidden');
+      document.getElementById('tenantModal').classList.remove('flex');
+    }
+
+    function renderTenants(filter = 'all') {
+      const list = document.getElementById('tenantList');
+      const filtered = filter === 'all' ? tenants : tenants.filter(t => t.status === filter);
+      
+      list.innerHTML = filtered.map(t => `
+        <div class="tenant-card flex items-center gap-4">
+          <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500/20 to-purple-500/20 flex items-center justify-center">
+            <i class="fa-solid fa-building text-blue-500"></i>
+          </div>
+          <div class="flex-1">
+            <div class="flex items-center gap-3">
+              <span class="font-semibold">${t.name}</span>
+              <span class="tenant-status ${t.status}">${t.status === 'active' ? 'Активен' : t.status === 'trial' ? 'Триал' : 'Приостановлен'}</span>
+              <span class="px-2 py-0.5 bg-purple-500/20 text-purple-400 rounded text-xs">${t.plan}</span>
+            </div>
+            <div class="flex items-center gap-4 text-xs text-slate-400 mt-1">
+              <span><i class="fa-solid fa-truck mr-1"></i>${t.vehicles} ТС</span>
+              <span><i class="fa-solid fa-users mr-1"></i>${t.users} польз.</span>
+              <span><i class="fa-solid fa-ruble-sign mr-1"></i>${t.mrr.toLocaleString()}/мес</span>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <button class="icon-btn w-8 h-8" onclick="editTenant(${t.id})" title="Редактировать">
+              <i class="fa-solid fa-pen text-xs"></i>
+            </button>
+            <button class="icon-btn w-8 h-8" onclick="viewTenantDetails(${t.id})" title="Подробнее">
+              <i class="fa-solid fa-eye text-xs"></i>
+            </button>
+            ${t.status === 'active' ? 
+              `<button class="icon-btn w-8 h-8 text-red-500" onclick="suspendTenant(${t.id})" title="Приостановить"><i class="fa-solid fa-pause text-xs"></i></button>` : 
+              `<button class="icon-btn w-8 h-8 text-emerald-500" onclick="activateTenant(${t.id})" title="Активировать"><i class="fa-solid fa-play text-xs"></i></button>`
+            }
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // Tenant tab filtering
+    document.querySelectorAll('.tenant-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.tenant-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        renderTenants(tab.dataset.filter);
+      });
+    });
+
+    function editTenant(id) { alert(`Редактирование тенанта #${id}`); }
+    function viewTenantDetails(id) { alert(`Детали тенанта #${id}`); }
+    function suspendTenant(id) { alert(`Приостановка тенанта #${id}`); }
+    function activateTenant(id) { alert(`Активация тенанта #${id}`); }
+    function showAddTenantForm() { alert('Форма добавления нового тенанта'); }
+  </script>
+  <script src="./assets/js/routa-core.js"></script>
+  <script>
+    // Apply theme immediately
+    Routa.Theme.load();
+    
+    // Initialize with Routa
+    document.addEventListener('DOMContentLoaded', async () => {
+      const user = await Routa.App.init({
+        requireAuth: true,
+        currentPage: 'admin-dashboard.html'
+      });
+      if (!user) return;
+    });
+    
+    // Logout function
+    function logout() {
+      Routa.Auth.logout();
+    }
   </script>
 </body>
 </html>

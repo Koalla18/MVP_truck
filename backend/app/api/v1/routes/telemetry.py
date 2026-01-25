@@ -4,10 +4,12 @@ import hashlib
 import hmac
 import secrets
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
+from typing import Optional
 
-from fastapi import APIRouter, Depends, Header, HTTPException
+from fastapi import APIRouter, Depends, Header, HTTPException, Query
 from sqlalchemy.orm import Session
+from sqlalchemy import desc
 
 from app.api.v1.deps import get_current_user, require_permissions
 from app.db.session import get_db
@@ -29,6 +31,136 @@ from app.services.geo import haversine_m, point_in_polygon
 
 
 router = APIRouter()
+
+
+def _hash_key(raw: str) -> str:
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()
+
+
+# ============================================================================
+# ETA CALCULATION
+# ============================================================================
+
+def calculate_eta(distance_remaining_km: float, avg_speed_kph: float) -> Optional[datetime]:
+    """Calculate ETA based on remaining distance and average speed."""
+    if avg_speed_kph <= 0 or distance_remaining_km <= 0:
+        return None
+    
+    hours = distance_remaining_km / avg_speed_kph
+    return datetime.now(timezone.utc) + timedelta(hours=hours)
+
+
+def estimate_remaining_distance(current_lat: float, current_lon: float, dest_lat: float, dest_lon: float) -> float:
+    """Estimate remaining distance in km (direct line * road factor)."""
+    direct_distance_m = haversine_m(current_lat, current_lon, dest_lat, dest_lon)
+    # Road factor: actual road distance is typically 1.3-1.5x direct distance
+    return (direct_distance_m / 1000) * 1.35
+
+
+# ============================================================================
+# POSITIONS & TRACKING
+# ============================================================================
+
+@router.get("/positions")
+def get_positions(
+    vehicle_id: Optional[str] = Query(None),
+    since: Optional[datetime] = Query(None, description="Get positions since this timestamp"),
+    limit: int = Query(100, le=1000),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get latest vehicle positions for real-time tracking."""
+    
+    query = db.query(VehiclePosition).filter(
+        VehiclePosition.company_id == user.company_id
+    )
+    
+    if vehicle_id:
+        query = query.filter(VehiclePosition.vehicle_id == vehicle_id)
+    
+    if since:
+        query = query.filter(VehiclePosition.recorded_at >= since)
+    
+    positions = query.order_by(desc(VehiclePosition.recorded_at)).limit(limit).all()
+    
+    return {
+        "positions": [
+            {
+                "id": p.id,
+                "vehicle_id": p.vehicle_id,
+                "lat": p.lat,
+                "lon": p.lon,
+                "speed_kph": p.speed_kph,
+                "heading": p.heading,
+                "recorded_at": p.recorded_at.isoformat() if p.recorded_at else None
+            }
+            for p in positions
+        ]
+    }
+
+
+@router.get("/positions/latest")
+def get_latest_positions(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get the most recent position for each vehicle (for map display)."""
+    
+    from sqlalchemy import func
+    
+    # Subquery to get the latest position for each vehicle
+    subq = (
+        db.query(
+            VehiclePosition.vehicle_id,
+            func.max(VehiclePosition.recorded_at).label("max_recorded")
+        )
+        .filter(VehiclePosition.company_id == user.company_id)
+        .group_by(VehiclePosition.vehicle_id)
+        .subquery()
+    )
+    
+    positions = (
+        db.query(VehiclePosition)
+        .join(
+            subq,
+            (VehiclePosition.vehicle_id == subq.c.vehicle_id) &
+            (VehiclePosition.recorded_at == subq.c.max_recorded)
+        )
+        .all()
+    )
+    
+    # Get vehicle info for ETA calculation
+    vehicles_dict = {}
+    vehicle_ids = [p.vehicle_id for p in positions]
+    if vehicle_ids:
+        vehicles = db.query(Vehicle).filter(Vehicle.id.in_(vehicle_ids)).all()
+        vehicles_dict = {v.id: v for v in vehicles}
+    
+    result = []
+    for p in positions:
+        vehicle = vehicles_dict.get(p.vehicle_id)
+        eta = None
+        remaining_km = None
+        
+        if vehicle and vehicle.distance_total_km and vehicle.distance_done_km:
+            remaining_km = vehicle.distance_total_km - vehicle.distance_done_km
+            if vehicle.avg_speed and vehicle.avg_speed > 0:
+                eta = calculate_eta(remaining_km, vehicle.avg_speed)
+        
+        result.append({
+            "vehicle_id": p.vehicle_id,
+            "vehicle_name": vehicle.name if vehicle else None,
+            "lat": p.lat,
+            "lon": p.lon,
+            "speed_kph": p.speed_kph,
+            "heading": p.heading,
+            "recorded_at": p.recorded_at.isoformat() if p.recorded_at else None,
+            "eta": eta.isoformat() if eta else None,
+            "remaining_km": round(remaining_km, 1) if remaining_km else None,
+            "status": vehicle.status_main if vehicle else None
+        })
+    
+    return {"positions": result, "count": len(result)}
 
 
 def _hash_key(raw: str) -> str:
